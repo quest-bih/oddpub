@@ -4,6 +4,12 @@ ODDPub is a text mining algorithm that parses a set of publications and detects
 which publications disseminated Open Data or Open Code together with the
 publication. It is tailored towards biomedical literature.
 
+## Authors
+
+Nico Riedel (nico.riedel@bihealth.de), Miriam Kip, Evgeny Bobrov - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
+
+## Description
+
 The algorithm searches for several categories of similar keywords in each 
 sentence. Multiple categories have to match for a single sentence to trigger a 
 detection. Among keyword categories are categories for specific biomedical
@@ -66,4 +72,6 @@ Additionally, the detection of Open Code statements is done with the following k
 | Supplementary Source-code | SOURCE_CODE NEAR SUPPLEMENT |
 | All Open Code keywords combined | SOURCE_CODE NEAR (SUPPLEMENT OR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR UPON_REQUEST)) |
 
+## License
 
+ODDPub is avalable under the MIT license. See the [LICENSE](https://github.com/quest-bih/oddpub/blob/master/LICENSE) file for more info.
