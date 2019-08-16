@@ -1,4 +1,4 @@
-Package: ODDPub
+Package: oddpub
 Type: Package
 Title: Detection of Open Data & Open Code statements in biomedical publications
 Version: 5.0
