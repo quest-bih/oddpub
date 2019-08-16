@@ -363,7 +363,7 @@
                           "additional file",
                           "file", "files")
   supplemental_table_number <- c("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]")
-  supplemental_table <- outer_str(supplemental_table_name, supplemental_table_number)
+  supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number)
   supplemental_table <- paste0("\\b", supplemental_table, "\\b")
   supplemental_table <- paste(supplemental_table, collapse = "|") %>% tolower()
   keyword_list[["supplemental_table"]] <- supplemental_table
@@ -377,7 +377,7 @@
                       "supplemental data set [[:digit:]]{1,2}")
   dataset_name <- c("data", "dataset", "datasets", "data set", "data sets")
   dataset_number <- c("S[[:digit:]]{1,2}")
-  dataset <- outer_str(dataset_name, dataset_number)
+  dataset <- .outer_str(dataset_name, dataset_number)
   dataset <- c(dataset, supplemental_dataset)
   dataset <- paste0("\\b", dataset, "\\b")
   dataset <- paste(dataset, collapse = "|") %>% tolower()
@@ -392,17 +392,17 @@
 
   #special regex pattern that looks for word closeness instead of words being in the same sentence
   #effect: all_data & file_format words are at most 10 words apart from each other
-  all_data_file_formats <- near_wd_sym(all_data, file_formats, dist = 10)
+  all_data_file_formats <- .near_wd_sym(all_data, file_formats, dist = 10)
   keyword_list[["all_data_file_formats"]] <- all_data_file_formats
 
 
-  supp_table_data <- near_wd_sym(supplemental_table,
+  supp_table_data <- .near_wd_sym(supplemental_table,
                                  paste(file_formats, all_data, sep = "|"),
                                  dist = 10)
   keyword_list[["supp_table_data"]] <- supp_table_data
 
 
-  data_availibility_statement <- near_wd(data_availability,
+  data_availibility_statement <- .near_wd(data_availability,
                                          paste("doi", accession_nr, repositories, sep = "|"),
                                          dist = 30)
   keyword_list[["data_availibility_statement"]] <- data_availibility_statement
@@ -411,7 +411,7 @@
 }
 
 
-outer_str <- function(x, y)
+.outer_str <- function(x, y)
 {
   outer_1 <- outer(x, y, FUN = "paste") %>% as.vector()
   outer_2 <- outer(y, x, FUN = "paste") %>% as.vector()
@@ -421,7 +421,7 @@ outer_str <- function(x, y)
 }
 
 #function that creates Regex that searches for cases where words x and y are at max dist words apart
-near_wd_sym <- function(x, y, dist = 10)
+.near_wd_sym <- function(x, y, dist = 10)
 {
   combined <- paste0("\\b(",
                      x,
@@ -437,7 +437,7 @@ near_wd_sym <- function(x, y, dist = 10)
 }
 
 #assymetric version where only the case with x before y is checked
-near_wd <- function(x, y, dist = 10)
+.near_wd <- function(x, y, dist = 10)
 {
   combined <- paste0("\\b(",
                      x,
