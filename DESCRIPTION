@@ -1,0 +1,15 @@
+Package: ODDPubV5
+Type: Package
+Title: Detection of Open Data & Open Code statements in biomedical publications
+Version: 0.1.0
+Author: Nico Riedel
+Maintainer: Nico Riedel <nico.riedel@bihealth.de>
+Description: Detection of Open Data & Open Code statements in biomedical publications.
+  Uses publication PDFs as input and returns both Open Data/Code: 'yes/no' and the detected statement.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Depends:
+  dplyr, purrr
+Imports:
+  foreach, doParallel, tokenizers, stringr
