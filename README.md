@@ -58,9 +58,9 @@ The algorithm was developed on an institutional publication record (N=8654). On 
 
 ## Detailed description of the keywords
 
-In the following, we give an overview over the different parts of the keywords used in the algoritm
+In the following, we give an overview over the different parts of the keywords used in the algorithm
 
-Those are the combined keyword categories that are searched in the full text. If a hit was detected in any of these combined categories the paper is flagged as Open Data. For definitions of the individual keyword categories, see below.
+Those are the combined keyword categories that are searched in the full text. If a hit was detected in any of these combined categories, the paper is flagged as Open Data. For definitions of the individual keyword categories, see below.
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
@@ -118,4 +118,4 @@ Individual keyword categories:
 
 ## License
 
-ODDPub is avalable under the MIT license. See the [LICENSE](https://github.com/quest-bih/oddpub/blob/master/LICENSE) file for more info.
+ODDPub is available under the MIT license. See the [LICENSE](https://github.com/quest-bih/oddpub/blob/master/LICENSE) file for more info.
