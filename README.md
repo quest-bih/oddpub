@@ -64,7 +64,7 @@ Those are the combined keyword categories that are searched in the full text. If
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Field-specific databases        | GENE_DB NEAR ACCESSION_NR NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
+| Field-specific databases        | FIELD_SPECIFIC_DB NEAR ACCESSION_NR NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
 | General-purpose databases | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
 | Dataset |	(DATASET_NAME OUTER_SYM DATASET_NUMBER) OR SUPPLEMENTAL_DATASET |
 | Supplemental table or data |	SUPPLEMENTAL_TABLE NEAR_WD(10) (FILE_FORMATS OR ALL_DATA) |
