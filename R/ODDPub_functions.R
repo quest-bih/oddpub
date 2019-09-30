@@ -461,7 +461,7 @@
   sentence_idx <- apply(open_data_tibble[2:tibble_cols], 2, which)
 
   if(length(sentence_idx) == 0) {
-    return(c("", "", "", ""))
+    return(rep("", dim(open_data_tibble)[2]-1))
   }
 
   text_frag <- vector()
@@ -531,7 +531,7 @@
 
 
 #part of the keyword search that searches for nearby words on the full text
-.keyword_search_near_wd <- function(PDF_text_sentences)
+.keyword_search_near_wd <- function(PDF_text_sentences, extract_text = FALSE)
 {
   keyword_list <- .create_keyword_list()
 
@@ -539,10 +539,18 @@
   PDF_text_full <- PDF_text_sentences %>% map(paste, collapse = " ")
 
   #search for the last combination in the non-tokenized text and add it to the results table for the publications
+  #either give out TRUE/FALSE or return detected string
+  if(extract_text) {
+    str_function <- stringr::str_extract
+    map_function <- map_chr
+  } else {
+    str_function <- stringr::str_detect
+    map_function <- map_lgl
+  }
   keyword_results_near_wd <- tibble(
-    com_file_formats = map_lgl(PDF_text_full, stringr::str_detect, pattern = keyword_list[["all_data_file_formats"]]),
-    com_supplemental_data = map_lgl(PDF_text_full, stringr::str_detect, pattern = keyword_list[["supp_table_data"]]),
-    com_data_availibility = map_lgl(PDF_text_full, stringr::str_detect, pattern = keyword_list[["data_availibility_statement"]]))
+    com_file_formats = map_function(PDF_text_full, str_function, pattern = keyword_list[["all_data_file_formats"]]),
+    com_supplemental_data = map_function(PDF_text_full, str_function, pattern = keyword_list[["supp_table_data"]]),
+    com_data_availibility = map_function(PDF_text_full, str_function, pattern = keyword_list[["data_availibility_statement"]]))
 
   return(keyword_results_near_wd)
 }

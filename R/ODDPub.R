@@ -93,7 +93,7 @@ open_data_sentences <- function(PDF_text_sentences)
     map(select, value, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
 
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
-  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
+  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
 
 
   #identifies the text fragments in which the Open Data keywords were detected
