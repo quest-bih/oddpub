@@ -195,6 +195,7 @@ test_that("supp_table_data",
             expect_true(.detect_keywords("csv word word word word word all S2 Table", "supp_table_data"))
             expect_true(.detect_keywords("S2 Table word word word word word raw data", "supp_table_data"))
             expect_true(.detect_keywords("raw data word word. word word word additional file 8", "supp_table_data"))
+            expect_true(.detect_keywords("Proteomics data for all unique proteins detected (Table S1) (XLSX)", "supp_table_data"))
             expect_false(.detect_keywords("supplementary table S3 word word word word word word word word word word word xlsx", "supp_table_data"))
           })
 
@@ -204,10 +205,11 @@ test_that("data_availibility_statement",
             expect_true(.detect_keywords("data sharing word word word word word GSE77534", "data_availibility_statement"))
             expect_true(.detect_keywords("availability of data and materials word word word word word figshare", "data_availibility_statement"))
             expect_true(.detect_keywords("Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" %>% tolower(), "data_availibility_statement"))
-            expect_false(.detect_keywords("doi word word word word word data availability", "data_availibility_statement"))
             expect_true(.detect_keywords("data availability word word word word word word word word word word word word word word word word word word word word word word doi", "data_availibility_statement"))
-            expect_false(.detect_keywords("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", "data_availibility_statement"))
             expect_true(.detect_keywords("Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" %>% tolower(), "data_availibility_statement"))
+            expect_true(.detect_keywords("Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" %>% tolower(), "data_availibility_statement"))
+            expect_false(.detect_keywords("doi word word word word word data availability", "data_availibility_statement"))
+            expect_false(.detect_keywords("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", "data_availibility_statement"))
           })
 
 
