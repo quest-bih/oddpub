@@ -69,15 +69,19 @@
   return(PDF_text_corrected)
 }
 
+#helper function for .correct_tokenization
+#pastes together sentences where tokenization needs to be corrected by index
 .paste_idx <- function(PDF_text, idx)
 {
-  #create dummy sentences such that the indexing always works correctly
+  #create dummy sentences such that the indexing always works correctly,
+  #even with only one element in PDF_text
   PDF_text_pasted <- c("x", PDF_text, "x")
   idx <- idx + 1 #shift idx due to dummy sentence
 
   PDF_text_pasted <- c(PDF_text_pasted[1:(idx-1)],
                        paste(PDF_text_pasted[idx], PDF_text_pasted[idx+1]),
                        PDF_text_pasted[(idx+2):length(PDF_text_pasted)])
+  #remove dummy elemets
   PDF_text_pasted <- PDF_text_pasted[c(-1, -length(PDF_text_pasted))]
 
   return(PDF_text_pasted)
@@ -88,10 +92,10 @@
 # 3 - Open data identification keywords
 #--------------------------------------------------------------------------------------
 
+#Several categories of similar keywords are searched for in a sentence.
+#Multiple categories have to match to trigger a detection.
 .create_keyword_list <- function()
 {
-  #Several categories of similar keywords are searched for in a sentence.
-  #Multiple categories have to match to trigger a detection.
   keyword_list <- list()
 
   available <- c("included",
@@ -411,6 +415,8 @@
 }
 
 
+#function that returns all the pasted combinations of two strings coming from different vectors
+#used to make all possible text combinations of two related keyword categories
 .outer_str <- function(x, y)
 {
   outer_1 <- outer(x, y, FUN = "paste") %>% as.vector()
@@ -419,6 +425,7 @@
 
   return(outer_sym)
 }
+
 
 #function that creates Regex that searches for cases where words x and y are at max dist words apart
 .near_wd_sym <- function(x, y, dist = 10)
@@ -435,6 +442,7 @@
 
   return(combined)
 }
+
 
 #assymetric version where only the case with x before y is checked
 .near_wd <- function(x, y, dist = 10)
@@ -556,6 +564,7 @@
 }
 
 
+#helper function for the testing of the keywords with testthat
 .detect_keywords <- function(string, keyword_category)
 {
   keywords <- .create_keyword_list()
