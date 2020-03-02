@@ -112,8 +112,9 @@
                  "can be downloaded",
                  "reported in",
                  "uploaded",
-                 "are public on")
-  keyword_list[["available"]] <- .format_keyword_vector(available)
+                 "are public on") %>%
+    .format_keyword_vector()
+  keyword_list[["available"]] <- available
 
 
   was_available <- c("was provided",
@@ -125,8 +126,9 @@
                      "was accessible",
                      "were accessible",
                      "deposited by",
-                     "were reproduced")
-  keyword_list[["was_available"]] <- .format_keyword_vector(was_available)
+                     "were reproduced") %>%
+    .format_keyword_vector()
+  keyword_list[["was_available"]] <- was_available
 
 
   not_available <- c("not included",
@@ -136,8 +138,9 @@
                      "not contained in",
                      "not available",
                      "not accessible",
-                     "not submitted")
-  keyword_list[["not_available"]] <- .format_keyword_vector(not_available)
+                     "not submitted") %>%
+    .format_keyword_vector()
+  keyword_list[["not_available"]] <- not_available
 
 
   field_specific_db <- c("GEO",
@@ -182,8 +185,9 @@
                "accession number",
                "accession code",
                "accession numbers",
-               "accession codes")
-  keyword_list[["field_specific_db"]] <- .format_keyword_vector(field_specific_db, end_boundary = TRUE)
+               "accession codes") %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["field_specific_db"]] <- field_specific_db
 
 
 
@@ -234,8 +238,9 @@
                     "EMD-[[:digit:]]{4,5}",
                     "[[:digit:]]{7}",
                     "[A-Z]{2}_[:digit:]{6,7}",
-                    "[A-Z]{2}-[:digit:]{4,5}")
-  keyword_list[["accession_nr"]] <- .format_keyword_vector(accession_nr)
+                    "[A-Z]{2}-[:digit:]{4,5}") %>%
+    .format_keyword_vector()
+  keyword_list[["accession_nr"]] <- accession_nr
 
 
   repositories <- c("figshare",
@@ -248,18 +253,21 @@
                     "mendeley data",
                     "GIGADB",
                     "GigaScience database",
-                    "OpenNeuro")
-  keyword_list[["repositories"]] <- .format_keyword_vector(repositories, end_boundary = TRUE)
+                    "OpenNeuro") %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["repositories"]] <- repositories
 
 
-  github <- c("github")
-  keyword_list[["github"]] <- .format_keyword_vector(github, end_boundary = TRUE)
+  github <- c("github") %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["github"]] <- github
 
 
   data <- c("data",
             "dataset",
-            "datasets")
-  keyword_list[["data"]] <- .format_keyword_vector(data, end_boundary = TRUE)
+            "datasets") %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["data"]] <- data
 
 
   all_data <- c("all data",
@@ -268,16 +276,18 @@
                 "full data set",
                 "full dataset",
                 "crystallographic data",
-                "subject-level data")
-  keyword_list[["all_data"]] <- .format_keyword_vector(all_data)
+                "subject-level data") %>%
+    .format_keyword_vector()
+  keyword_list[["all_data"]] <- all_data
 
 
   not_data <- c("not all data",
                 "not all array data",
                 "no raw data",
                 "no full data set",
-                "no full dataset")
-  keyword_list[["not_data"]] <- .format_keyword_vector(not_data)
+                "no full dataset") %>%
+    .format_keyword_vector()
+  keyword_list[["not_data"]] <- not_data
 
 
   source_code <- c("source code",
@@ -290,14 +300,16 @@
                    "python script",
                    "python code",
                    "matlab script",
-                   "matlab code")
-  keyword_list[["source_code"]] <- .format_keyword_vector(source_code)
+                   "matlab code") %>%
+    .format_keyword_vector()
+  keyword_list[["source_code"]] <- source_code
 
 
   supplement <- c("supporting information",
                   "supplement",
-                  "supplementary data")
-  keyword_list[["supplement"]] <- .format_keyword_vector(supplement)
+                  "supplementary data") %>%
+    .format_keyword_vector()
+  keyword_list[["supplement"]] <- supplement
 
 
   file_formats <- c("csv",
@@ -306,14 +318,16 @@
                     "xlsx",
                     "sav",
                     "cif",
-                    "fasta")
-  keyword_list[["file_formats"]] <- .format_keyword_vector(file_formats, end_boundary = TRUE)
+                    "fasta") %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["file_formats"]] <- file_formats
 
 
   upon_request <- c("upon request",
                     "on request",
-                    "upon reasonable request")
-  keyword_list[["upon_request"]] <- .format_keyword_vector(upon_request)
+                    "upon reasonable request") %>%
+    .format_keyword_vector()
+  keyword_list[["upon_request"]] <- upon_request
 
 
   data_availability <- c("Data sharing",
@@ -325,8 +339,9 @@
                         "Availability of data and materials",
                         "Availability of data",
                         "Data Accessibility",
-                        "Accessibility of data")
-  keyword_list[["data_availability"]] <- .format_keyword_vector(data_availability)
+                        "Accessibility of data") %>%
+    .format_keyword_vector()
+  keyword_list[["data_availability"]] <- data_availability
 
 
   supplemental_table_name <- c("supplementary table",
@@ -337,8 +352,9 @@
                           "additional file",
                           "file", "files")
   supplemental_table_number <- c("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]")
-  supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number)
-  keyword_list[["supplemental_table"]] <- .format_keyword_vector(supplemental_table, end_boundary = TRUE)
+  supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number) %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["supplemental_table"]] <- supplemental_table
 
 
   supplemental_dataset <- c("supplementary data [[:digit:]]{1,2}",
@@ -350,12 +366,14 @@
   dataset_name <- c("data", "dataset", "datasets", "data set", "data sets")
   dataset_number <- c("S[[:digit:]]{1,2}")
   dataset <- .outer_str(dataset_name, dataset_number)
-  dataset <- c(dataset, supplemental_dataset)
-  keyword_list[["dataset"]] <- .format_keyword_vector(dataset, end_boundary = TRUE)
+  dataset <- c(dataset, supplemental_dataset) %>%
+    .format_keyword_vector(end_boundary = TRUE)
+  keyword_list[["dataset"]] <- dataset
 
 
-  data_journal_dois <- c("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib")
-  keyword_list[["data_journal_dois"]] <- .format_keyword_vector(data_journal_dois)
+  data_journal_dois <- c("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib") %>%
+    .format_keyword_vector()
+  keyword_list[["data_journal_dois"]] <- data_journal_dois
 
 
   #special regex pattern that looks for word closeness instead of words being in the same sentence
