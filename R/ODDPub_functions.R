@@ -575,16 +575,6 @@
   return(detected)
 }
 
-.detect_multiple_keywords <- function(string, keyword_category)
-{
-  keywords <- .create_keyword_list()
-
-  string <- tolower(string)
-  detected <- stringr::str_detect(string, keywords[[keyword_category]])
-
-  return(detected)
-}
-
 
 #additional Open Data check: checks if PDF DOI stems from a list of Data Journals
 #requires that the PDF filename is the DOI
