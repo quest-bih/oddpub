@@ -113,10 +113,7 @@
                  "reported in",
                  "uploaded",
                  "are public on")
-  #word boundaries are added in the beginning only to allow for different possible endings
-  available <- paste0("\\b", available)
-  available <- paste(available, collapse = "|") %>% tolower()
-  keyword_list[["available"]] <- available
+  keyword_list[["available"]] <- .format_keyword_vector(available)
 
 
   was_available <- c("was provided",
@@ -129,9 +126,7 @@
                      "were accessible",
                      "deposited by",
                      "were reproduced")
-  was_available <- paste0("\\b", was_available)
-  was_available <- paste(was_available, collapse = "|") %>% tolower()
-  keyword_list[["was_available"]] <- was_available
+  keyword_list[["was_available"]] <- .format_keyword_vector(was_available)
 
 
   not_available <- c("not included",
@@ -142,9 +137,7 @@
                      "not available",
                      "not accessible",
                      "not submitted")
-  not_available <- paste0("\\b", not_available)
-  not_available <- paste(not_available, collapse = "|") %>% tolower()
-  keyword_list[["not_available"]] <- not_available
+  keyword_list[["not_available"]] <- .format_keyword_vector(not_available)
 
 
   field_specific_db <- c("GEO",
@@ -190,9 +183,8 @@
                "accession code",
                "accession numbers",
                "accession codes")
-  field_specific_db <- paste0("\\b", field_specific_db, "\\b") #for all the abbreviations probably need an explicit end of word boundary as well, but needs to be tested
-  field_specific_db <- paste(field_specific_db, collapse = "|") %>% tolower()
-  keyword_list[["field_specific_db"]] <- field_specific_db
+  keyword_list[["field_specific_db"]] <- .format_keyword_vector(field_specific_db, end_boundary = TRUE)
+
 
 
   accession_nr <- c("GSE[[:digit:]]{2,8}", #GEO
@@ -243,9 +235,7 @@
                     "[[:digit:]]{7}",
                     "[A-Z]{2}_[:digit:]{6,7}",
                     "[A-Z]{2}-[:digit:]{4,5}")
-  accession_nr <- paste0("\\b", accession_nr)
-  accession_nr <- paste(accession_nr, collapse = "|") %>% tolower()
-  keyword_list[["accession_nr"]] <- accession_nr
+  keyword_list[["accession_nr"]] <- .format_keyword_vector(accession_nr)
 
 
   repositories <- c("figshare",
@@ -259,23 +249,17 @@
                     "GIGADB",
                     "GigaScience database",
                     "OpenNeuro")
-  repositories <- paste0("\\b", repositories, "\\b")
-  repositories <- paste(repositories, collapse = "|") %>% tolower()
-  keyword_list[["repositories"]] <- repositories
+  keyword_list[["repositories"]] <- .format_keyword_vector(repositories, end_boundary = TRUE)
 
 
   github <- c("github")
-  github <- paste0("\\b", github, "\\b")
-  github <- github %>% tolower()
-  keyword_list[["github"]] <- github
+  keyword_list[["github"]] <- .format_keyword_vector(github, end_boundary = TRUE)
 
 
   data <- c("data",
             "dataset",
             "datasets")
-  data <- paste0("\\b", data, "\\b")
-  data <- paste(data, collapse = "|") %>% tolower()
-  keyword_list[["data"]] <- data
+  keyword_list[["data"]] <- .format_keyword_vector(data, end_boundary = TRUE)
 
 
   all_data <- c("all data",
@@ -285,9 +269,7 @@
                 "full dataset",
                 "crystallographic data",
                 "subject-level data")
-  all_data <- paste0("\\b", all_data)
-  all_data <- paste(all_data, collapse = "|") %>% tolower()
-  keyword_list[["all_data"]] <- all_data
+  keyword_list[["all_data"]] <- .format_keyword_vector(all_data)
 
 
   not_data <- c("not all data",
@@ -295,9 +277,7 @@
                 "no raw data",
                 "no full data set",
                 "no full dataset")
-  not_data <- paste0("\\b", not_data)
-  not_data <- paste(not_data, collapse = "|") %>% tolower()
-  keyword_list[["not_data"]] <- not_data
+  keyword_list[["not_data"]] <- .format_keyword_vector(not_data)
 
 
   source_code <- c("source code",
@@ -311,17 +291,13 @@
                    "python code",
                    "matlab script",
                    "matlab code")
-  source_code <- paste0("\\b", source_code)
-  source_code <- paste(source_code, collapse = "|") %>% tolower()
-  keyword_list[["source_code"]] <- source_code
+  keyword_list[["source_code"]] <- .format_keyword_vector(source_code)
 
 
   supplement <- c("supporting information",
                   "supplement",
                   "supplementary data")
-  supplement <- paste0("\\b", supplement)
-  supplement <- paste(supplement, collapse = "|") %>% tolower()
-  keyword_list[["supplement"]] <- supplement
+  keyword_list[["supplement"]] <- .format_keyword_vector(supplement)
 
 
   file_formats <- c("csv",
@@ -331,17 +307,13 @@
                     "sav",
                     "cif",
                     "fasta")
-  file_formats <- paste0("\\b", file_formats, "\\b")
-  file_formats <- paste(file_formats, collapse = "|") %>% tolower()
-  keyword_list[["file_formats"]] <- file_formats
+  keyword_list[["file_formats"]] <- .format_keyword_vector(file_formats, end_boundary = TRUE)
 
 
   upon_request <- c("upon request",
                     "on request",
                     "upon reasonable request")
-  upon_request <- paste0("\\b", upon_request)
-  upon_request <- paste(upon_request, collapse = "|") %>% tolower()
-  keyword_list[["upon_request"]] <- upon_request
+  keyword_list[["upon_request"]] <- .format_keyword_vector(upon_request)
 
 
   data_availability <- c("Data sharing",
@@ -354,9 +326,7 @@
                         "Availability of data",
                         "Data Accessibility",
                         "Accessibility of data")
-  data_availability <- paste0("\\b", data_availability)
-  data_availability <- paste(data_availability, collapse = "|") %>% tolower()
-  keyword_list[["data_availability"]] <- data_availability
+  keyword_list[["data_availability"]] <- .format_keyword_vector(data_availability)
 
 
   supplemental_table_name <- c("supplementary table",
@@ -368,9 +338,7 @@
                           "file", "files")
   supplemental_table_number <- c("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]")
   supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number)
-  supplemental_table <- paste0("\\b", supplemental_table, "\\b")
-  supplemental_table <- paste(supplemental_table, collapse = "|") %>% tolower()
-  keyword_list[["supplemental_table"]] <- supplemental_table
+  keyword_list[["supplemental_table"]] <- .format_keyword_vector(supplemental_table, end_boundary = TRUE)
 
 
   supplemental_dataset <- c("supplementary data [[:digit:]]{1,2}",
@@ -383,15 +351,11 @@
   dataset_number <- c("S[[:digit:]]{1,2}")
   dataset <- .outer_str(dataset_name, dataset_number)
   dataset <- c(dataset, supplemental_dataset)
-  dataset <- paste0("\\b", dataset, "\\b")
-  dataset <- paste(dataset, collapse = "|") %>% tolower()
-  keyword_list[["dataset"]] <- dataset
+  keyword_list[["dataset"]] <- .format_keyword_vector(dataset, end_boundary = TRUE)
 
 
   data_journal_dois <- c("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib")
-  data_journal_dois <- paste0("\\b", data_journal_dois)
-  data_journal_dois <- paste(data_journal_dois, collapse = "|") %>% tolower()
-  keyword_list[["data_journal_dois"]] <- data_journal_dois
+  keyword_list[["data_journal_dois"]] <- .format_keyword_vector(data_journal_dois)
 
 
   #special regex pattern that looks for word closeness instead of words being in the same sentence
@@ -412,6 +376,21 @@
   keyword_list[["data_availibility_statement"]] <- data_availibility_statement
 
   return(keyword_list)
+}
+
+
+#standard formatting for the different keyword vectors
+.format_keyword_vector <- function(keywords, end_boundary = FALSE) {
+  #typically word boundaries are added in the beginning only to allow for different possible endings
+  if(end_boundary) {
+    keywords_formatted <- paste0("\\b", keywords, "\\b")
+  } else {
+    keywords_formatted <- paste0("\\b", keywords)
+  }
+  #collapse keywords into one string with OR symbol between them and convert to lowercase
+  keywords_formatted <- paste(keywords_formatted, collapse = "|") %>% tolower()
+
+  return(keywords_formatted)
 }
 
 
