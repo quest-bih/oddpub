@@ -269,3 +269,24 @@ test_that("paste_accession_nr",
             expect_equal(.correct_tokenization(c("accession nos.", "123")), "accession nos. 123")
           })
 
+
+context("higher level functions")
+
+example_text <- list(a = c("sentence",
+                             "deposited in geo with accession number gse77534",
+                             "sentence"),
+                     b = c("sentence",
+                             "sentence",
+                             "sentence"))
+
+test_that("open_data_search",
+          {
+            expect_equivalent(open_data_search(example_text)$is_open_data, c(TRUE, FALSE))
+            expect_equivalent(open_data_search(example_text)$is_open_code, c(FALSE, FALSE))
+          })
+
+test_that("open_data_sentences",
+          {
+            expect_equivalent(open_data_sentences(example_text)$com_specific_db,
+                              c("deposited in geo with accession number gse77534", ""))
+          })
