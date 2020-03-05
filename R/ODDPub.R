@@ -10,7 +10,6 @@
 #'
 #' @return Logical vector describing the conversion success for each PDF file.
 #'
-#' @examples pdf_convert("./example_PDFs/", "./examples/")
 pdf_convert <- function(PDF_folder, output_folder, clusters = 10)
 {
   #parallelize pdf conversion
