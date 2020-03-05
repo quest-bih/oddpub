@@ -475,7 +475,7 @@
     if(length(idx) == 0) {
       text_frag <- c(text_frag, "")
     } else {
-      current_txt <- open_data_tibble$value[idx] %>% paste(collapse = ";     ")
+      current_txt <- open_data_tibble[[1]][idx] %>% paste(collapse = ";     ")
       text_frag <- c(text_frag, current_txt)
     }
   }
@@ -504,7 +504,9 @@
   #gather results
   publ_keywords <- do.call(cbind, publ_keywords) %>%
     as_tibble()
-  publ_keywords <- cbind(publ_sentences, publ_keywords)
+  publ_keywords <- cbind(publ_sentences, publ_keywords) %>%
+    as_tibble()
+  publ_keywords$publ_sentences <- as.character(publ_keywords$publ_sentences)
 
   return(publ_keywords)
 }
@@ -589,7 +591,9 @@
 {
   keyword_list <- .create_keyword_list()
 
-  dois <- names(PDF_text_sentences) %>% str_replace_all(fixed("+"), fixed("/")) %>% str_remove(fixed(".txt"))
+  dois <- names(PDF_text_sentences) %>%
+    stringr::str_replace_all(stringr::fixed("+"), stringr::fixed("/")) %>%
+    stringr::str_remove(stringr::fixed(".txt"))
 
   data_journal_doi <- tibble(
     is_data_journal = map_lgl(dois, stringr::str_detect, pattern = keyword_list[["data_journal_dois"]]))

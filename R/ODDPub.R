@@ -127,7 +127,7 @@ open_data_sentences <- function(PDF_text_sentences)
     map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
     map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
     map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, value, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
+    map(select, publ_sentences, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
 
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
@@ -137,7 +137,8 @@ open_data_sentences <- function(PDF_text_sentences)
   open_data_sentences <- map(open_data_combined, .text_fragments)
   open_data_sentences <- do.call(rbind, open_data_sentences)
   open_data_sentences <- cbind(names(open_data_categories), open_data_sentences, keyword_results_near_wd) %>%
-    as_tibble()
+    as_tibble() %>%
+    mutate_each(funs(as.character))
   colnames(open_data_sentences) <- c("article", "com_specific_db", "com_general_db", "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_file_formats", "com_supplemental_data", "com_data_availibility")
 
