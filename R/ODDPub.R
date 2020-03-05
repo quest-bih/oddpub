@@ -1,16 +1,16 @@
-#' @title ODDPub_v%
+#' Conversion of PDFs to text.
 #'
-#' @description Detection of Open Data & Open Code statements in biomedical publications
+#' Converts PDFs to text before the text can be loaded and text-mined.
+#' Requires the poppler library (\url{https://poppler.freedesktop.org/})
+#' that is run via a terminal command to do the conversion.
 #'
-#' @param PDF_text_sentences
+#' @param PDF_folder String of the folder name in which the PDFs are located.
+#' @param output_folder String of the folder name in which the converted files will be saved.
+#' @param clusters Number of parallel threads used to speed up conversion (using packages parallel, doParallel and foreach)
 #'
-#' @return open_data_publication
+#' @return Logical vector describing the conversion success for each PDF file.
 #'
-#' @export open_data_search
-
-
-#converts PDFs to text
-#requires the pdftotext program that is run via a terminal command
+#' @examples pdf_convert("./my_PDF_folder/", "./my_txt_folder/")
 pdf_convert <- function(PDF_folder, output_folder, clusters = 10)
 {
   #parallelize pdf conversion
@@ -33,7 +33,19 @@ pdf_convert <- function(PDF_folder, output_folder, clusters = 10)
 }
 
 
-#loads converted PDFs
+#' Load converted PDFs.
+#'
+#' Loads the text files into a list of string vectors that can subsequently be searched by the text-mining algorithm.
+#' The returned object has a list structure with one list element per document.
+#' Each list element is a vector of strings containing the sentences of the document.
+#' First use the function pdf_convert to create the converted files, if you have them in PDF format.
+#'
+#' @param pdf_text_folder String of the folder name from which the converted files will be loaded.
+#'
+#' @return List with one element per document.
+#' Each document is split into its sentences and saved as a vector of strings.
+#'
+#' @examples pdf_load("./my_txt_folder/")
 pdf_load <- function(pdf_text_folder)
 {
 
@@ -56,7 +68,21 @@ pdf_load <- function(pdf_text_folder)
 }
 
 
-#actual search for open data & open code keywords
+#' Seach for open data & open code keywords.
+#'
+#' The algorithm searches for several categories of similar keywords in each sentence.
+#' Multiple categories have to match for a single sentence to trigger a detection.
+#' Among keyword categories are categories for specific biomedical databases as well as
+#' their corresponding accession numbers (as regular expressions), general-purpose repositories
+#' or different file formats typically used to distribute raw data in the supplement.
+#' Additionally, Open Code dissemination is detected using keywords categories for source code or code repositories.
+#'
+#' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
+#'
+#' @return Tibble with one row per screened document and the filename and logical values for open data
+#' and open code detection as columns.
+#'
+#' @examples open_data_search(pdf_load("./my_txt_folder/"))
 open_data_search <- function(PDF_text_sentences)
 {
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
@@ -78,7 +104,18 @@ open_data_search <- function(PDF_text_sentences)
 }
 
 
-#funtion that detects and outputs the sentences in which the Open Data keywords were detected
+#' Seach for open data & open code keywords and return detected sentences.
+#'
+#' Does the same keyword search as the function \code{\link{open_data_search}}
+#' but also returns the sentences in which the Open Data keywords were detected.
+#'
+#' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
+#'
+#' @return Tibble with one row per screened document and the filename and logical values for open data
+#' and open code detection as columns plus an additional column containing the detected sentences
+#' for each of the checked keyword category.
+#'
+#' @examples open_data_sentences(pdf_load("./my_txt_folder/"))
 open_data_sentences <- function(PDF_text_sentences)
 {
   #search for open data keywords in the full texts
@@ -90,7 +127,7 @@ open_data_sentences <- function(PDF_text_sentences)
     map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
     map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
     map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, value, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
+    map(select, publ_sentences, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
 
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
@@ -100,7 +137,8 @@ open_data_sentences <- function(PDF_text_sentences)
   open_data_sentences <- map(open_data_combined, .text_fragments)
   open_data_sentences <- do.call(rbind, open_data_sentences)
   open_data_sentences <- cbind(names(open_data_categories), open_data_sentences, keyword_results_near_wd) %>%
-    as_tibble()
+    as_tibble() %>%
+    mutate_each(funs(as.character))
   colnames(open_data_sentences) <- c("article", "com_specific_db", "com_general_db", "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_file_formats", "com_supplemental_data", "com_data_availibility")
 

@@ -3,13 +3,16 @@ Type: Package
 Title: Detection of Open Data & Open Code statements in biomedical publications
 Version: 5.0
 Author: Nico Riedel
+Date: 2019-09-30
 Maintainer: Nico Riedel <nico.riedel@bihealth.de>
 Description: Detection of Open Data & Open Code statements in biomedical publications.
   Uses publication PDFs as input and returns both Open Data/Code: 'yes/no' and the detected statement.
 License: MIT
+URL: https://github.com/quest-bih/oddpub
 Encoding: UTF-8
 LazyData: true
 Depends:
   dplyr, purrr
 Imports:
   foreach, doParallel, tokenizers, stringr
+RoxygenNote: 6.1.1

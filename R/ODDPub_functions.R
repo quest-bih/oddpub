@@ -69,15 +69,19 @@
   return(PDF_text_corrected)
 }
 
+#helper function for .correct_tokenization
+#pastes together sentences where tokenization needs to be corrected by index
 .paste_idx <- function(PDF_text, idx)
 {
-  #create dummy sentences such that the indexing always works correctly
+  #create dummy sentences such that the indexing always works correctly,
+  #even with only one element in PDF_text
   PDF_text_pasted <- c("x", PDF_text, "x")
   idx <- idx + 1 #shift idx due to dummy sentence
 
   PDF_text_pasted <- c(PDF_text_pasted[1:(idx-1)],
                        paste(PDF_text_pasted[idx], PDF_text_pasted[idx+1]),
                        PDF_text_pasted[(idx+2):length(PDF_text_pasted)])
+  #remove dummy elemets
   PDF_text_pasted <- PDF_text_pasted[c(-1, -length(PDF_text_pasted))]
 
   return(PDF_text_pasted)
@@ -88,10 +92,10 @@
 # 3 - Open data identification keywords
 #--------------------------------------------------------------------------------------
 
+#Several categories of similar keywords are searched for in a sentence.
+#Multiple categories have to match to trigger a detection.
 .create_keyword_list <- function()
 {
-  #Several categories of similar keywords are searched for in a sentence.
-  #Multiple categories have to match to trigger a detection.
   keyword_list <- list()
 
   available <- c("included",
@@ -108,10 +112,8 @@
                  "can be downloaded",
                  "reported in",
                  "uploaded",
-                 "are public on")
-  #word boundaries are added in the beginning only to allow for different possible endings
-  available <- paste0("\\b", available)
-  available <- paste(available, collapse = "|") %>% tolower()
+                 "are public on") %>%
+    .format_keyword_vector()
   keyword_list[["available"]] <- available
 
 
@@ -124,9 +126,8 @@
                      "was accessible",
                      "were accessible",
                      "deposited by",
-                     "were reproduced")
-  was_available <- paste0("\\b", was_available)
-  was_available <- paste(was_available, collapse = "|") %>% tolower()
+                     "were reproduced") %>%
+    .format_keyword_vector()
   keyword_list[["was_available"]] <- was_available
 
 
@@ -137,9 +138,8 @@
                      "not contained in",
                      "not available",
                      "not accessible",
-                     "not submitted")
-  not_available <- paste0("\\b", not_available)
-  not_available <- paste(not_available, collapse = "|") %>% tolower()
+                     "not submitted") %>%
+    .format_keyword_vector()
   keyword_list[["not_available"]] <- not_available
 
 
@@ -185,10 +185,10 @@
                "accession number",
                "accession code",
                "accession numbers",
-               "accession codes")
-  field_specific_db <- paste0("\\b", field_specific_db, "\\b") #for all the abbreviations probably need an explicit end of word boundary as well, but needs to be tested
-  field_specific_db <- paste(field_specific_db, collapse = "|") %>% tolower()
+               "accession codes") %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["field_specific_db"]] <- field_specific_db
+
 
 
   accession_nr <- c("GSE[[:digit:]]{2,8}", #GEO
@@ -238,9 +238,8 @@
                     "EMD-[[:digit:]]{4,5}",
                     "[[:digit:]]{7}",
                     "[A-Z]{2}_[:digit:]{6,7}",
-                    "[A-Z]{2}-[:digit:]{4,5}")
-  accession_nr <- paste0("\\b", accession_nr)
-  accession_nr <- paste(accession_nr, collapse = "|") %>% tolower()
+                    "[A-Z]{2}-[:digit:]{4,5}") %>%
+    .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
 
 
@@ -254,23 +253,20 @@
                     "mendeley data",
                     "GIGADB",
                     "GigaScience database",
-                    "OpenNeuro")
-  repositories <- paste0("\\b", repositories, "\\b")
-  repositories <- paste(repositories, collapse = "|") %>% tolower()
+                    "OpenNeuro") %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["repositories"]] <- repositories
 
 
-  github <- c("github")
-  github <- paste0("\\b", github, "\\b")
-  github <- github %>% tolower()
+  github <- c("github") %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["github"]] <- github
 
 
   data <- c("data",
             "dataset",
-            "datasets")
-  data <- paste0("\\b", data, "\\b")
-  data <- paste(data, collapse = "|") %>% tolower()
+            "datasets") %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["data"]] <- data
 
 
@@ -280,9 +276,8 @@
                 "full data set",
                 "full dataset",
                 "crystallographic data",
-                "subject-level data")
-  all_data <- paste0("\\b", all_data)
-  all_data <- paste(all_data, collapse = "|") %>% tolower()
+                "subject-level data") %>%
+    .format_keyword_vector()
   keyword_list[["all_data"]] <- all_data
 
 
@@ -290,9 +285,8 @@
                 "not all array data",
                 "no raw data",
                 "no full data set",
-                "no full dataset")
-  not_data <- paste0("\\b", not_data)
-  not_data <- paste(not_data, collapse = "|") %>% tolower()
+                "no full dataset") %>%
+    .format_keyword_vector()
   keyword_list[["not_data"]] <- not_data
 
 
@@ -306,17 +300,15 @@
                    "python script",
                    "python code",
                    "matlab script",
-                   "matlab code")
-  source_code <- paste0("\\b", source_code)
-  source_code <- paste(source_code, collapse = "|") %>% tolower()
+                   "matlab code") %>%
+    .format_keyword_vector()
   keyword_list[["source_code"]] <- source_code
 
 
   supplement <- c("supporting information",
                   "supplement",
-                  "supplementary data")
-  supplement <- paste0("\\b", supplement)
-  supplement <- paste(supplement, collapse = "|") %>% tolower()
+                  "supplementary data") %>%
+    .format_keyword_vector()
   keyword_list[["supplement"]] <- supplement
 
 
@@ -326,17 +318,15 @@
                     "xlsx",
                     "sav",
                     "cif",
-                    "fasta")
-  file_formats <- paste0("\\b", file_formats, "\\b")
-  file_formats <- paste(file_formats, collapse = "|") %>% tolower()
+                    "fasta") %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["file_formats"]] <- file_formats
 
 
   upon_request <- c("upon request",
                     "on request",
-                    "upon reasonable request")
-  upon_request <- paste0("\\b", upon_request)
-  upon_request <- paste(upon_request, collapse = "|") %>% tolower()
+                    "upon reasonable request") %>%
+    .format_keyword_vector()
   keyword_list[["upon_request"]] <- upon_request
 
 
@@ -349,9 +339,8 @@
                         "Availability of data and materials",
                         "Availability of data",
                         "Data Accessibility",
-                        "Accessibility of data")
-  data_availability <- paste0("\\b", data_availability)
-  data_availability <- paste(data_availability, collapse = "|") %>% tolower()
+                        "Accessibility of data") %>%
+    .format_keyword_vector()
   keyword_list[["data_availability"]] <- data_availability
 
 
@@ -363,9 +352,8 @@
                           "additional file",
                           "file", "files")
   supplemental_table_number <- c("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]")
-  supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number)
-  supplemental_table <- paste0("\\b", supplemental_table, "\\b")
-  supplemental_table <- paste(supplemental_table, collapse = "|") %>% tolower()
+  supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number) %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["supplemental_table"]] <- supplemental_table
 
 
@@ -378,15 +366,13 @@
   dataset_name <- c("data", "dataset", "datasets", "data set", "data sets")
   dataset_number <- c("S[[:digit:]]{1,2}")
   dataset <- .outer_str(dataset_name, dataset_number)
-  dataset <- c(dataset, supplemental_dataset)
-  dataset <- paste0("\\b", dataset, "\\b")
-  dataset <- paste(dataset, collapse = "|") %>% tolower()
+  dataset <- c(dataset, supplemental_dataset) %>%
+    .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["dataset"]] <- dataset
 
 
-  data_journal_dois <- c("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib")
-  data_journal_dois <- paste0("\\b", data_journal_dois)
-  data_journal_dois <- paste(data_journal_dois, collapse = "|") %>% tolower()
+  data_journal_dois <- c("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib") %>%
+    .format_keyword_vector()
   keyword_list[["data_journal_dois"]] <- data_journal_dois
 
 
@@ -411,6 +397,23 @@
 }
 
 
+#standard formatting for the different keyword vectors
+.format_keyword_vector <- function(keywords, end_boundary = FALSE) {
+  #typically word boundaries are added in the beginning only to allow for different possible endings
+  if(end_boundary) {
+    keywords_formatted <- paste0("\\b", keywords, "\\b")
+  } else {
+    keywords_formatted <- paste0("\\b", keywords)
+  }
+  #collapse keywords into one string with OR symbol between them and convert to lowercase
+  keywords_formatted <- paste(keywords_formatted, collapse = "|") %>% tolower()
+
+  return(keywords_formatted)
+}
+
+
+#function that returns all the pasted combinations of two strings coming from different vectors
+#used to make all possible text combinations of two related keyword categories
 .outer_str <- function(x, y)
 {
   outer_1 <- outer(x, y, FUN = "paste") %>% as.vector()
@@ -419,6 +422,7 @@
 
   return(outer_sym)
 }
+
 
 #function that creates Regex that searches for cases where words x and y are at max dist words apart
 .near_wd_sym <- function(x, y, dist = 10)
@@ -435,6 +439,7 @@
 
   return(combined)
 }
+
 
 #assymetric version where only the case with x before y is checked
 .near_wd <- function(x, y, dist = 10)
@@ -470,7 +475,7 @@
     if(length(idx) == 0) {
       text_frag <- c(text_frag, "")
     } else {
-      current_txt <- open_data_tibble$value[idx] %>% paste(collapse = ";     ")
+      current_txt <- open_data_tibble[[1]][idx] %>% paste(collapse = ";     ")
       text_frag <- c(text_frag, current_txt)
     }
   }
@@ -484,24 +489,36 @@
 {
   keyword_list <- .create_keyword_list()
 
-  publ_keywords <- as_tibble(publ_sentences) %>%
-    tibble::add_column(available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["available"]])) %>%
-    tibble::add_column(was_available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["was_available"]])) %>%
-    tibble::add_column(not_available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["not_available"]])) %>%
-    tibble::add_column(field_specific_db = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["field_specific_db"]])) %>%
-    tibble::add_column(accession_nr = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["accession_nr"]])) %>%
-    tibble::add_column(repositories = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["repositories"]])) %>%
-    tibble::add_column(github = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["github"]])) %>%
-    tibble::add_column(data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["data"]])) %>%
-    tibble::add_column(all_data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["all_data"]])) %>%
-    tibble::add_column(not_data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["not_data"]])) %>%
-    tibble::add_column(source_code = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["source_code"]])) %>%
-    tibble::add_column(supplement = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["supplement"]])) %>%
-    tibble::add_column(file_formats = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["file_formats"]])) %>%
-    tibble::add_column(upon_request = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["upon_request"]])) %>%
-    tibble::add_column(dataset = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["dataset"]]))
+  #not all keyword categories are used for the sentence search
+  sentence_search_keywords <- c("available", "was_available", "not_available",
+                                "field_specific_db", "accession_nr", "repositories",
+                                "github", "data", "all_data",
+                                "not_data", "source_code", "supplement",
+                                "file_formats", "upon_request", "dataset")
+
+  #search for all relevant keyword categories
+  publ_keywords <- sentence_search_keywords %>%
+    map(.search_keyword_cat, publ_sentences, keyword_list)
+  names(publ_keywords) <- sentence_search_keywords
+
+  #gather results
+  publ_keywords <- do.call(cbind, publ_keywords) %>%
+    as_tibble()
+  publ_keywords <- cbind(publ_sentences, publ_keywords) %>%
+    as_tibble()
+  publ_keywords$publ_sentences <- as.character(publ_keywords$publ_sentences)
 
   return(publ_keywords)
+}
+
+
+#helper function to search for all keyword categories in the sentences
+.search_keyword_cat <- function(keyword, sentences, keyword_list)
+{
+  detection_col <- sentences %>%
+    map_lgl(stringr::str_detect, pattern = keyword_list[[keyword]])
+
+  return(detection_col)
 }
 
 
@@ -556,17 +573,8 @@
 }
 
 
+#helper function for the testing of the keywords with testthat
 .detect_keywords <- function(string, keyword_category)
-{
-  keywords <- .create_keyword_list()
-
-  string <- tolower(string)
-  detected <- stringr::str_detect(string, keywords[[keyword_category]])
-
-  return(detected)
-}
-
-.detect_multiple_keywords <- function(string, keyword_category)
 {
   keywords <- .create_keyword_list()
 
@@ -583,7 +591,9 @@
 {
   keyword_list <- .create_keyword_list()
 
-  dois <- names(PDF_text_sentences) %>% str_replace_all(fixed("+"), fixed("/")) %>% str_remove(fixed(".txt"))
+  dois <- names(PDF_text_sentences) %>%
+    stringr::str_replace_all(stringr::fixed("+"), stringr::fixed("/")) %>%
+    stringr::str_remove(stringr::fixed(".txt"))
 
   data_journal_doi <- tibble(
     is_data_journal = map_lgl(dois, stringr::str_detect, pattern = keyword_list[["data_journal_dois"]]))

@@ -1,2 +1,2 @@
 library(testthat)
-test_check("ODDPub")
+test_check("oddpub")
