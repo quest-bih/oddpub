@@ -489,24 +489,34 @@
 {
   keyword_list <- .create_keyword_list()
 
-  publ_keywords <- as_tibble(publ_sentences) %>%
-    tibble::add_column(available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["available"]])) %>%
-    tibble::add_column(was_available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["was_available"]])) %>%
-    tibble::add_column(not_available = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["not_available"]])) %>%
-    tibble::add_column(field_specific_db = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["field_specific_db"]])) %>%
-    tibble::add_column(accession_nr = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["accession_nr"]])) %>%
-    tibble::add_column(repositories = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["repositories"]])) %>%
-    tibble::add_column(github = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["github"]])) %>%
-    tibble::add_column(data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["data"]])) %>%
-    tibble::add_column(all_data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["all_data"]])) %>%
-    tibble::add_column(not_data = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["not_data"]])) %>%
-    tibble::add_column(source_code = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["source_code"]])) %>%
-    tibble::add_column(supplement = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["supplement"]])) %>%
-    tibble::add_column(file_formats = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["file_formats"]])) %>%
-    tibble::add_column(upon_request = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["upon_request"]])) %>%
-    tibble::add_column(dataset = map_lgl(publ_sentences, stringr::str_detect, pattern = keyword_list[["dataset"]]))
+  #not all keyword categories are used for the sentence search
+  sentence_search_keywords <- c("available", "was_available", "not_available",
+                                "field_specific_db", "accession_nr", "repositories",
+                                "github", "data", "all_data",
+                                "not_data", "source_code", "supplement",
+                                "file_formats", "upon_request", "dataset")
+
+  #search for all relevant keyword categories
+  publ_keywords <- sentence_search_keywords %>%
+    map(.search_keyword_cat, publ_sentences, keyword_list)
+  names(publ_keywords) <- sentence_search_keywords
+
+  #gather results
+  publ_keywords <- do.call(cbind, publ_keywords) %>%
+    as_tibble()
+  publ_keywords <- cbind(publ_sentences, publ_keywords)
 
   return(publ_keywords)
+}
+
+
+#helper function to search for all keyword categories in the sentences
+.search_keyword_cat <- function(keyword, sentences, keyword_list)
+{
+  detection_col <- sentences %>%
+    map_lgl(stringr::str_detect, pattern = keyword_list[[keyword]])
+
+  return(detection_col)
 }
 
 
