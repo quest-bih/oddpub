@@ -14,5 +14,5 @@ LazyData: true
 Depends:
   dplyr, purrr
 Imports:
-  foreach, doParallel, tokenizers, stringr
+  foreach, doParallel, tokenizers, stringr, magrittr
 RoxygenNote: 6.1.1
