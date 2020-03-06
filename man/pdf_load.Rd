@@ -20,5 +20,5 @@ Each list element is a vector of strings containing the sentences of the documen
 First use the function pdf_convert to create the converted files, if you have them in PDF format.
 }
 \examples{
-pdf_load("./my_txt_folder/")
+pdf_load("./examples/")
 }

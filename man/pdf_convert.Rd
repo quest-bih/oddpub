@@ -21,6 +21,3 @@ Converts PDFs to text before the text can be loaded and text-mined.
 Requires the poppler library (\url{https://poppler.freedesktop.org/})
 that is run via a terminal command to do the conversion.
 }
-\examples{
-pdf_convert("./my_PDF_folder/", "./my_txt_folder/")
-}
