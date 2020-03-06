@@ -48,10 +48,6 @@ r_binary_packages:
   - pkgload
   - praise
 
-# do not build vignettes...takes too long and times out on travis
-r_build_args: --no-build-vignettes --no-manual
-r_check_args: --no-build-vignettes --no-manual --timings
-
 # for codecov
 r_packages:
   - covr
