@@ -59,7 +59,7 @@ open_data_sentences_detected <- oddpub::open_data_sentences(PDF_text_sentences)
 ```
 Function that returns the detected Open Data sentences as well. Does not work for several combined keyword categories that do not search on the sentence level ('Supplemental table or data', 'Supplementary raw/full data with specific file format', 'Data availability statement'). For those categories only returns if there was a hit in this category or not.
 
-The algorithm was developed on an institutional publication record (N=8654). On an additional training dataset of 868 random Pubmed publications it achieved a sensitivity of 82% and a specificity of 98%. An independent validation sample is currently work in progress.
+To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.74 and specificity of 0.97.
 
 ## Detailed description of the keywords
 
