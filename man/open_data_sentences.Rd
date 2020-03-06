@@ -18,6 +18,3 @@ for each of the checked keyword category.
 Does the same keyword search as the function \code{\link{open_data_search}}
 but also returns the sentences in which the Open Data keywords were detected.
 }
-\examples{
-open_data_sentences(pdf_load("examples/"))
-}
