@@ -9,6 +9,49 @@ r:
 r_packages:
   - covr
 
+r_binary_packages:
+  - devtools
+  - dplyr
+  - purrr
+  - foreach
+  - doParallel
+  - tokenizers
+  - stringr
+  - readr
+  - testthat
+  - rlang
+  - cli
+  - fansi
+  - pillar
+  - pkgconfig
+  - assertthat
+  - glue
+  - utf8
+  - vctrs
+  - ellipsis
+  - iterators
+  - desc
+  - pkgbuild
+  - rprojroot
+  - rstudioapi
+  - callr
+  - prettyunits
+  - backports
+  - processx
+  - ps
+  - Rcpp
+  - tibble
+  - tidyselect
+  - BH
+  - plogr
+  - stringi
+  - SnowballC
+  - hms
+  - clipr
+  - evaluate
+  - pkgload
+  - praise
+
 # only report coverage after build is successful
 after_success:
   - Rscript -e 'covr::codecov()'
