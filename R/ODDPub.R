@@ -52,7 +52,7 @@ pdf_convert <- function(PDF_folder, output_folder, clusters = 10)
 #' @return List with one element per document.
 #' Each document is split into its sentences and saved as a vector of strings.
 #'
-#' @examples pdf_load("./examples/")
+#' @examples pdf_load("examples/")
 pdf_load <- function(pdf_text_folder)
 {
 
@@ -89,7 +89,7 @@ pdf_load <- function(pdf_text_folder)
 #' @return Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns.
 #'
-#' @examples open_data_search(pdf_load("./examples/"))
+#' @examples open_data_search(pdf_load("examples/"))
 open_data_search <- function(PDF_text_sentences)
 {
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
@@ -122,7 +122,7 @@ open_data_search <- function(PDF_text_sentences)
 #' and open code detection as columns plus an additional column containing the detected sentences
 #' for each of the checked keyword category.
 #'
-#' @examples open_data_sentences(pdf_load("./examples/"))
+#' @examples open_data_sentences(pdf_load("examples/"))
 open_data_sentences <- function(PDF_text_sentences)
 {
   #search for open data keywords in the full texts
