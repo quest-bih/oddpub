@@ -16,6 +16,14 @@ pdf_convert <- function(PDF_folder, output_folder, clusters = 10)
   cl <- parallel::makeCluster(clusters, outfile="")
   doParallel::registerDoParallel(cl)
 
+  #check if dir path has final /, otherwise add
+  if(PDF_folder %>% stringr::str_sub(-1) != "/") {
+    PDF_folder <- paste0(PDF_folder, "/")
+  }
+  if(output_folder %>% stringr::str_sub(-1) != "/") {
+    output_folder <- paste0(output_folder, "/")
+  }
+
   PDF_filenames <- list.files(PDF_folder, recursive = TRUE)
   PDF_filenames <- paste0(PDF_folder, PDF_filenames)
 
