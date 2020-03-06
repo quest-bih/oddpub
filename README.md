@@ -1,5 +1,9 @@
 # Open Data Detection in Publications (ODDPub)
 
+[![Build Status](https://travis-ci.com/quest-bih/oddpub.svg?branch=master)](https://travis-ci.com/quest-bih/oddpub)
+[![codecov](https://codecov.io/gh/quest-bih/oddpub/branch/master/graph/badge.svg)](https://codecov.io/gh/quest-bih/oddpub)
+
+
 ODDPub is a text mining algorithm that parses a set of publications and detects
 which publications disseminated Open Data or Open Code together with the
 publication. It is tailored towards biomedical literature.
