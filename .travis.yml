@@ -48,6 +48,9 @@ r_binary_packages:
   - pkgload
   - praise
 
+# do not check examples for the CI
+r_check_args: --no-examples 
+
 # for codecov
 r_packages:
   - covr

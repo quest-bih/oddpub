@@ -21,3 +21,7 @@ their corresponding accession numbers (as regular expressions), general-purpose 
 or different file formats typically used to distribute raw data in the supplement.
 Additionally, Open Code dissemination is detected using keywords categories for source code or code repositories.
 }
+\examples{
+open_data_search(pdf_load("examples/"))
+
+}
