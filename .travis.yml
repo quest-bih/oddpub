@@ -5,10 +5,6 @@ warnings_are_errors: false
 r:
   - release
 
-# for codecov
-r_packages:
-  - covr
-
 r_binary_packages:
   - devtools
   - dplyr
@@ -51,6 +47,14 @@ r_binary_packages:
   - evaluate
   - pkgload
   - praise
+
+# do not build vignettes...takes too long and times out on travis
+r_build_args: --no-build-vignettes --no-manual
+r_check_args: --no-build-vignettes --no-manual --timings
+
+# for codecov
+r_packages:
+  - covr
 
 # only report coverage after build is successful
 after_success:
