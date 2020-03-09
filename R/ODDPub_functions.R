@@ -193,13 +193,8 @@
 
 
 
-  accession_nr <- c("GSE[[:digit:]]{2,8}", #GEO
-                    "GSM[[:digit:]]{2,8}",
-                    "GDS[[:digit:]]{2,8}",
-                    "GPL[[:digit:]]{2,8}",
-                    "(E|D|S)RP[:digit:]{6,}",
+  accession_nr <- c("G(SE|SM|DS|PL)[[:digit:]]{2,}", #GEO
                     "PRJ(E|D|N|EB|DB|NB)[:digit:]+",
-                    "ERS[:digit:]{6,}",
                     "SAM(E|D|N)[A-Z]?[:digit:]+",
                     "[A-Z]{1}[:digit:]{5}\\.[:digit:]+",
                     "[A-Z]{2}[:digit:]{6}\\.[:digit:]+",
@@ -212,35 +207,18 @@
                     "[A-Z]{4}[:digit:]{8}",
                     "[A-Z]{5}[:digit:]{7}",
                     "[A-Z]{6}[:digit:]{9}",
-                    "(E|D|S)RX[:digit:]{6,}",
-                    "(E|D|S)RR[:digit:]{6,}",
                     "GCA_[:digit:]{9}\\.[:digit:]+",
-                    "PRJNA[[:digit:]]{3,8}",
-                    "SRP[[:digit:]]{3,8}",
-                    "SRR[[:digit:]]{3,8}",
-                    "SRX[[:digit:]]{3,8}",
-                    "SRS[[:digit:]]{3,8}",
-                    "SRZ[[:digit:]]{3,8}",
-                    "MSV[[:digit:]]{7,9}",
-                    "PDX[[:digit:]]{5,6}",
-                    "E-[A-Z]{4}-[:digit:]{1,6}",
-                    "PXD[[:digit:]]{5,6}",
-                    "PRD[[:digit:]]{5,6}",
-                    "DRA[[:digit:]]{6}",
-                    "ERA[[:digit:]]{6}",
-                    "DRP[[:digit:]]{6}",
-                    "ERP[[:digit:]]{6}",
-                    "DRX[[:digit:]]{6}",
-                    "DRS[[:digit:]]{6}",
-                    "DRR[[:digit:]]{6}",
+                    "PRJNA[[:digit:]]{3,}",
+                    "SR(P|R|X|S|Z)[[:digit:]]{3,}",
+                    "E-[A-Z]{4}-[:digit:]{1,}",
                     "[:digit:]{1}[A-Z]{1}[[:alnum:]]{2}",
-                    "MTBLS[[:digit:]]{2,4}",
+                    "MTBLS[[:digit:]]{2,}",
                     "10.17590",
                     "10.5073",
-                    "EMD-[[:digit:]]{4,5}",
+                    "EMD-[[:digit:]]{4,}",
                     "[[:digit:]]{7}",
-                    "[A-Z]{2}_[:digit:]{6,7}",
-                    "[A-Z]{2}-[:digit:]{4,5}") %>%
+                    "[A-Z]{2}_[:digit:]{6,}",
+                    "[A-Z]{2}-[:digit:]{4,}") %>%
     .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
 
