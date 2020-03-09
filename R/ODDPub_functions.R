@@ -35,8 +35,10 @@
 
 .create_output_filename <- function(PDF_filename, output_folder)
 {
-  output_filename <- sub('.pdf', '.txt', PDF_filename)
-  output_filename <- tail(strsplit(output_filename, "/")[[1]],1)
+  output_filename <- PDF_filename %>%
+    stringr::str_replace(stringr::fixed(".pdf"),
+                         stringr::fixed(".txt"))
+  output_filename <- tail(stringr::str_split(output_filename, stringr::fixed("/"))[[1]],1)
   output_filename <- paste0(output_folder, output_filename)
 
   return(output_filename)
