@@ -196,13 +196,10 @@
   accession_nr <- c("G(SE|SM|DS|PL)[[:digit:]]{2,}", #GEO
                     "PRJ(E|D|N|EB|DB|NB)[:digit:]+",
                     "SAM(E|D|N)[A-Z]?[:digit:]+",
-                    "[A-Z]{4}S?[:digit:]{8,9}\\.[:digit:]+",
                     "[A-Z]{1}[:digit:]{5}", #GenBank
                     "[A-Z]{2}[:digit:]{6}",
                     "[A-Z]{3}[:digit:]{5}",
-                    "[A-Z]{4}[:digit:]{8}",
-                    "[A-Z]{5}[:digit:]{7}",
-                    "[A-Z]{6}[:digit:]{9}",
+                    "[A-Z]{4,6}[:digit:]{7,9}",
                     "GCA_[:digit:]{9}\\.[:digit:]+",
                     "PRJNA[[:digit:]]{3,}",
                     "SR(P|R|X|S|Z)[[:digit:]]{3,}",
