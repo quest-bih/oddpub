@@ -495,8 +495,9 @@
 }
 
 
-#part of the keyword search on the tokenized sentences
-.keyword_search_tokenized <- function(PDF_text_sentences)
+
+
+.keyword_search_full <- function(PDF_text_sentences)
 {
   #search for open data keywords in the full texts
   open_data_categories <- map(PDF_text_sentences, .map_keywords)
@@ -508,10 +509,18 @@
     map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
     map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
     map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
+    map(select, publ_sentences, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
 
+  return(keyword_results_combined)
+}
+
+
+#part of the keyword search on the tokenized sentences
+.keyword_search_tokenized <- function(keyword_results_combined)
+{
   #summarze results over all sentences of each publication to see if any match was found for each keyword category
   keyword_results_tokenized <- keyword_results_combined %>%
+    map(select, -publ_sentences) %>%
     map(apply, MARGIN = 2, FUN = any)
   keyword_results_tokenized <- do.call(rbind, keyword_results_tokenized) %>%
     as_tibble()
@@ -574,3 +583,51 @@
   return(data_journal_doi)
 
 }
+
+
+
+#---------------------------------------------------------------------
+# 5 - Combine search steps to obtain Open Data status &
+#     detected sentences
+#---------------------------------------------------------------------
+
+
+.open_data_detection <- function(PDF_text_sentences, keyword_results)
+{
+  #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
+  keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
+  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
+  data_journal_doi <- .check_journal_doi(PDF_text_sentences)
+
+  keyword_results_combined <- cbind(keyword_results_tokenized, keyword_results_near_wd, data_journal_doi) %>%
+    as_tibble()
+
+  #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
+  open_data_publication <- keyword_results_combined %>%
+    mutate(is_open_data = com_specific_db | com_general_db | com_file_formats | com_github_data | dataset | com_supplemental_data | com_data_availibility | is_data_journal) %>%
+    mutate(is_open_code = com_code | com_suppl_code) %>%
+    tibble::add_column(article = names(PDF_text_sentences)) %>%
+    select(article, is_open_data, is_open_code)
+
+  return(open_data_publication)
+}
+
+
+.open_data_sentences <- function(PDF_text_sentences, keyword_results)
+{
+  #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
+  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
+
+  #identifies the text fragments in which the Open Data keywords were detected
+  open_data_sentences <- map(keyword_results, .text_fragments)
+  open_data_sentences <- do.call(rbind, open_data_sentences)
+  open_data_sentences <- cbind(names(keyword_results), open_data_sentences, keyword_results_near_wd) %>%
+    as_tibble() %>%
+    mutate_each(funs(as.character))
+  colnames(open_data_sentences) <- c("article", "com_specific_db", "com_general_db", "com_github_data", "dataset", "com_code", "com_suppl_code",
+                                     "com_file_formats", "com_supplemental_data", "com_data_availibility")
+
+  return(open_data_sentences)
+}
+
+

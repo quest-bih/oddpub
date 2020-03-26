@@ -87,70 +87,31 @@ pdf_load <- function(pdf_text_folder)
 #'
 #' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
 #'
-#' @return Tibble with one row per screened document and the filename and logical values for open data
-#' and open code detection as columns.
-#'
-#' @examples open_data_search(pdf_load("examples/"))
-#'
-open_data_search <- function(PDF_text_sentences)
-{
-  #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
-  keyword_results_tokenized <- .keyword_search_tokenized(PDF_text_sentences)
-  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
-  data_journal_doi <- .check_journal_doi(PDF_text_sentences)
-
-  keyword_results_combined <- cbind(keyword_results_tokenized, keyword_results_near_wd, data_journal_doi) %>%
-    as_tibble()
-
-  #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
-  open_data_publication <- keyword_results_combined %>%
-    mutate(is_open_data = com_specific_db | com_general_db | com_file_formats | com_github_data | dataset | com_supplemental_data | com_data_availibility | is_data_journal) %>%
-    mutate(is_open_code = com_code | com_suppl_code) %>%
-    tibble::add_column(article = names(PDF_text_sentences)) %>%
-    select(article, is_open_data, is_open_code)
-
-  return(open_data_publication)
-}
-
-
-#' Seach for open data & open code keywords and return detected sentences.
-#'
-#' Does the same keyword search as the function \code{\link{open_data_search}}
-#' but also returns the sentences in which the Open Data keywords were detected.
-#'
-#' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
+#' @param detected_sentences Logical parameter. If TRUE, the sentences in which the Open Data
+#' statements were detected are added to the results table as well.
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus an additional column containing the detected sentences
 #' for each of the checked keyword category.
 #'
-#' @examples open_data_sentences(pdf_load("examples/"))
+#' @examples open_data_search(pdf_load("examples/"))
 #'
-open_data_sentences <- function(PDF_text_sentences)
+open_data_search <- function(PDF_text_sentences, detected_sentences = TRUE)
 {
   #search for open data keywords in the full texts
-  open_data_categories <- map(PDF_text_sentences, .map_keywords)
+  #do this only once, as this is the most time consuming step
+  keyword_results <- .keyword_search_full(PDF_text_sentences)
 
-  open_data_combined <- open_data_categories %>%
-    map(mutate, com_specific_db = field_specific_db & accession_nr & available & !not_available & !was_available) %>%
-    map(mutate, com_general_db = repositories & available & !not_available & !was_available) %>%
-    map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
-    map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
-    map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, publ_sentences, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
+  open_data_results <- .open_data_detection(PDF_text_sentences, keyword_results)
 
-  #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
-  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
+  #extract detected sentences as well
+  if(detected_sentences)
+  {
+    detected_sentences <- .open_data_sentences(PDF_text_sentences, keyword_results)
+    open_data_results <- cbind(open_data_results, detected_sentences[,-1]) %>%
+      as_tibble()
+  }
 
-
-  #identifies the text fragments in which the Open Data keywords were detected
-  open_data_sentences <- map(open_data_combined, .text_fragments)
-  open_data_sentences <- do.call(rbind, open_data_sentences)
-  open_data_sentences <- cbind(names(open_data_categories), open_data_sentences, keyword_results_near_wd) %>%
-    as_tibble() %>%
-    mutate_each(funs(as.character))
-  colnames(open_data_sentences) <- c("article", "com_specific_db", "com_general_db", "com_github_data", "dataset", "com_code", "com_suppl_code",
-                                     "com_file_formats", "com_supplemental_data", "com_data_availibility")
-
-  return(open_data_sentences)
+  return(open_data_results)
 }
+
