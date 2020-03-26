@@ -145,8 +145,8 @@ open_data_search_parallel <- function(PDF_text_sentences, detected_sentences = T
   cl <- parallel::makeCluster(cluster_num, outfile="")
   doParallel::registerDoParallel(cl)
 
-  open_data_results <- foreach(i=1:length(PDF_text_sentences)) %dopar% {
-    open_data_search(PDF_text_sentences[i])
+  open_data_results <- foreach::foreach(i=1:length(PDF_text_sentences)) %dopar% {
+    open_data_search(PDF_text_sentences[i], detected_sentences)
   }
   open_data_results <- do.call(rbind, open_data_results)
 
