@@ -52,12 +52,12 @@ Loads all text files from given folder.
 ``` r
 open_data_results <- oddpub::open_data_search(PDF_text_sentences)
 ```
-Actual Open Data detection. Returns for each file if Open Data or Open Code is detected.
+Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the detected sentences, which can be deactivated using the additional parameter ```r detected_sentences = FALSE```.
 
 ``` r
-open_data_sentences_detected <- oddpub::open_data_sentences(PDF_text_sentences)
+open_data_results <- oddpub::open_data_search_parallel(PDF_text_sentences)
 ```
-Function that returns the detected Open Data sentences as well. Does not work for several combined keyword categories that do not search on the sentence level ('Supplemental table or data', 'Supplementary raw/full data with specific file format', 'Data availability statement'). For those categories only returns if there was a hit in this category or not.
+Paralellized version of the algorithm that starts several parallel processes using the foreach and doParallel package to speed up the detection. Number of processes can be set with the parameter ```r cluster_num``` (default value: 4).
 
 To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.74 and specificity of 0.97.
 
