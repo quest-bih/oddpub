@@ -115,3 +115,44 @@ open_data_search <- function(PDF_text_sentences, detected_sentences = TRUE)
   return(open_data_results)
 }
 
+
+
+#' Parallelizied of the open data & open code keyword search
+#'
+#' The algorithm searches for several categories of similar keywords in each sentence.
+#' Multiple categories have to match for a single sentence to trigger a detection.
+#' Among keyword categories are categories for specific biomedical databases as well as
+#' their corresponding accession numbers (as regular expressions), general-purpose repositories
+#' or different file formats typically used to distribute raw data in the supplement.
+#' Additionally, Open Code dissemination is detected using keywords categories for source code or code repositories.
+#'
+#' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
+#'
+#' @param detected_sentences Logical parameter. If TRUE, the sentences in which the Open Data
+#' statements were detected are added to the results table as well.
+#'
+#' @param cluster_num Number of parallel processes that are started. The keyword search is parallelized
+#' with respect to the documents to speed up the calculations.
+#'
+#' @return Tibble with one row per screened document and the filename and logical values for open data
+#' and open code detection as columns plus an additional column containing the detected sentences
+#' for each of the checked keyword category.
+#'
+#' @examples open_data_search_parallel(pdf_load("examples/"))
+#'
+open_data_search_parallel <- function(PDF_text_sentences, detected_sentences = TRUE, cluster_num = 4)
+{
+  cl <- parallel::makeCluster(cluster_num, outfile="")
+  doParallel::registerDoParallel(cl)
+
+  open_data_results <- foreach(i=1:length(PDF_text_sentences)) %dopar% {
+    open_data_search(PDF_text_sentences[i])
+  }
+  open_data_results <- do.call(rbind, open_data_results)
+
+  parallel::stopCluster(cl)
+
+  return(open_data_results)
+}
+
+
