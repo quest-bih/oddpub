@@ -321,6 +321,8 @@ test_that("open_data_search",
           {
             expect_equivalent(open_data_search(example_text)$is_open_data, c(TRUE, FALSE))
             expect_equivalent(open_data_search(example_text)$is_open_code, c(FALSE, FALSE))
+            expect_equivalent(open_data_search_parallel(example_text)$is_open_data, c(TRUE, FALSE))
+            expect_equivalent(open_data_search_parallel(example_text)$is_open_code, c(FALSE, FALSE))
           })
 
 test_that("open_data_sentences",
