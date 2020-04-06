@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.com/quest-bih/oddpub.svg?branch=master)](https://travis-ci.com/quest-bih/oddpub)
 [![codecov](https://codecov.io/gh/quest-bih/oddpub/branch/master/graph/badge.svg)](https://codecov.io/gh/quest-bih/oddpub)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/175600565.svg)](https://zenodo.org/badge/latestdoi/175600565)
 
 
 ODDPub is a text mining algorithm that parses a set of publications and detects
