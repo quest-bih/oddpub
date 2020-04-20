@@ -28,7 +28,7 @@ devtools::install_github("quest-bih/oddpub")
 The algorithm searches for several categories of similar keywords in each 
 sentence. Multiple categories have to match for a single sentence to trigger a 
 detection. Among keyword categories are categories for specific biomedical
-databases as well as their corresponding accession numbers (as regular
+repositories as well as their corresponding accession numbers (as regular
 expressions), general-purpose repositories or different file formats typically
 used to distribute raw data in the supplement.
 
@@ -60,7 +60,7 @@ open_data_results <- oddpub::open_data_search_parallel(PDF_text_sentences)
 ```
 Paralellized version of the algorithm that starts several parallel processes using the foreach and doParallel package to speed up the detection. Number of processes can be set with the parameter ```cluster_num``` (default value: 4).
 
-To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.74 and specificity of 0.97.
+To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.73 and specificity of 0.97.
 
 ## Detailed description of the keywords
 
@@ -70,8 +70,8 @@ Those are the combined keyword categories that are searched in the full text. If
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Field-specific databases        | FIELD_SPECIFIC_DB NEAR ACCESSION_NR NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
-| General-purpose databases | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
+| Field-specific repositories        | FIELD_SPECIFIC_REPO NEAR ACCESSION_NR NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
+| General-purpose repositories | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
 | Dataset |	(DATASET_NAME OUTER_SYM DATASET_NUMBER) OR SUPPLEMENTAL_DATASET |
 | Supplemental table or data |	SUPPLEMENTAL_TABLE NEAR_WD(10) (FILE_FORMATS OR ALL_DATA) |
 | Supplementary raw/full data with specific file format | (ALL_DATA NOT NOT_DATA) NEAR_WD(10) FILE_FORMATS |
@@ -100,8 +100,8 @@ Individual keyword categories:
 | UPON_REQUEST   | Phrase describing that data are only available upon request | ("upon request" OR "on request" OR "upon reasonable request") |
 | ALL_DATA       | Set of words describing all data or raw data | ("all data" OR  "all array data" OR  "raw data" OR  "full data set" OR  "full dataset" OR  "crystallographic data" OR  "subject-level data") |
 | NOT_DATA       | Set of negations of the data phrases | ("not all data" OR "not all array data" OR "no raw data" OR "no full data set" OR "no full dataset") |
-| FIELD_SPECIFIC_DB        | Set of names and abbreviations of field specific databases | ("GEO" OR "Gene Expression Omnibus" OR "European Nucleotide Archive" OR "National Center for Biotechnology Information" OR "European Molecular Biology Laboratory" OR "EMBL-EBI" OR "BioProject" OR "Sequence Read Archive" OR "SRA" OR "ENA" OR "MassIVE" OR "ProteomeXchange" OR "Proteome Exchange" OR "ProteomeExchange" OR "MetaboLights" OR "Array-Express" OR "ArrayExpress" OR "Array Express" OR "PRIDE" OR "DNA Data Bank of Japan" OR "DDBJ" OR "Genbank" OR "Protein Databank" OR "Protein Data Bank" OR "PDB" OR "Metagenomics Rapid Annotation using Subsystem Technology" OR "MG-RAST" OR "metabolights" OR "OpenAgrar" OR "Open Agrar" OR "Electron microscopy data bank" OR "emdb" OR "Cambridge Crystallographic Data Centre" OR "CCDC" OR "Treebase" OR "dbSNP" OR "dbGaP" OR "IntAct" OR "ClinVar" OR "accession number" OR "accession code" OR "accession numbers" OR "accession codes") |
-| ACCESSION_NR   | Set of regular expressions that represent the accession number formats of different (biomedicine-related) databases | ("G(SE\|SM\|DS\|PL)[[:digit:]]{2,}" OR "PRJ(E\|D\|N\|EB\|DB\|NB)[:digit:]+" OR "SAM(E\|D\|N)[A-Z]?[:digit:]+" OR "[A-Z]{1}[:digit:]{5}" OR "[A-Z]{2}[:digit:]{6}" OR "[A-Z]{3}[:digit:]{5}" OR "[A-Z]{4,6}[:digit:]{7,9}" OR "GCA_[:digit:]{9}\\.[:digit:]+" OR "PRJNA[[:digit:]]{3,}" OR "SR(P\|R\|X\|S\|Z)[[:digit:]]{3,}" OR "E-[A-Z]{4}-[:digit:]{1,}" OR "[:digit:]{1}[A-Z]{1}[[:alnum:]]{2}" OR "MTBLS[[:digit:]]{2,}" OR "10.17590" OR "10.5073" OR "EMD-[[:digit:]]{4,}" OR "[[:digit:]]{7}" OR "[A-Z]{2}_[:digit:]{6,}" OR "[A-Z]{2}-[:digit:]{4,}") |
+| FIELD_SPECIFIC_REPO        | Set of names and abbreviations of field-specific repositories | ("GEO" OR "Gene Expression Omnibus" OR "European Nucleotide Archive" OR "National Center for Biotechnology Information" OR "European Molecular Biology Laboratory" OR "EMBL-EBI" OR "BioProject" OR "Sequence Read Archive" OR "SRA" OR "ENA" OR "MassIVE" OR "ProteomeXchange" OR "Proteome Exchange" OR "ProteomeExchange" OR "MetaboLights" OR "Array-Express" OR "ArrayExpress" OR "Array Express" OR "PRIDE" OR "DNA Data Bank of Japan" OR "DDBJ" OR "Genbank" OR "Protein Databank" OR "Protein Data Bank" OR "PDB" OR "Metagenomics Rapid Annotation using Subsystem Technology" OR "MG-RAST" OR "metabolights" OR "OpenAgrar" OR "Open Agrar" OR "Electron microscopy data bank" OR "emdb" OR "Cambridge Crystallographic Data Centre" OR "CCDC" OR "Treebase" OR "dbSNP" OR "dbGaP" OR "IntAct" OR "ClinVar" OR "accession number" OR "accession code" OR "accession numbers" OR "accession codes") |
+| ACCESSION_NR   | Set of regular expressions that represent the accession number formats of different (biomedicine-related) repositories | ("G(SE\|SM\|DS\|PL)[[:digit:]]{2,}" OR "PRJ(E\|D\|N\|EB\|DB\|NB)[:digit:]+" OR "SAM(E\|D\|N)[A-Z]?[:digit:]+" OR "[A-Z]{1}[:digit:]{5}" OR "[A-Z]{2}[:digit:]{6}" OR "[A-Z]{3}[:digit:]{5}" OR "[A-Z]{4,6}[:digit:]{7,9}" OR "GCA_[:digit:]{9}\\.[:digit:]+" OR "PRJNA[[:digit:]]{3,}" OR "SR(P\|R\|X\|S\|Z)[[:digit:]]{3,}" OR "E-[A-Z]{4}-[:digit:]{1,}" OR "[:digit:]{1}[A-Z]{1}[[:alnum:]]{2}" OR "MTBLS[[:digit:]]{2,}" OR "10.17590" OR "10.5073" OR "EMD-[[:digit:]]{4,}" OR "[[:digit:]]{7}" OR "[A-Z]{2}_[:digit:]{6,}" OR "[A-Z]{2}-[:digit:]{4,}") |
 | REPOSITORIES   | Set of names of general-purpose repositories | ("figshare" OR "dryad" OR "zenodo" OR "dataverse" OR "DataverseNL" OR "osf" OR "open science framework" OR "mendeley data" OR "GIGADB" OR "GigaScience database" OR "OpenNeuro") |
 | FILE_FORMATS   | Set of file formats | ("csv" OR "zip" OR "xls" OR "xlsx" OR "sav" OR "cif" OR "fasta") |
 | GITHUB |	Github for data has to be treated differently, as we need additional information that data and not only code was shared on Github |	(“github”) |
