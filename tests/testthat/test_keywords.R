@@ -37,13 +37,13 @@ test_that("not_available",
             expect_false(.detect_keywords("The data are provided", "not_available"))
           })
 
-test_that("field_specific_db",
+test_that("field_specific_repo",
           {
-            expect_true(.detect_keywords("data were deposited in the geo repository ", "field_specific_db"))
-            expect_true(.detect_keywords("data were deposited in the sequence read archive", "field_specific_db"))
-            expect_true(.detect_keywords("data were deposited in the dbGaP database ", "field_specific_db"))
-            expect_true(.detect_keywords("data were deposited in the treebase database ", "field_specific_db"))
-            expect_false(.detect_keywords("data were deposited in the database ", "field_specific_db"))
+            expect_true(.detect_keywords("data were deposited in the geo repository ", "field_specific_repo"))
+            expect_true(.detect_keywords("data were deposited in the sequence read archive", "field_specific_repo"))
+            expect_true(.detect_keywords("data were deposited in the dbGaP database ", "field_specific_repo"))
+            expect_true(.detect_keywords("data were deposited in the treebase database ", "field_specific_repo"))
+            expect_false(.detect_keywords("data were deposited in the database ", "field_specific_repo"))
           })
 
 test_that("accession_nr",
@@ -257,32 +257,32 @@ context("combined keywords")
 
 test_that("field_specific_databases",
           {
-            expect_true(.keyword_search_tokenized_2("deposited in geo with accession number gse77534")[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2(tolower("The crystallographic data and structure were deposited in the Protein Data Bank under ID: 5AHK."))[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("CIF file for the Na12[Co5POM] is deposited with the Cambridge Crystallographic Data Centre (CCDC no. 1558372)" %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("data described herein is available at european nucleotide archive under the project identifiers prjeb402 prjeb6610 and prjeb7988 pangaea48–50" %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("Microarray-based methylome data are available at Array-Express (E-MTAB-5797)." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("genome and chromatin immunoprecipitation sequencing data have been deposited in the ncbi sequence read archive and gene expression omnibus databases (bioproject 320056 and data set gse81160 respectively)." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("the rna-seq data for human cd4 þ central memory t cells referenced in this study are available in the ‘european nucleotide archive’ with the accession codes erp004883 (ref." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("the new 18s genotypes reported in this paper are available in the genbank under the accession number(s): kj170100.1 to kj170108.1  5." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("the data reported in this article have been deposited in the proteomexchange (accession number pxd004606)." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("Metabolome data have been submitted to the Metabolights database75 (http://www.ebi.ac.uk/metabolights/) with the accession number: MTBLS168." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("are available in the OpenAgrar repository: https://doi.org/10.17590/20171025-153520 and https://doi.org/10.17590/20171025-154025" %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("Microarray data were uploaded in Gene Expression Omnibus (GEO) repository, accession number: GSE94381." %>% tolower())[["com_specific_db"]])
-            expect_true(.keyword_search_tokenized_2("were deposited in the Electron Microscopy Data Bank (European Molecular Biology Laboratory-European Bioinformatics Institute, Cambridge, UK) with the accession numbers EMD-3221 (classical), EMD-3223" %>% tolower())[["com_specific_db"]])
-            expect_false(.keyword_search_tokenized_2("Raw sequencing data are available via the European Genome–phenome Archive (accession EGAS00001002213)." %>% tolower())[["com_specific_db"]])
+            expect_true(.keyword_search_tokenized_2("deposited in geo with accession number gse77534")[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2(tolower("The crystallographic data and structure were deposited in the Protein Data Bank under ID: 5AHK."))[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("CIF file for the Na12[Co5POM] is deposited with the Cambridge Crystallographic Data Centre (CCDC no. 1558372)" %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("data described herein is available at european nucleotide archive under the project identifiers prjeb402 prjeb6610 and prjeb7988 pangaea48–50" %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("Microarray-based methylome data are available at Array-Express (E-MTAB-5797)." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("genome and chromatin immunoprecipitation sequencing data have been deposited in the ncbi sequence read archive and gene expression omnibus databases (bioproject 320056 and data set gse81160 respectively)." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("the rna-seq data for human cd4 þ central memory t cells referenced in this study are available in the ‘european nucleotide archive’ with the accession codes erp004883 (ref." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("the new 18s genotypes reported in this paper are available in the genbank under the accession number(s): kj170100.1 to kj170108.1  5." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("the data reported in this article have been deposited in the proteomexchange (accession number pxd004606)." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("Metabolome data have been submitted to the Metabolights database75 (http://www.ebi.ac.uk/metabolights/) with the accession number: MTBLS168." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("are available in the OpenAgrar repository: https://doi.org/10.17590/20171025-153520 and https://doi.org/10.17590/20171025-154025" %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("Microarray data were uploaded in Gene Expression Omnibus (GEO) repository, accession number: GSE94381." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("were deposited in the Electron Microscopy Data Bank (European Molecular Biology Laboratory-European Bioinformatics Institute, Cambridge, UK) with the accession numbers EMD-3221 (classical), EMD-3223" %>% tolower())[["com_specific_repo"]])
+            expect_false(.keyword_search_tokenized_2("Raw sequencing data are available via the European Genome–phenome Archive (accession EGAS00001002213)." %>% tolower())[["com_specific_repo"]])
           })
 
 
 
 test_that("general_purpose_databases",
           {
-            expect_true(.keyword_search_tokenized_2("openly available via http://dx.doi. org/10.5061/dryad.p4s57.")[["com_general_db"]])
-            expect_true(.keyword_search_tokenized_2("data availability statement: all the relevant data for this study is available from the http://figshare.com database (figshare.com/s/ 205e6d4a552511e4856c06ec4bbcf141 http://dx.doi. org/10.6084/m9.figshare.1206313.")[["com_general_db"]])
-            expect_true(.keyword_search_tokenized_2("data was uploaded as online supporting information (file s2) and deposited in zenodo (doi 10.5281/zenodo.17098).")[["com_general_db"]])
-            expect_true(.keyword_search_tokenized_2("All files are available from the Open Science Framework database" %>% tolower())[["com_general_db"]])
-            expect_true(.keyword_search_tokenized_2("the raw quantification data files have been deposited in the Mendeley Data repositroy (http://dx.doi.org/10.17632/vgpmnzdz55.1)" %>% tolower())[["com_general_db"]])
-            expect_true(.keyword_search_tokenized_2("Data Availability Statement: All relevant data are available from Dryad (doi:10.5061/dryad.g8143).")[["com_general_db"]])
+            expect_true(.keyword_search_tokenized_2("openly available via http://dx.doi. org/10.5061/dryad.p4s57.")[["com_general_repo"]])
+            expect_true(.keyword_search_tokenized_2("data availability statement: all the relevant data for this study is available from the http://figshare.com database (figshare.com/s/ 205e6d4a552511e4856c06ec4bbcf141 http://dx.doi. org/10.6084/m9.figshare.1206313.")[["com_general_repo"]])
+            expect_true(.keyword_search_tokenized_2("data was uploaded as online supporting information (file s2) and deposited in zenodo (doi 10.5281/zenodo.17098).")[["com_general_repo"]])
+            expect_true(.keyword_search_tokenized_2("All files are available from the Open Science Framework database" %>% tolower())[["com_general_repo"]])
+            expect_true(.keyword_search_tokenized_2("the raw quantification data files have been deposited in the Mendeley Data repositroy (http://dx.doi.org/10.17632/vgpmnzdz55.1)" %>% tolower())[["com_general_repo"]])
+            expect_true(.keyword_search_tokenized_2("Data Availability Statement: All relevant data are available from Dryad (doi:10.5061/dryad.g8143).")[["com_general_repo"]])
           })
 
 test_that("data_on_github",
@@ -327,6 +327,6 @@ test_that("open_data_search",
 
 test_that("open_data_sentences",
           {
-            expect_equivalent(open_data_search(example_text)$com_specific_db,
+            expect_equivalent(open_data_search(example_text)$com_specific_repo,
                               c("deposited in geo with accession number gse77534", ""))
           })
