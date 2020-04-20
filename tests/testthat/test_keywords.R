@@ -327,6 +327,6 @@ test_that("open_data_search",
 
 test_that("open_data_sentences",
           {
-            expect_equivalent(open_data_search(example_text)$com_specific_repo,
+            expect_equivalent(open_data_search(example_text)$open_data_statements,
                               c("deposited in geo with accession number gse77534", ""))
           })

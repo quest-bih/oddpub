@@ -624,8 +624,19 @@
   open_data_sentences <- cbind(names(keyword_results), open_data_sentences, keyword_results_near_wd) %>%
     as_tibble() %>%
     mutate_each(funs(as.character))
-  colnames(open_data_sentences) <- c("article", "com_specific_repo", "com_general_repo", "com_github_data", "dataset", "com_code", "com_suppl_code",
+  colnames(open_data_sentences) <- c("article", "com_specific_repo", "com_general_repo",
+                                     "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_file_formats", "com_supplemental_data", "com_data_availibility")
+  open_data_sentences[is.na(open_data_sentences)] = "" #unify empty fields
+
+  #collapse the found statements into one column for Open Data and one for Open Code
+  open_data_sentences <- open_data_sentences %>%
+    mutate(open_data_statements = paste(com_specific_repo, com_general_repo, com_github_data,
+                                        dataset, com_file_formats, com_supplemental_data,
+                                        com_data_availibility, sep = " ") %>% trimws()) %>%
+    mutate(open_code_statements = paste(com_code, com_suppl_code, sep = " ") %>% trimws()) %>%
+    select(article, open_data_statements, open_code_statements)
+
 
   return(open_data_sentences)
 }
