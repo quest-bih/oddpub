@@ -509,7 +509,8 @@
     map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
     map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
     map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, publ_sentences, com_specific_repo, com_general_repo, com_github_data, dataset, com_code, com_suppl_code)
+    map(select, publ_sentences, com_specific_repo, com_general_repo,
+                com_github_data, dataset, com_code, com_suppl_code)
 
   return(keyword_results_combined)
 }
@@ -547,9 +548,12 @@
     map_function <- map_lgl
   }
   keyword_results_near_wd <- tibble(
-    com_file_formats = map_function(PDF_text_full, str_function, pattern = keyword_list[["all_data_file_formats"]]),
-    com_supplemental_data = map_function(PDF_text_full, str_function, pattern = keyword_list[["supp_table_data"]]),
-    com_data_availibility = map_function(PDF_text_full, str_function, pattern = keyword_list[["data_availibility_statement"]]))
+    com_file_formats = map_function(PDF_text_full, str_function,
+                                    pattern = keyword_list[["all_data_file_formats"]]),
+    com_supplemental_data = map_function(PDF_text_full, str_function,
+                                         pattern = keyword_list[["supp_table_data"]]),
+    com_data_availibility = map_function(PDF_text_full, str_function,
+                                         pattern = keyword_list[["data_availibility_statement"]]))
 
   return(keyword_results_near_wd)
 }
@@ -599,7 +603,9 @@
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
   data_journal_doi <- .check_journal_doi(PDF_text_sentences)
 
-  keyword_results_combined <- cbind(keyword_results_tokenized, keyword_results_near_wd, data_journal_doi) %>%
+  keyword_results_combined <- cbind(keyword_results_tokenized,
+                                    keyword_results_near_wd,
+                                    data_journal_doi) %>%
     as_tibble()
 
   #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
