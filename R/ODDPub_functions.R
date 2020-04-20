@@ -145,7 +145,7 @@
   keyword_list[["not_available"]] <- not_available
 
 
-  field_specific_db <- c("GEO",
+  field_specific_repo <- c("GEO",
                "Gene Expression Omnibus",
                "European Nucleotide Archive",
                "National Center for Biotechnology Information",
@@ -189,7 +189,7 @@
                "accession numbers",
                "accession codes") %>%
     .format_keyword_vector(end_boundary = TRUE)
-  keyword_list[["field_specific_db"]] <- field_specific_db
+  keyword_list[["field_specific_repo"]] <- field_specific_repo
 
 
 
@@ -464,7 +464,7 @@
 
   #not all keyword categories are used for the sentence search
   sentence_search_keywords <- c("available", "was_available", "not_available",
-                                "field_specific_db", "accession_nr", "repositories",
+                                "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
                                 "file_formats", "upon_request", "dataset")
@@ -504,12 +504,12 @@
 
   #combine columns for the different open data keywords
   keyword_results_combined <- open_data_categories %>%
-    map(mutate, com_specific_db = field_specific_db & accession_nr & available & !not_available & !was_available) %>%
-    map(mutate, com_general_db = repositories & available & !not_available & !was_available) %>%
+    map(mutate, com_specific_repo = field_specific_repo & accession_nr & available & !not_available & !was_available) %>%
+    map(mutate, com_general_repo = repositories & available & !not_available & !was_available) %>%
     map(mutate, com_github_data = data & github & available & !not_available & !was_available) %>%
     map(mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) %>%
     map(mutate, com_suppl_code = supplement & source_code) %>%
-    map(select, publ_sentences, com_specific_db, com_general_db, com_github_data, dataset, com_code, com_suppl_code)
+    map(select, publ_sentences, com_specific_repo, com_general_repo, com_github_data, dataset, com_code, com_suppl_code)
 
   return(keyword_results_combined)
 }
@@ -604,7 +604,7 @@
 
   #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
   open_data_publication <- keyword_results_combined %>%
-    mutate(is_open_data = com_specific_db | com_general_db | com_file_formats | com_github_data | dataset | com_supplemental_data | com_data_availibility | is_data_journal) %>%
+    mutate(is_open_data = com_specific_repo | com_general_repo | com_file_formats | com_github_data | dataset | com_supplemental_data | com_data_availibility | is_data_journal) %>%
     mutate(is_open_code = com_code | com_suppl_code) %>%
     tibble::add_column(article = names(PDF_text_sentences)) %>%
     select(article, is_open_data, is_open_code)
@@ -624,7 +624,7 @@
   open_data_sentences <- cbind(names(keyword_results), open_data_sentences, keyword_results_near_wd) %>%
     as_tibble() %>%
     mutate_each(funs(as.character))
-  colnames(open_data_sentences) <- c("article", "com_specific_db", "com_general_db", "com_github_data", "dataset", "com_code", "com_suppl_code",
+  colnames(open_data_sentences) <- c("article", "com_specific_repo", "com_general_repo", "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_file_formats", "com_supplemental_data", "com_data_availibility")
 
   return(open_data_sentences)
