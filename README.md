@@ -14,6 +14,10 @@ publication. It is tailored towards biomedical literature.
 
 Nico Riedel (nico.riedel@bihealth.de), Miriam Kip, Evgeny Bobrov - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
 
+## Publication
+
+More information on the development and validation of the algorithm can be found in the bioRxiv preprint https://www.biorxiv.org/content/10.1101/2020.05.11.088021v1. The related training and validation datasets can be found under https://osf.io/yv5rx/.
+
 ## Installation
 
 The latest version of the algorithm is structured as an R package and can easily be installed with the following command:
