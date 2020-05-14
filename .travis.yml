@@ -5,49 +5,6 @@ warnings_are_errors: false
 r:
   - release
 
-r_binary_packages:
-  - devtools
-  - dplyr
-  - purrr
-  - foreach
-  - doParallel
-  - tokenizers
-  - stringr
-  - readr
-  - testthat
-  - rlang
-  - cli
-  - fansi
-  - pillar
-  - pkgconfig
-  - assertthat
-  - glue
-  - utf8
-  - vctrs
-  - ellipsis
-  - iterators
-  - desc
-  - pkgbuild
-  - rprojroot
-  - rstudioapi
-  - callr
-  - prettyunits
-  - backports
-  - processx
-  - ps
-  - Rcpp
-  - tibble
-  - tidyselect
-  - BH
-  - plogr
-  - stringi
-  - SnowballC
-  - hms
-  - clipr
-  - evaluate
-  - pkgload
-  - praise
-
 # do not check examples for the CI
 r_check_args: --no-examples 
 
