@@ -589,6 +589,36 @@
 }
 
 
+#assign the detected Open Data cases to certain categories depending
+#on the keyword category in which it was found
+.OD_category <- function(specific_repo, general_repo,
+                           suppl, DAS, data_journal)
+{
+  category = vector()
+
+  # should give out several categories
+  # if there are multipe matches
+  if(specific_repo == TRUE) {
+    category <- category %>% c("field-specific repository")
+  }
+  if(general_repo == TRUE) {
+    category <- category %>% c("general-purpose repository")
+  }
+  if(suppl == TRUE) {
+    category <- category %>% c("supplement")
+  }
+  if(DAS == TRUE) {
+    category <- category %>% c("data availability statement")
+  }
+  if(data_journal == TRUE) {
+    category <- category %>% c("data journal")
+  }
+  category <- category %>% paste(collapse = ", ")
+
+  return(category)
+}
+
+
 
 #---------------------------------------------------------------------
 # 5 - Combine search steps to obtain Open Data status &
@@ -612,8 +642,12 @@
   open_data_publication <- keyword_results_combined %>%
     mutate(is_open_data = com_specific_repo | com_general_repo | com_file_formats | com_github_data | dataset | com_supplemental_data | com_data_availibility | is_data_journal) %>%
     mutate(is_open_code = com_code | com_suppl_code) %>%
+    mutate(is_supplement = dataset | com_file_formats | com_supplemental_data) %>%
+    mutate(is_general_purpose = com_general_repo | com_github_data ) %>%
+    mutate(open_data_category = purrr::pmap_chr(list(com_specific_repo, is_general_purpose, is_supplement,
+                                                     com_data_availibility, is_data_journal), .OD_category)) %>%
     tibble::add_column(article = names(PDF_text_sentences)) %>%
-    select(article, is_open_data, is_open_code)
+    select(article, is_open_data, open_data_category, is_open_code)
 
   return(open_data_publication)
 }
