@@ -258,7 +258,7 @@
                "IoChem-BD",
                "Computational Chemistry Datasets",
                "STRENDA",
-               "European Genome–phenome Archive",
+               "European Genome-phenome Archive",
                "European Genome phenome Archive",
                "accession number",
                "accession code",
