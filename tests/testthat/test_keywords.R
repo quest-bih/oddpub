@@ -296,7 +296,7 @@ test_that("field_specific_databases",
             expect_true(.keyword_search_tokenized_2("are available in the OpenAgrar repository: https://doi.org/10.17590/20171025-153520 and https://doi.org/10.17590/20171025-154025" %>% tolower())[["com_specific_repo"]])
             expect_true(.keyword_search_tokenized_2("Microarray data were uploaded in Gene Expression Omnibus (GEO) repository, accession number: GSE94381." %>% tolower())[["com_specific_repo"]])
             expect_true(.keyword_search_tokenized_2("were deposited in the Electron Microscopy Data Bank (European Molecular Biology Laboratory-European Bioinformatics Institute, Cambridge, UK) with the accession numbers EMD-3221 (classical), EMD-3223" %>% tolower())[["com_specific_repo"]])
-            expect_true(.keyword_search_tokenized_2("Raw sequencing data are available via the European Genome–phenome Archive (accession EGAS00001002213)." %>% tolower())[["com_specific_repo"]])
+            expect_true(.keyword_search_tokenized_2("Raw sequencing data are available via the European Genome-phenome Archive (accession EGAS00001002213)." %>% tolower())[["com_specific_repo"]])
             expect_true(.keyword_search_tokenized_2("deposited in the European Variation Archive with ID GCA_000002285.2" %>% tolower())[["com_specific_repo"]])
             expect_true(.keyword_search_tokenized_2("deposited in dbVar with ID nstd102" %>% tolower())[["com_specific_repo"]])
             expect_true(.keyword_search_tokenized_2("deposited in Mgnify with ID MGYA00088411" %>% tolower())[["com_specific_repo"]])
