@@ -91,8 +91,8 @@ pdf_load <- function(pdf_text_folder)
 #' statements were detected are added to the results table as well.
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
-#' and open code detection as columns plus an additional column containing the detected sentences
-#' for each of the checked keyword category.
+#' and open code detection as columns plus additional columns containing the identified open data/code categories
+#' as well as the sentences in which open data/code was detected.
 #'
 #' @examples open_data_search(pdf_load("examples/"))
 #'
@@ -135,8 +135,8 @@ open_data_search <- function(PDF_text_sentences, detected_sentences = TRUE)
 #' with respect to the documents to speed up the calculations.
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
-#' and open code detection as columns plus an additional column containing the detected sentences
-#' for each of the checked keyword category.
+#' and open code detection as columns plus additional columns containing the identified open data/code categories
+#' as well as the sentences in which open data/code was detected.
 #'
 #' @examples open_data_search_parallel(pdf_load("examples/"))
 #'

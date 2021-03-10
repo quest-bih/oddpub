@@ -57,7 +57,7 @@ Loads all text files from given folder.
 ``` r
 open_data_results <- oddpub::open_data_search(PDF_text_sentences)
 ```
-Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the detected sentences, which can be deactivated using the additional parameter ```detected_sentences = FALSE```.
+Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the identified Open Data/Code categories as well as the detected sentences, which can be deactivated using the additional parameter ```detected_sentences = FALSE```.
 
 ``` r
 open_data_results <- oddpub::open_data_search_parallel(PDF_text_sentences)

@@ -14,8 +14,8 @@ statements were detected are added to the results table as well.}
 }
 \value{
 Tibble with one row per screened document and the filename and logical values for open data
-and open code detection as columns plus an additional column containing the detected sentences
-for each of the checked keyword category.
+and open code detection as columns plus additional columns containing the identified open data/code categories
+as well as the sentences in which open data/code was detected.
 }
 \description{
 The algorithm searches for several categories of similar keywords in each sentence.
