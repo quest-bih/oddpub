@@ -16,7 +16,7 @@ Nico Riedel (nico.riedel@bihealth.de), Miriam Kip, Evgeny Bobrov - QUEST Center 
 
 ## Publication
 
-More information on the development and validation of the algorithm can be found in the bioRxiv preprint https://www.biorxiv.org/content/10.1101/2020.05.11.088021v1. The related training and validation datasets can be found under https://osf.io/yv5rx/.
+More information on the development and validation of the algorithm can be found in the publication https://doi.org/10.5334/dsj-2020-042. The related training and validation datasets can be found under https://osf.io/yv5rx/.
 
 ## Installation
 
