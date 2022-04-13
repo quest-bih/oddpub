@@ -12,7 +12,7 @@ publication. It is tailored towards biomedical literature.
 
 ## Authors
 
-Nico Riedel (nico.riedel@bihealth.de), Miriam Kip, Evgeny Bobrov - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
+Nico Riedel, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
 
 ## Publication
 
