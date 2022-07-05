@@ -117,7 +117,7 @@ open_data_search <- function(PDF_text_sentences, detected_sentences = TRUE)
 
 
 
-#' Parallelizied of the open data & open code keyword search
+#' Parallelized version of the open data & open code keyword search
 #'
 #' The algorithm searches for several categories of similar keywords in each sentence.
 #' Multiple categories have to match for a single sentence to trigger a detection.
