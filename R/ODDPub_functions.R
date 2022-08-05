@@ -21,9 +21,9 @@
     tryCatch({
       com <- paste0('pdftotext ', '\"', PDF_filename, '\" ',
                     '\"', output_filename, '\"')
-      system(com, wait = T)
+      system(com, wait = TRUE)
       success <- TRUE
-    }, error=function(e){
+    }, error = function(e){
       print("Could not convert pdf to text.")
     })
   }
@@ -49,7 +49,7 @@
 # 2 - text data loading
 #--------------------------------------------------------------------------------------
 
-#function that search for sentences that were falsely split on abbreviations like accession nr.
+#function that searches for sentences that were falsely split on abbreviations like accession nr.
 #and pastes them together again
 .correct_tokenization <- function(PDF_text)
 {
@@ -59,7 +59,7 @@
     stringr::str_detect("accession nr.|accession no.|ccession nos.|ccession nrs.") %>%
     which()
 
-  #for all indicies do a pairwise pasting
+  #for all indices do a pairwise pasting
   if(length(sentence_paste_idx) > 0)
   {
     for(i in 1:length(sentence_paste_idx))
@@ -746,7 +746,8 @@
   open_data_sentences <- do.call(rbind, open_data_sentences)
   open_data_sentences <- cbind(names(keyword_results), open_data_sentences, keyword_results_near_wd) %>%
     as_tibble() %>%
-    mutate_each(funs(as.character))
+    mutate(across(everything(), as.character))
+    # mutate_each(funs(as.character))
   colnames(open_data_sentences) <- c("article", "com_specific_repo", "com_general_repo",
                                      "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_file_formats", "com_supplemental_data", "com_data_availibility")
