@@ -47,7 +47,6 @@ The package exposes four functions that allow the following workflow:
 oddpub::pdf_convert(PDF_folder, output_folder)
 ```
 Converts PDFs contained in one folder to txt-files and saves them into the output folder.
-**Requires external poppler library for the conversion.**
 
 ``` r
 PDF_text_sentences <- oddpub::pdf_load(pdf_text_folder)

@@ -7,30 +7,30 @@
 
 #converts PDF file to txt file and saves it to output_folder
 #requires the pdftotext program that is run via a terminal command
-.pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE)
-{
-  success <- FALSE
-  output_filename <- .create_output_filename(PDF_filename, output_folder)
-
-  if(!file.exists(PDF_filename)) {
-    print("PDF file does not exist!")
-  } else if(file.exists(output_filename) && overwriteExistingFiles == FALSE) {
-    print("Output file already exists!")
-    success <- TRUE
-  } else  {
-    tryCatch({
-      com <- paste0('pdftotext ', '\"', PDF_filename, '\" ',
-                    '\"', output_filename, '\"')
-      system(com, wait = TRUE)
-      success <- TRUE
-    }, error = function(e){
-      print("Could not convert pdf to text.")
-    })
-  }
-
-  names(success) <- PDF_filename
-  return(success)
-}
+# .pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE)
+# {
+#   success <- FALSE
+#   output_filename <- .create_output_filename(PDF_filename, output_folder)
+#
+#   if(!file.exists(PDF_filename)) {
+#     print("PDF file does not exist!")
+#   } else if(file.exists(output_filename) && overwriteExistingFiles == FALSE) {
+#     print("Output file already exists!")
+#     success <- TRUE
+#   } else  {
+#     tryCatch({
+#       com <- paste0('pdftotext ', '\"', PDF_filename, '\" ',
+#                     '\"', output_filename, '\"')
+#       system(com, wait = TRUE)
+#       success <- TRUE
+#     }, error = function(e){
+#       print("Could not convert pdf to text.")
+#     })
+#   }
+#
+#   names(success) <- PDF_filename
+#   return(success)
+# }
 
 
 .create_output_filename <- function(PDF_filename, output_folder)
@@ -44,6 +44,31 @@
   return(output_filename)
 }
 
+# converts PDF file to txt file and saves it to output_folder
+##### alternative conversion using the pdftools package (faster but creates larger files)
+
+.pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE) {
+  success <- FALSE
+  output_filename <- .create_output_filename(PDF_filename, output_folder)
+
+  if(!file.exists(PDF_filename)) {
+    print("PDF file does not exist!")
+  } else if(file.exists(output_filename) && overwriteExistingFiles == FALSE) {
+    print("Output file already exists!")
+    success <- TRUE
+  } else  {
+    tryCatch({
+      text <- pdftools::pdf_text(PDF_filename)
+      cat(text, file = output_filename)
+      success <- TRUE
+    }, error = function(e){
+      print("Could not convert pdf to text.")
+    })
+  }
+
+  names(success) <- PDF_filename
+  return(success)
+}
 
 #--------------------------------------------------------------------------------------
 # 2 - text data loading
