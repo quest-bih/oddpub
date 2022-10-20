@@ -45,7 +45,7 @@
 }
 
 # converts PDF file to txt file and saves it to output_folder
-##### alternative conversion using the pdftools package (faster but creates larger files)
+##### new conversion using the pdftools package (faster but creates larger files)
 
 .pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE) {
   success <- FALSE
