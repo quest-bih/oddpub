@@ -1,20 +1,23 @@
 Package: oddpub
 Type: Package
 Title: Detection of Open Data & Open Code statements in biomedical publications
-Version: 5.1.0
-Author: Nico Riedel
-Date: 2019-09-30
-Maintainer: Vladislav Nachev <vladislav.nachev@charite.de>
+Version: 7.0.0
+Authors@R: 
+    c(person("Nico", "Riedel",
+    role = "aut"),
+    person("Vladislav", "Nachev",
+    role = c("aut", "cre"),
+    email = "vladislav.nachev@charite.de",
+    comment = c(ORCID = "0000-0003-0521-6153")))
+Date: 2023-05-12
 Description: Detection of Open Data & Open Code statements in biomedical publications.
   Uses publication PDFs as input and returns both Open Data/Code: 'yes/no' and the detected statement.
-License: MIT
+License: MIT + file LICENSE
 URL: https://github.com/quest-bih/oddpub
 Encoding: UTF-8
 LazyData: true
-Depends:
-  dplyr, purrr, pdftools
 Imports:
-  foreach, parallel, doParallel, tokenizers, stringr, magrittr, readr
+  tokenizers, stringr, magrittr, readr, dplyr, purrr, pdftools, furrr, tibble
 Suggests: 
   testthat
-RoxygenNote: 7.1.0
+RoxygenNote: 7.2.3

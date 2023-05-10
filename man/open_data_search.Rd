@@ -18,14 +18,18 @@ and open code detection as columns plus additional columns containing the identi
 as well as the sentences in which open data/code was detected.
 }
 \description{
-The algorithm searches for several categories of similar keywords in each sentence.
-Multiple categories have to match for a single sentence to trigger a detection.
+The algorithm first searchers for a Data Availability Statement (DAS) and extracts it.
+If no DAS was found, the algorithm searches for several categories of similar keywords
+in each sentence. Multiple categories have to match for a single sentence to trigger a detection.
 Among keyword categories are categories for specific biomedical databases as well as
 their corresponding accession numbers (as regular expressions), general-purpose repositories
 or different file formats typically used to distribute raw data in the supplement.
-Additionally, Open Code dissemination is detected using keywords categories for source code or code repositories.
+Additionally, Open Code dissemination is detected using keywords categories for source code or
+code repositories.
 }
 \examples{
+\dontrun{
 open_data_search(pdf_load("examples/"))
+}
 
 }

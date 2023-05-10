@@ -4,20 +4,18 @@
 \alias{pdf_convert}
 \title{Conversion of PDFs to text.}
 \usage{
-pdf_convert(PDF_folder, output_folder, clusters = 10)
+pdf_convert(PDF_folder, output_folder)
 }
 \arguments{
 \item{PDF_folder}{String of the folder name in which the PDFs are located.}
 
 \item{output_folder}{String of the folder name in which the converted files will be saved.}
-
-\item{clusters}{Number of parallel threads used to speed up conversion (using packages parallel, doParallel and foreach)}
 }
 \value{
 Logical vector describing the conversion success for each PDF file.
 }
 \description{
 Converts PDFs to text before the text can be loaded and text-mined.
-Requires the poppler library (\url{https://poppler.freedesktop.org/})
-that is run via a terminal command to do the conversion.
+For the PDFconversion requires the pdftools library.
+for parallelisation requires the future and furrr libraries.
 }
