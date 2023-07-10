@@ -4,13 +4,13 @@
 \alias{open_data_search}
 \title{Seach for open data & open code keywords.}
 \usage{
-open_data_search(PDF_text_sentences, detected_sentences = TRUE)
+open_data_search(PDF_text_sentences, extract_sentences = TRUE)
 }
 \arguments{
 \item{PDF_text_sentences}{Document corpus loaded with the pdf_load function.}
 
-\item{detected_sentences}{Logical parameter. If TRUE, the sentences in which the Open Data
-statements were detected are added to the results table as well.}
+\item{extract_sentences}{Logical parameter. If TRUE, the sentences in which the Open Data
+statements were detected are extracted and added to the results table as well.}
 }
 \value{
 Tibble with one row per screened document and the filename and logical values for open data

@@ -50,28 +50,73 @@
 #' @noRd
 .est_col_n <- function(text_data) {
 
-  dac <- space <- text <- y <- x <- line_n <- NULL
-  dac_statement_present <- text_data |>
-    dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "Data" &
-                                  dplyr::lead(text) == "and" &
-                                  dplyr::lead(text, n = 2) == "code" &
-                                  dplyr::lead(text, n = 3) == "availability" &
-                                  dplyr::lead(space, n = 3) == FALSE,
-                                1, 0)) |>
+  ralc <- space <- text <- y <- x <- line_n <- NULL
+
+  # for elsevier data and code availability the column estimation is thrown off by the key ressources table
+
+  ralc_statement_present <- text_data |>
+    dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "REAGENT" &
+                                         dplyr::lead(text) == "or" &
+                                         dplyr::lead(text, n = 2) == "RESOURCE" &
+                                         dplyr::lead(space, n = 2) == FALSE &
+                                         dplyr::lead(text, n = 3) == "SOURCE" &
+                                         dplyr::lead(space, n = 3) == FALSE &
+                                         dplyr::lead(text, n = 4) == "IDENTIFIER" &
+                                         dplyr::lead(space, n = 4) == FALSE,
+                                       1, 0)) |>
     dplyr::summarise(dac = sum(dac)) |>
     dplyr::pull(dac) |>
     as.logical()
+  # if ralc is detected, force single-column layout
+  if (ralc_statement_present == TRUE) return (1)
 
-  if (dac_statement_present == TRUE) return (1)
+
+
+
+  # determine y of reference section for later exclusion
+  reference_y <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "References") & space == FALSE) |>
+    dplyr::pull(y)
+
+  if (length(reference_y) == 0) reference_y <- max(text_data$y) + 1
 
   cols <- text_data |>
     dplyr::arrange(y, x) |>
-    .add_line_n() |>
+    # exclude what could be references
+    dplyr::filter(!stringr::str_detect(text, "^\\d{1,3}\\.?$"),
+                  y < reference_y,
+                  y > 21, # exclude upper margin
+                  font_size > 4) |>
+    .add_line_n()
+#
+#   midpage_words <- cols |>
+#     dplyr::filter(between(x, 285, 300)) |>
+#     nrow()
+
+  cols <- cols |>
     dplyr::group_by(line_n) |>
-    dplyr::summarise(ret_per_line = sum(space == FALSE))
+    dplyr::summarise(ret_per_line = sum(space == FALSE),
+                     midpage_words = sum(dplyr::between(x, 285, 300)),
+                     max_x = max(x))
+
+  if (nrow(cols) == 0) return (1)
+
+  midpage_words <- cols |>
+    dplyr::filter(midpage_words > 0) |>
+    nrow()
+
+  if (midpage_words < 20) return (2)
+
+  rows_over_one <- cols |>
+    dplyr::filter(ret_per_line > 1) |>
+    nrow()
+
+  if (rows_over_one / nrow(cols) >= 0.2) { # if over 20% on the page seems to be split in columns, assume multicol layout
+    cols <- cols |>
+      dplyr::filter(ret_per_line > 1)
+  }
 
   stats::median(cols$ret_per_line)
-
 }
 
 
@@ -105,7 +150,7 @@ Mode <- function(x) {
 
   text_data |>
     dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
-                  line_n = abs(jump_size) > 5,
+                  line_n = abs(jump_size) > 4,
                   # line_n = dplyr::lag(space == FALSE, default = 0) & jump_size > 5,
                   line_n = cumsum(line_n))
 }
@@ -125,9 +170,11 @@ Mode <- function(x) {
                     font_size > 7) |>
       dplyr::mutate(text = stringr::str_remove(text, "Tag$"))
 
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41531"))
+  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41531")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "BBKNAK+AdvTT6780a46b")
+  }
+
   # special case for the frontiers, royal society special 2col formatting
   if (stringr::str_detect(PDF_filename, "10\\.3389\\+f|10\\.1098\\+rspb")) {
     text_data <- .reformat_columns(text_data)
@@ -136,11 +183,17 @@ Mode <- function(x) {
     cols <- .est_col_n(text_data)
   }
 
-  col2_x <- max(text_data$x, 700) # initial estimate is the maximum, works for single column layouts
-  min_x <- min(text_data$x, 0) + 100
+  col2_x <- 700 # initial estimate is the maximum, works for single column layouts
+  col3_x <- col2_x
+  min_x <- dplyr::case_when(
+    stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals
+    cols == 2 ~ 295,
+   # cols == 3 ~ 150,
+    .default = 150
+  )
 
 
-  if (cols == 2 | is.na(cols)) {
+  if (cols > 1 | is.na(cols)) {
 
     if (nrow(text_data) < 2) return("")
 
@@ -148,31 +201,52 @@ Mode <- function(x) {
     col2_x_est <- text_data |>
       dplyr::filter(x > min_x & dplyr::lag(space) == FALSE) |>
       dplyr::count(x) |>
-      dplyr::filter(n > 5) |>
+      dplyr::filter(n > 3) |>
       dplyr::pull(x) |>
       min()
 
+    # if (cols == 3) {
+      col3_x_est <- text_data |>
+        dplyr::filter(x > col2_x_est + 100 & dplyr::lag(space) == FALSE) |>
+        dplyr::count(x) |>
+        dplyr::filter(n > 5) |>
+        dplyr::pull(x) |>
+        min()
+    # } else {
+    #   col3_x_est <- col3_x
+    # }
+
+
     # if above fails, take the max estimate, reducing in effect to a single column
     if (is.na(col2_x_est)) col2_x_est <- col2_x
+    # if above fails, take the max estimate, reducing in effect to a single column
+    if (is.na(col3_x_est) | cols != 3) col3_x_est <- col3_x
     # if max is at least 100 to the right of estimate, then estimate is good
     if (col2_x - col2_x_est > 100) col2_x <- col2_x_est
-
+    if (col3_x - col3_x_est > 100) col3_x <- col3_x_est
  }
 
-  min_y <- min(35, min(text_data$y)) # remove header in most journals
+  min_y <- 37 #min(37, min(text_data$y) + 3) # remove header in most journals
+  max_y <- max(750, max(text_data$y)) # remove footer in most journals
+  max_x <- 563 # remove right margin in most journals
 
   text_data <- text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the very first line on top of the page
-    dplyr::filter(!(stringr::str_detect(text, "^\\d+\\.*$") & space == FALSE), y > min_y) |>
-    # remove the references section because it often collides with DAS
-    dplyr::filter(!(stringr::str_detect(tolower(text), "references$") & space == FALSE)) |>
+    dplyr::filter(!(stringr::str_detect(text, "^\\d+\\.*$") & space == FALSE),
+                  y > min_y, # remove header
+                  y < max_y, # remove footer
+                  x < max_x) |> # remove margin text, e.g. 'downloaded from...'
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0),
-           column = dplyr::if_else(x >= col2_x, 2, 1))
+           column = dplyr::case_when(
+             x >= col2_x & x < col3_x ~ 2,
+             x >= col3_x ~ 3,
+             .default = 1))
 
 
-  if (cols == 2) text_data <- text_data |>
-    dplyr::arrange(column, y, x)
+  # if (cols > 1)
+  text_data <- text_data |>
+      dplyr::arrange(column, y, x)
 
   text_data <- .add_line_n(text_data) |>
     dplyr::arrange(column, line_n, x) |>
@@ -195,15 +269,34 @@ Mode <- function(x) {
         abs(font_size - dplyr::lag(font_size)) > 1.4 |
           !stringr::str_detect(text, "[[:lower:]]") | # only caps
         # font_size - regular_font_size > 1 |
-          stringr::str_detect(font_name, "[B,b]old|\\.[B,b]|AdvPSHN-H$|AdvPA5D1$|AdvOTd67905e7$"), TRUE, FALSE),
+          stringr::str_detect(font_name, "[B,b]old|\\.[B,b]|AdvPSHN-H$|AdvPA5D1$|AdvOTd67905e7$|AdvTT99c4c969$"), TRUE, FALSE),
       newline_heading = line_n == 1 & is.na(heading_font) |
         line_n > dplyr::lag(line_n) &
         stringr::str_detect(dplyr::lag(text), "\\.$") &
         (font_name != dplyr::lag(font_name)),
       paragraph_start = abs(jump_size) > section_jump,
-      section_start = (paragraph_start & heading_font) | newline_heading,
-      text = dplyr::if_else(section_start == TRUE, paste("\n<section>", text), text)) |>
-      # text = ifelse(section_start == TRUE, paste(" .\n<Section>", text), text)) |>
+      # for the three-column science layout DAS may start within the line
+      science_section = (text == "Data" &
+        dplyr::lead(text) == "and" &
+        stringr::str_detect(dplyr::lead(text, 2), "mat")) |
+        y > 711 & dplyr::lag(space) == FALSE & stringr::str_detect(text, "^[A-Z][a-z]") |
+        text == "Submitted",
+      # for some journals with das on first page (e.g. elsevier jclinepi, erj, etc.)
+      plain_section =
+        dplyr::lag(space) == FALSE & stringr::str_detect(text, "^[A-Z]") &
+        (stringr::str_detect(text, ":$") | # e.g. Funding:
+           stringr::str_detect(dplyr::lead(text), ":$") & line_n == dplyr::lead(line_n) | # e.g. Data sharing:
+           stringr::str_detect(dplyr::lead(text, 2), ":$") & line_n == dplyr::lead(line_n, 2) | # e.g. Conflict of interest:
+           stringr::str_detect(dplyr::lead(text, 3), ":$") & line_n == dplyr::lead(line_n, 3) | # e.g. Data and code availability:
+           stringr::str_detect(dplyr::lead(text, 5), ":$") & line_n == dplyr::lead(line_n, 5)) | # e.g. Disclosure of potential conflict of interest:
+        # (stringr::str_detect(text, "Data|Software") &
+        # stringr::str_detect(dplyr::lead(text), "(A|a)vailability:")) |
+        # dplyr::lead(text, 2) == "interest:" |
+        # (text == "Data" & dplyr::lead(text) == "sharing" & dplyr::lead(text, 2) == "statement:") |
+        # text == "Funding:" |
+        text == "*" & dplyr::lag(space) == FALSE,
+      section_start = (paragraph_start & heading_font) | newline_heading | science_section | plain_section,
+      text = dplyr::if_else(section_start == FALSE | is.na(section_start), text, paste("\n<section>", text))) |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(text = paste(text, collapse = " ")) |>
     dplyr::summarise(text = paste(text, collapse = "\n ")) |>
@@ -218,13 +311,27 @@ Mode <- function(x) {
 #' search for sentences that were falsely split on abbreviations like accession nr.
 #' and pastes them together again
 #' @noRd
-
 .correct_tokenization <- function(PDF_text)
 {
+  regex_to_correct <- c(
+    "a?cc(ession)? nrs?\\.",
+    "a?cc(ession)? nos?\\.",
+    "fig\\.",
+    "doi\\.",
+    "zenodo\\.",
+    "et al\\.",
+    "ncbi\\.",
+    "www\\.",
+    "https?:\\/\\/",
+    "^(<section> )?\\w\\.$",
+    "^(<section> )?\\d\\.\\d\\.$"
+  ) |>
+    paste(collapse = "|")
+
   PDF_text_corrected <- PDF_text
   sentence_paste_idx <- PDF_text  |>
-    stringr::str_sub(-13, -1) |>
-    stringr::str_detect("accession nr\\.|acc(ession)? no\\.|ccession nos\\.|ccession nrs\\.") |>
+    stringr::str_sub(-14, -1) |>
+    stringr::str_detect(regex_to_correct) |>
     which()
 
   #for all indices do a pairwise pasting
@@ -261,9 +368,10 @@ Mode <- function(x) {
 #' format
 #' @noRd
 # textfile <- paste0(pdf_text_folder, txt_filenames)
+# textfile <- txt_filenames
 .tokenize_sections <- function(textfile)
 {
-  readr::read_lines(textfile) |>
+ readr::read_lines(textfile) |>
     paste(collapse = " ") |>
     stringr::str_replace_all("\n", ".") |>
     stringr::str_squish() |>
@@ -272,7 +380,8 @@ Mode <- function(x) {
     purrr::list_c() |>
     stringr::str_replace_all(pattern = ",", replacement = "") |>
     stringr::str_replace_all(pattern = "- ", replacement = "") |>
-    .correct_tokenization()
+    .correct_tokenization() |>
+    stats::na.omit()
 }
 
 
@@ -294,9 +403,10 @@ Mode <- function(x) {
                  "(is|are) provided",
                  "(is|are) hosted",
                  "contained in",
+                 "contains",
                  "listed in",
                  "lodged with",
-                 "(?<!the) available",
+                 "(?<!the )available",
                  "doi of the data(set)? (is|are)",
                  "reproduce",
                  "accessible",
@@ -304,12 +414,12 @@ Mode <- function(x) {
                  "(can|may) be retrieved",
                  "submitted",
                  "(can|may) be downloaded",
-                 "(can|may) be found",
+                 "(can|may) be .*found",
                  "held in",
                  "reported in",
                  "uploaded",
                  "are public on",
-                 "added",
+                 "we (have )?added",
                  "(?<=data) at",
                  "doi: ") |>
     .format_keyword_vector()
@@ -317,18 +427,26 @@ Mode <- function(x) {
 
   was_available <- c("(was|were) provided",
                      "(was|were)? previously published",
+                     "(was|were|have been)? published previously",
                      "(was|were) contained in",
                      "(was|were) available",
                      "(was|were) accessible",
                      "(was|were) deposited by",
+                     "(has (been )?)? previously (been )?deposited",
                      "(was|were) reproduced",
                      "were open source data",
                      "(previous|prior) study",
-                     "were (used|analyzed) in this study",
-                     "were downloaded and analyzed",
+                     "were (used|analy[z,s]ed) in this study",
+                     "were downloaded( and analy[z,s]ed)?",
                      "this study used .* publicly available",
                      "existing publicly available",
-                     "data .* reanalyzed here") |>
+                     "data .* reanaly[z,s]ed here",
+                     "used data from a public",
+                     "all data we used are public",
+                     "covers public",
+                     "available in .* previous",
+                     "(we|was|were) obtained",
+                     "checked .* on .* freely available") |>
     .format_keyword_vector()
   keyword_list[["was_available"]] <- was_available
 
@@ -339,7 +457,6 @@ Mode <- function(x) {
 
   keyword_list[["not_produced"]] <- not_produced
 
-
   not_available <- c("not included",
                      "not deposited",
                      "not released",
@@ -348,21 +465,25 @@ Mode <- function(x) {
                      "not available",
                      "not accessible",
                      "not submitted",
-                     "no \\w.* (is|are) available") |>
+                     "(few|no|not enough) \\w.* (is|are) available"
+                     ) |>
     .format_keyword_vector()
   keyword_list[["not_available"]] <- not_available
-
-# stringr::str_detect("Proteome exchange", "Proteome *[E,e][X,x]change")
+  # str_detect(publ_sentences, accession_nr[1])field_specific_repo
+ # stringr::str_detect("http://www.ncbi. nlm.nih.gov/ pubmed", "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?pubmed)")
   # field_specific_repo |> sort() |> paste(collapse = ",\n")
   field_specific_repo <- c(
     "10xgenomics",
     "23andme",
+    "4D Nucleome Consortium",
     "accession codes*",
     "accession numbers*",
     "ACDC",
     "Addgene",
     "ADHD *200",
     "AIBL",
+    "Aphasia Resource",
+    "aphasiatrials\\.org",
     "Array[ ,-]*Express",
     "BBMRI.nl",
     "bbmri.nl",
@@ -456,7 +577,7 @@ Mode <- function(x) {
     "National Center for Biotechnology Information",
     "National Database for Autism Research",
     "National Database for Clinical Trials related to Mental Illness",
-    "NCBI",
+    "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?(pubmed|pmc))",
     "NDAR",
     "NDCT",
     "NDEx",
@@ -518,7 +639,7 @@ Mode <- function(x) {
                     "GCA_[:digit:]{9}\\.[:digit:]+",
                     "SR(P|R|X|S|Z)[[:digit:]]{3,}",
                     "(E|P)-[A-Z]{4}-[:digit:]{1,}",
-                    "(?<!\\.)[:digit:]{1}[a-z]{1}[[:alnum:]]{2}",
+                    "(?<!(\\.|<))[:digit:]{1}[a-z]{1}[[:alnum:]]{2}",
                     "MTBLS[[:digit:]]{2,}",
                     "10.17590",
                     "10.5073",
@@ -535,15 +656,19 @@ Mode <- function(x) {
                     "FR-FCM-[[:alnum:]]{4}",
                     "ICPSR [:digit:]{4}",
                     "SN [:digit:]{4}",
-                    "key resources table") |>
+                    "key resources table",
+                    "accession numbers") |>
     .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
 
-  repositories <- c("available online *(\\(|\\[)+",
+  repositories <- c("available online *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
+                    "(is|are) available *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
                     "10\\.17617/3.", # Edmond
                     "10\\.18452", # edoc HU
                     "10\\.13130", # UNIMI Dataverse
                     "10\\.1038 */s41597-", # scientific data
+                    "10\\.11588", # hei DATA
+                    # "doi\\.org/[[:graph:]]* (?!received)",
                     "code ocean *(capsule)?",
                     "cyverse",
                     "dataverse(\\.harvard.\\edu)?",
@@ -555,7 +680,7 @@ Mode <- function(x) {
                     "GigaScience database",
                     "harvard dataverse",
                     "heidata",
-                    "mendeley data",
+                    "mendeley",
                     "OpenNeuro",
                     "open science framework",
                     "osf",
@@ -572,9 +697,11 @@ Mode <- function(x) {
   keyword_list[["github"]] <- github
 
 
-  data <- c("data",
-            "dataset",
-            "datasets") |>
+  data <- c("data(?! (availability|accessibility))",
+            "datasets?",
+            # "databases?",
+            "responses",
+            "materials") |>
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["data"]] <- data
 
@@ -585,7 +712,6 @@ Mode <- function(x) {
                 "source data",
                 "full data set",
                 "full dataset",
-                # "crystallographic data",
                 "subject-level data") |>
     .format_keyword_vector()
   keyword_list[["all_data"]] <- all_data
@@ -599,26 +725,43 @@ Mode <- function(x) {
     .format_keyword_vector()
   keyword_list[["not_data"]] <- not_data
 
-
   source_code <- c("source code",
+                   "code files?",
                    "analysis script",
-                   "data and code",
+                   "data (and )?code",
                    "github",
                    "gitlab",
+                   "bitbucket",
                    "code ocean",
                    "SAS script",
                    "SPSS script",
-                   "R script",
-                   "R code",
+                   "r[-, ]+script",
+                   "r[-, ]+code",
+                   "r[-, ]+package",
                    "python script",
                    "python code",
+                   # "software",
                    "matlab script",
                    "matlab code",
-                   "macro",
-                   "software") |>
+                   "macro") |>
     .format_keyword_vector()
   keyword_list[["source_code"]] <- source_code
 
+# str_detect("my.email@haha.com", weblink)
+  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
+  keyword_list[["weblink"]] <- weblink
+# str_detect(publ_sentences, source_code)
+  reuse <- .near_wd(was_available,
+                    paste(
+                      accession_nr,
+                      field_specific_repo,
+                      repositories,
+                      weblink,
+                      github,
+                      "cited as reference",
+                      sep = "|"),
+                    dist = 30)
+  keyword_list[["reuse"]] <- reuse
 
   supplement <- c("supporting information",
                   "supplement",
@@ -630,7 +773,6 @@ Mode <- function(x) {
                   ) |>
     .format_keyword_vector()
   keyword_list[["supplement"]] <- supplement
-
 
   file_formats <- c("csv",
                     "zip",
@@ -652,26 +794,29 @@ Mode <- function(x) {
     .format_keyword_vector()
   keyword_list[["upon_request"]] <- upon_request
 
-
-  data_availability <- c("Software and Data Availability",
+  data_availability <- c("Data and (Software|Resource) Availability",
+                         "Software and Data Availability",
                          "Statistical Analysis and Data Availability",
                          "Data sharing statement",
                          "Data sharing",
+                         "Data availability statement & Data deposition",
                          "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y S ?t ?a ?t ?e ?m ?e ?n ?t",
                          "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y P ?o ?l ?i ?c ?y",
                          "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y",
-                         "Data availability statement & Data deposition",
                          "Data and code availability",
+                         "Data and ma-*te-*ri-*als a-*vai-*la-*bi-*li-*ty",
                          "Data deposition",
                          "Deposited Data",
                          "Data Archiving",
-                         "Accessibility of data and materials",
-                         "Availability of data and materials",
+                         "(Accessi|availa)bility of data and materials",
                          "Availability of data",
                          "Data Accessibility",
-                         "Accessibility of data",
+                         "Data Access",
                          "Accessibility of data and code",
-                         "Accession codes") |>
+                         "Accessibility of data",
+                         "Availability and implementation",
+                         "Accession codes",
+                         "Open practices") |>
     .format_keyword_vector()
   keyword_list[["data_availability"]] <- data_availability
 
@@ -679,12 +824,13 @@ Mode <- function(x) {
   code_availability <- c("Code sharing",
                          "Code availability statement",
                          "Code availability",
-                         "Data and code availability",
-                         "Accessibility of data and code",
+                         # "(Data and)? Software availability",
+                         # "Data and code availability",
+                         # "Data and materials availability",
+                         # "Accessibility of data and code",
                          "Source code available from:") |>
     .format_keyword_vector()
   keyword_list[["code_availability"]] <- code_availability
-
 
   supplemental_table_name <- c("supplementa(l|ry) tables?",
                           "tables?",
@@ -693,11 +839,12 @@ Mode <- function(x) {
                           "article/supplementa(l|ry) material",
                           "supplementa(l|ry) information",
                           "supplementa(l|ry) file")
-  supplemental_table_number <- c("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]")
+  supplemental_table_number <- c("S[[:digit:]]",
+                                 "[[:digit:]]",
+                                 "[A-Z]{2}[[:digit:]]")
   supplemental_table <- .outer_str(supplemental_table_name, supplemental_table_number) |>
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["supplemental_table"]] <- supplemental_table
-
 
   supplemental_dataset <- c("supplementary data [[:digit:]]{1,2}",
                       "supplementary dataset [[:digit:]]{1,2}",
@@ -712,7 +859,7 @@ Mode <- function(x) {
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["dataset"]] <- dataset
 
-  protocol <- c("protocol") |>
+  protocol <- c("protocols?") |>
     .format_keyword_vector()
   keyword_list[["protocol"]] <- protocol
 
@@ -745,11 +892,14 @@ Mode <- function(x) {
                                  dist = 10)
   keyword_list[["supp_table_data"]] <- supp_table_data
 
-  # data_availability_statement <- .near_wd(data_availability,
-  #                                        paste("doi", accession_nr, repositories, "online", sep = "|"),
-  #                                        dist = 30)
-  # keyword_list[["data_availability_statement"]] <- data_availability_statement
-  keyword_list[["data_availability_statement"]] <- data_availability
+  # data_in_DAS <- .near_wd(data_availability,
+  #                                         paste(
+  #                                           accession_nr, repositories,
+  #                                           weblink,
+  #                                           sep = "|"),
+  #                                         dist = 30)
+  # keyword_list[["data_in_DAS"]] <- data_in_DAS
+
 
   return(keyword_list)
 }
@@ -863,6 +1013,7 @@ Mode <- function(x) {
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
+                                "reuse",
                                 "file_formats", "upon_request", "dataset", "protocol")
 
   # search for all relevant keyword categories
@@ -893,33 +1044,48 @@ Mode <- function(x) {
   return(detection_col)
 }
 # sections_v <- PDF_text_sentences[DAS_start:DAS_end]
+# sections_v <- DAS
 #' search plos DAS when spread over two pages
 #' @noRd
-.splice_twopager <- function(sections_v) {
+.splice_plos_twopager <- function(sections_v) {
 
-  # if (length(sections_v) == 1) return(sections_v)
-  if (any(stringr::str_detect(sections_v, "<section> plos"))) {
+  # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
+    sections <- stringr::str_detect(sections_v, "^<section> ")
 
-    if (which.max(stringr::str_detect(sections_v, "<section> plos")) == length(sections_v)) {
-      return(sections_v[-length(sections_v)])
-    } else {
-      return(c(sections_v[1], sections_v[length(sections_v)]))
-    }
+    if (sum(sections) == 1) return(sections_v)
 
-  } else {
-    return(sections_v)
-  }
+    splice_start_piece <- which(sections)[2] - 1
+    splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
+    splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
 
+    c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)])
+    # plos_line <- which.max(stringr::str_detect(sections_v, "<section> plos"))
+
+    # if (plos_line == length(sections_v)) {
+      # return(sections_v[-length(sections_v)])
+      # if plos line at the end of DAS there is no page break
+    # } else if (plos_line == which(sections)[2] & stringr::str_detect(sections_v[plos_line - 1], "\\.$")) {
+      # return(sections_v[1:(plos_line - 1)])
+    # } else {
+      # splice_start_piece <- which(sections)[2] - 1
+      # splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
+      # splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
+      # return(c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)]))
+    # }
+
+  # } else {
+  #   return(sections_v)
+  # }
 
 }
-
+# sentence <- PDF_text_sentences[927]
 #' test if text contains data availability statement
 #' @noRd
 .has_DAS <- function(sentence, keyword_list) {
 
   data_availability <- keyword_list[["data_availability"]]
 
-  data_availability <- paste0("(<section>)\\W+(", data_availability, ")\\b")
+  data_availability <- paste0("(<section>)\\W+[\\d,\\W]*(", data_availability, ")\\b")
   stringr::str_detect(sentence, data_availability)
 }
 
@@ -934,135 +1100,164 @@ Mode <- function(x) {
 
   data_availability <- keyword_list[["data_availability"]]
 
-  # lowered_text_sentences <- tolower(PDF_text_sentences)
 
-  # check if meta-science article containing >5 mentions of DAS, then return whole text
-  # DAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
-  #                     \(sentence) stringr::str_detect(sentence, data_availability))
-  # if (sum(DAS_detections) > 5) return(PDF_text_sentences)
-
-  # data_availability <- .near_wd("section", data_availability, 1)
-  # data_availability <- paste0("(<section>)\\W+(", data_availability, ")\\b")
   DAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
-                      \(sentence) .has_DAS(sentence, keyword_list))
-  # check if meta-science article containing >5 mentions of DAS, then return whole text
-  # if (sum(DAS_detections) > 2) return(PDF_text_sentences)
+                      \(sentence) stringr::str_detect(sentence, data_availability))
+
+  if (sum(DAS_detections) > 0) {
+    DAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
+                                            \(sentence) .has_DAS(sentence, keyword_list))
+  }
+
   DAS_start <- which(DAS_detections)
 
   # if more than one detections of DAS were made, then return full document
   if (length(DAS_start) == 2) {
-    if (diff(DAS_start) == 1) { # if the DAS starts with <section> and a DAS keyphrase
-      DAS_start <- min(DAS_start)
-    } else {
-      return(PDF_text_sentences)
-    }
-  } else if (length(DAS_start) != 1) {
+        DAS_start <- min(DAS_start)
+  } else if (length(DAS_start) != 1 ) {
     return(PDF_text_sentences)
   }
 
-
-  # stringr::str_detect("<section> abstract", "^<section> (?!abstract)")
   str_DAS <- PDF_text_sentences[DAS_start] |>
     stringr::str_trim()
-  str_DAS_sameline <- str_DAS |> stringr::str_remove(data_availability)
+  str_DAS_sameline <- str_DAS |>
+    stringr::str_remove(data_availability) |>
+    stringr::str_remove("<section> ")
 
-  # if (stringr::str_length(str_DAS_sameline) > 5) {
-  #
+  # candidates are sentences after the first section but before the next
+  # which begin with <section> or digit. (reference number at start of line)
     DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
                                          \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
       which() - 1
-    DAS_end <- DAS_end_candidates[1]
+  # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
+    completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
+                                                 \(sentence) stringr::str_detect(sentence, "\\.$"))
 
-    if (DAS_start / length(DAS_detections) < 0.1) { # for plos journals with DAS on first page
-      # ti <- tibble(text = ti )
-      DAS_second_part <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
-                                               \(sentence) stringr::str_detect(sentence, "<section> funding:"))
-      # "^<section> (?!(abstract|author|plos))"))
-      if (sum(DAS_second_part) == 0) {
-        DAS_end <- DAS_end
+    if (stringr::str_length(str_DAS_sameline) < 5) {
+      # first_sentence <- DAS_start + 1
+
+      DAS_end <- DAS_end_candidates[-1][completed_sentences[-1]][1]#
+
+    } else {
+      DAS_end <- DAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+
+      if (DAS_start / length(DAS_detections) < 0.1 & DAS_end != 0) { # for plos journals with DAS on first page
+
+        DAS_second_part <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
+                                                 \(sentence) stringr::str_detect(sentence, "<section> funding:"))
+        if (sum(DAS_second_part) == 0) {
+          DAS_end <- DAS_end
         } else {
           DAS_end <- DAS_end + which(DAS_second_part) - 1
-          }
-      } else if ((stringr::str_length(str_DAS_sameline) < 5 & DAS_end == 0) |
-                 !stringr::str_detect(PDF_text_sentences[DAS_start + DAS_end], "\\.$") ) {
-        # DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 2):length(PDF_text_sentences)],
-        #                           \(sentence) stringr::str_detect(sentence, "section"))
-        # DAS_end <- which.max(DAS_end_candidates)
-        DAS_end <- DAS_end_candidates[2]
-#
-#         if (!stringr::str_detect(PDF_text_sentences[DAS_start + DAS_end], "\\.$")) {
-#           DAS_end <- DAS_end + DAS_end_candidates[(DAS_end + 1):length(DAS_end_candidates)] |> which.max()
-#         }
-
+        }
       }
-#
-#     if (!stringr::str_detect(PDF_text_sentences[DAS_start + DAS_end], "\\.$")) {
-#       DAS_end <- DAS_end_candidates[2]
-#     }
+    }
 
-      # tibe <- tibble(text = PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
-      #                detection = furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
-      #                                             \(sentence) stringr::str_detect(sentence,
-      #                                                                             "^<section> (?!(abstract|author))")))
-
-
-  # } else {
-  #   DAS_end <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
-  #                             \(sentence) stringr::str_detect(sentence, "section")) |>
-  #     which.max() - 1
-  # }
 
   DAS_end <- DAS_start + DAS_end
-  # str_detect("https://", "/")
-  # str_remove_all("https://doi. org/10.5281/zenodo.4498214.", "(?<=https?://\\w{0,10}\\.?) ")
-  # PDF_text_sentences <-
-  PDF_text_sentences[DAS_start:DAS_end] |>
-    .splice_twopager() |>
+
+  DAS <- PDF_text_sentences[DAS_start:DAS_end]
+
+  if (DAS_start < 50 & any(stringr::str_detect(PDF_text_sentences[1:10], "plos"))) {
+    DAS <- .splice_plos_twopager(DAS)
+  }
+   DAS |>
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
     stringr::str_trim() |>
     # in some cases the references interpolate between DAS title and DAS text
     stringr::str_remove("<section> references.*") |> # remove references
-    # stringr::str_remove("<section> plos.*(?=<)") |> # remove plos remainder
-    stringr::str_remove_all("(?<=\\d\\.) (?=\\w)") |> # remove space separating URL or similar
-    stringr::str_remove_all("(?<=www\\.(\\w){0,10}\\.?) ") |> # remove space separating URL or similar
-    stringr::str_remove_all("(?<=https?://\\w{0,10}\\.?) (?=\\w)") |> # remove space separating URL or similar
-    stringr::str_remove_all("(?<=et al)\\.") |> # remove dot after et al.
+    stringr::str_remove("<section> authors.*") |> # remove author contributions
     stringr::str_replace("(?<=repository)\\.", ":") |>  # for the weird cases when after repository a . and not : follows
-    stringr::str_replace("(?<=were analyzed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
+    stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
     .correct_tokenization()
 
-  # PDF_text_sentences |> unlist() |> paste(collapse = " ") |>
-#   str_remove_all("(?<=et al)\\.")
-#
-#   DAS_start <- stringr::str_locate(PDF_DAS_sentences, data_availability)[1]
-#   stringr::str_sub(PDF_DAS_sentences,
-#                    start = DAS_start,
-#                    stringr::str_length(PDF_DAS_sentences))
-
 }
 
-# tib <- tibble(text = PDF_text_sentences)
 
+#' extract code availability statement
+#' @noRd
+.extract_CAS <- function(PDF_text_sentences) {
+
+  keyword_list <- .create_keyword_list()
+
+  code_availability <- keyword_list[["code_availability"]]
+
+  CAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
+                                          \(sentence) stringr::str_detect(sentence, code_availability))
+
+  CAS_start <- which(CAS_detections)
+
+  if (length(CAS_start) == 2) {
+    CAS_start <- max(CAS_start)
+  } else if (length(CAS_start) != 1 ) {
+    return("")
+  }
+
+  str_CAS <- PDF_text_sentences[CAS_start] |>
+    stringr::str_trim()
+  str_CAS_sameline <- str_CAS |>
+    stringr::str_remove(code_availability) |>
+    stringr::str_remove("<section> ")
+
+
+  # candidates are sentences after the first section but before the next
+  # which begin with <section> or digit. (reference number at start of line)
+  CAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(CAS_start + 1):length(PDF_text_sentences)],
+                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
+    which() - 1
+  # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
+  completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[CAS_start + CAS_end_candidates],
+                                               \(sentence) stringr::str_detect(sentence, "\\.$"))
+
+  if (stringr::str_length(str_CAS_sameline) < 5) {
+    # first_sentence <- DAS_start + 1
+
+    CAS_end <- CAS_end_candidates[-1][completed_sentences[-1]][1]#
+
+  } else {
+    CAS_end <- CAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+  }
+
+  CAS_end <- CAS_start + CAS_end
+
+  PDF_text_sentences[CAS_start:CAS_end] |>
+    # .splice_plos_twopager() |>
+    paste(collapse = " ") |>
+    stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
+    stringr::str_trim() |>
+    # in some cases the references interpolate between CAS title and DAS text
+    stringr::str_remove("<section> references.*") |> # remove references
+    stringr::str_remove("funding.*") |> # remove funding
+    tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
+    .correct_tokenization()
+
+}
 
 #'
 #' @noRd
 .keyword_search_full <- function(PDF_text_sentences)
 {
-  # if (length(PDF_text_sentences) == 1)
-# PDF_text_sentences <- "The crystallographic data and structure were deposited in the Protein Data Bank under ID: 5AHK." |> tolower()
-  #search for open data keywords in the full texts
+# odc <- open_data_categories[[1]]
+  # PDF_text_sentences <- publ_sentences
+  # search for open data keywords in the full texts
   open_data_categories <- furrr::future_map(PDF_text_sentences, .map_keywords, .progress = TRUE)
 
-  #combine columns for the different open data keywords
+  # combine columns for the different open data keywords
   keyword_results_combined <- open_data_categories  |>
-    purrr::map(dplyr::mutate, com_specific_repo = field_specific_repo & accession_nr & available & !not_available & !was_available) |>
-    purrr::map(dplyr::mutate, com_general_repo = repositories & available & !not_available & !was_available) |>
-    purrr::map(dplyr::mutate, com_github_data = data & github & available & !not_available & !was_available) |>
-    purrr::map(dplyr::mutate, com_code = source_code & available & !not_available & !was_available & !upon_request) |>
+    purrr::map(dplyr::mutate, com_specific_repo =
+                 field_specific_repo &
+                 accession_nr & available & !not_available & !was_available & !protocol
+               )|>
+    purrr::map(dplyr::mutate, com_general_repo = repositories & available &
+                 !not_available & !was_available & !protocol) |>
+    purrr::map(dplyr::mutate, com_github_data = data & github & available &
+                 !not_available & !was_available) |>
+    purrr::map(dplyr::mutate, com_code = source_code & available &
+                 !not_available & !was_available & !upon_request) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
-    purrr::map(dplyr::mutate, com_reuse = was_available & data & (field_specific_repo | repositories )) |>
+    purrr::map(dplyr::mutate, com_reuse = reuse) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
                 com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request)
@@ -1070,12 +1265,11 @@ Mode <- function(x) {
   return(keyword_results_combined)
 }
 
-
 #' keyword search on the tokenized sentences
 #' @noRd
 .keyword_search_tokenized <- function(keyword_results_combined)
 {
-  #summarze results over all sentences of each publication to see if any match was found for each keyword category
+  # summarze results over all sentences of each publication to see if any match was found for each keyword category
   keyword_results_tokenized <- keyword_results_combined |>
     purrr::map(\(x) dplyr::select(x, -publ_sentences)) |>
     purrr::map(\(x) apply(x, MARGIN = 2, FUN = any))
@@ -1092,13 +1286,13 @@ Mode <- function(x) {
 {
   keyword_list <- .create_keyword_list()
 
-  #needs text input in two formats: split into sentences, and one long string for
+  # needs text input in two formats: split into sentences, and one long string for
   PDF_text_full <- PDF_text_sentences |>
     furrr::future_map_if(.p = \(sentence) length(sentence) > 1,
                          .f = \(sentence) paste(sentence, collapse = " "))
 
-  #search for the last combination in the non-tokenized text and add it to the results table for the publications
-  #either give out TRUE/FALSE or return detected string
+  # search for the last combination in the non-tokenized text and add it to the results table for the publications
+  # either give out TRUE/FALSE or return detected string
   if(extract_text) {
     str_function <- stringr::str_extract
     map_function <- furrr::future_map_chr
@@ -1111,11 +1305,6 @@ Mode <- function(x) {
                                     pattern = keyword_list[["all_data_file_formats"]]),
     com_supplemental_data = map_function(PDF_text_full, str_function,
                                          pattern = keyword_list[["supp_table_data"]])
-    #
-    # ,
-    # com_data_availability = unlist(PDF_text_full)
-    # com_data_availability = map_function(PDF_text_full, str_function,
-    #                                      pattern = keyword_list[["data_availability_statement"]])
     )
 
   return(keyword_results_near_wd)
@@ -1162,7 +1351,7 @@ Mode <- function(x) {
                          suppl,
                          reuse,
                          request,
-                         # DAS,
+                         # unknown,
                          data_journal)
 {
   category = vector()
@@ -1184,8 +1373,8 @@ Mode <- function(x) {
   if(request == TRUE) {
     category <- category |> c("upon request")
   }
-  # if(DAS == TRUE) {
-  #   category <- category |> c("data availability statement")
+  # if(unknown == TRUE) {
+  #   category <- category |> c("unknown repository")
   # }
   if(data_journal == TRUE) {
     category <- category |> c("data journal")
@@ -1195,6 +1384,11 @@ Mode <- function(x) {
   return(category)
 }
 
+#' check if data availability statement (das) contains a url that is not a git url
+#' @noRd
+.has_url <- function(das){
+  stringr::str_detect(das, "(https?|ftp|smtp):\\/\\/(?! ?git)")
+}
 
 
 #---------------------------------------------------------------------
@@ -1219,14 +1413,13 @@ Mode <- function(x) {
   #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
   open_data_publication <- keyword_results_combined |>
     dplyr::mutate(is_open_data = com_specific_repo | com_general_repo |
-                    com_file_formats | com_github_data | dataset | is_data_journal) |>
-    dplyr::mutate(is_open_code = com_code | com_suppl_code) |>
-    dplyr::mutate(is_supplement = dataset | com_file_formats | com_supplemental_data) |>
-    dplyr::mutate(is_general_purpose = com_general_repo | com_github_data ) |>
-    dplyr::mutate(is_reuse = com_reuse) |>
-    dplyr::mutate(is_request = com_request) |>
-    dplyr::mutate(open_data_category = furrr::future_pmap_chr(list(com_specific_repo, is_general_purpose,
-                                                                   is_supplement, is_reuse, is_request,
+                    com_github_data | is_data_journal,
+                  is_open_code = com_code | com_suppl_code,
+                  is_supplement = dataset | com_file_formats | com_supplemental_data,
+                  is_general_purpose = com_general_repo | com_github_data,
+                  is_reuse = com_reuse,
+                  open_data_category = furrr::future_pmap_chr(list(com_specific_repo, is_general_purpose,
+                                                                   is_supplement, is_reuse, com_request,
                                                                    is_data_journal), .OD_category)) |>
     tibble::add_column(article = names(PDF_text_sentences)) |>
     dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code)
@@ -1236,24 +1429,30 @@ Mode <- function(x) {
 
 
 #' @noRd
-.open_data_sentences <- function(PDF_text_sentences, keyword_results)
+.open_data_sentences <- function(PDF_text_sentences, DAS_sentences, sentences_with_DAS, CAS_sentences, keyword_results)
 {
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
 
-  DAS_sentences <- PDF_text_sentences |>
-    furrr::future_map_chr(.f = \(sentences) dplyr::if_else(!any(.has_DAS(sentences, keyword_list)),
-                                            NA,
-                                            sentences |>
-                                              paste(collapse = " ") |>
-                                              unlist()))
+  DAS_sentences <- DAS_sentences |>
+    furrr::future_imap_chr(.f = \(x, idx) dplyr::case_when(
+      # !any(.has_DAS(x, keyword_list)) ~ "",
+      # length(sentences) > 30 ~ "multiple DAS mentions",
+      !idx %in% names(sentences_with_DAS) ~ "",
+      .default =  x |>
+        paste(collapse = " ") |>
+        unlist()))
 
+  CAS_sentences <- CAS_sentences |>
+    furrr::future_map_chr(\(x) paste(x, collapse = " ") |>  unlist())
+
+# tib <- tibble::tibble(text = DAS_sentences)
   #identifies the text fragments in which the Open Data keywords were detected
   open_data_sentences <- furrr::future_map(keyword_results, .text_fragments)
   open_data_sentences <- do.call(rbind, open_data_sentences)
   open_data_sentences <- cbind(names(keyword_results), open_data_sentences,
-                               keyword_results_near_wd, DAS_sentences) |>
+                               keyword_results_near_wd, DAS_sentences, CAS_sentences) |>
     dplyr::as_tibble() |>
     dplyr::mutate(dplyr::across(dplyr::everything(), as.character))
 
@@ -1261,25 +1460,28 @@ Mode <- function(x) {
                                      "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_reuse",
                                      "com_request",
-                                     "com_file_formats", "com_supplemental_data", "com_data_availability")
+                                     # "com_unknown",
+                                     "com_file_formats", "com_supplemental_data", "das", "cas")
   open_data_sentences[is.na(open_data_sentences)] = "" #unify empty fields
 
   #collapse the found statements into one column for Open Data and one for Open Code
   open_data_sentences <- open_data_sentences |>
-    dplyr::mutate(open_data_statements =
-                    paste(com_specific_repo, com_general_repo,
-                          com_github_data, dataset, com_file_formats,
-                          com_supplemental_data, com_reuse, sep = " ") |>
-                    trimws()
+    dplyr::mutate(
+      open_data_statements =
+        paste(com_specific_repo, com_general_repo,
+              com_github_data, dataset, com_file_formats,
+              com_supplemental_data, com_reuse, sep = " ") |>
+        trimws()
                   ) |>
-    dplyr::mutate(open_data_statements = dplyr::if_else(com_data_availability == "",
-                                                open_data_statements,
-                                                com_data_availability)) |>
-    dplyr::mutate(open_code_statements =
-                    paste(com_code, com_suppl_code, sep = " ") |>
-                    trimws()
-                  ) |>
-    dplyr::select(article, open_data_statements, open_code_statements)
+    # copy over das to cas if das is actually also a cas
+    dplyr::mutate(
+      cas = ifelse(stringr::str_detect(stringr::str_sub(das, 1, 30), "code|software|materials"), das, cas),
+      open_code_statements =
+        paste(com_code, com_suppl_code, sep = " ") |>
+        trimws()
+      ) |>
+    dplyr::select(article, das, open_data_statements, cas, open_code_statements)
+
 
 
   return(open_data_sentences)

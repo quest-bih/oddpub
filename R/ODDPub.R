@@ -83,8 +83,8 @@ pdf_load <- function(pdf_text_folder)
 #'
 #' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
 #'
-#' @param detected_sentences Logical parameter. If TRUE, the sentences in which the Open Data
-#' statements were detected are added to the results table as well.
+#' @param extract_sentences Logical parameter. If TRUE, the sentences in which the Open Data
+#' statements were detected are extracted and added to the results table as well.
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus additional columns containing the identified open data/code categories
@@ -96,36 +96,65 @@ pdf_load <- function(pdf_text_folder)
 #' }
 #'
 #' @export
-open_data_search <- function(PDF_text_sentences, detected_sentences = TRUE)
+open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
 {
-
-  PDF_text_sentences <- PDF_text_sentences |>
+  # PDF_text_sentences <- DAS_text_sentences
+  DAS_text_sentences <- PDF_text_sentences |>
     furrr::future_map(.extract_DAS)
 
+  sentences_with_DAS <- DAS_text_sentences |>
+    purrr::map_lgl(\(x) length(x) < 31) |> # It is assumed a DAS will not have more than 30 sentences
+    which()
 
-  # PDF_data_sentences <- PDF_text_sentences |>
-  #   furrr::future_map(.extract_DAS)
+  CAS_text_sentences <- PDF_text_sentences |>
+    furrr::future_map(.extract_CAS)
 
-  # PDF_code_sentences <- PDF_text_sentences |>
-  #   furrr::future_map(.extract_CAS)
-
-
-
-  # PDF_text_sentences <- c(PDF_data_sentences, PDF_code_sentences)
-  # extract a data availability statement and replace full text with it,
-  # otherwise take full text
-
+  DAS_CAS <- furrr::future_map2(DAS_text_sentences, CAS_text_sentences, vctrs::vec_c)
   # search for open data keywords in the full texts or DAS
-  # do this only once, as this is the most time consuming step
-  keyword_results <- .keyword_search_full(PDF_text_sentences)
-  open_data_results <- .open_data_detection(PDF_text_sentences, keyword_results)
+  print("Extracting and screening Data and Code Availability Statements:")
+  keyword_results <- .keyword_search_full(DAS_CAS)
+  open_data_results <- .open_data_detection(DAS_CAS, keyword_results)
+
+  sentences_second_pass <- open_data_results |>
+    dplyr::filter(is_open_data == FALSE & is_reuse == FALSE) |> # consider second pass also for software?
+    dplyr::pull(article) # extract the not open data cases for double-check in second pass
+
+  # restrict to cases with DAS only, since full texts were already screened for rest
+  sentences_second_pass <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_DAS)]
+  # kw <- keyword_second_pass[[1]]
+  # screen full text of second-pass cases
+  # do this only for subset of cases, as this is the most time-consuming step
+  if (length(sentences_second_pass) > 0) {
+    print("Screening full text of articles with uninformative Data Availability Statements:")
+    keyword_second_pass <- .keyword_search_full(PDF_text_sentences[sentences_second_pass])
+    open_data_second_pass <- .open_data_detection(PDF_text_sentences[sentences_second_pass], keyword_second_pass)
+    # |>
+    #   dplyr::bind_cols(open_data_cat_old = open_data_results$open_data_category) |>
+    #   dplyr::mutate(open_data_category = ifelse(open_data_cat_old != "", paste0(open_data_cat_old, ", ", open_data_category),
+    #                 open_data_category)) |>
+    #   dplyr::select(-open_data_cat_old) # test if this is necessary (if it overwrites categories at all)
+
+    keyword_results <- keyword_results |>
+      purrr::list_assign(!!!keyword_second_pass)
+
+
+    open_data_results <- open_data_results |>
+      dplyr::rows_upsert(open_data_second_pass, by = "article")
+  }
 
   #extract detected sentences as well
-  if(detected_sentences)
+  if(extract_sentences)
   {
-    detected_sentences <- .open_data_sentences(PDF_text_sentences, keyword_results)
+    detected_sentences <- .open_data_sentences(PDF_text_sentences, DAS_text_sentences, sentences_with_DAS,
+                                               CAS_text_sentences, keyword_results)
     open_data_results <- cbind(open_data_results, detected_sentences[, -1]) |>
-      dplyr::as_tibble()
+      dplyr::as_tibble() |>
+      dplyr::mutate(has_only_unknown = .has_url(das) & !is_open_data & !is_reuse, # check for unknown website
+        open_data_category = dplyr::case_when(
+          has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url"),
+          has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url",
+          .default = open_data_category)) |>
+      dplyr::select(-has_only_unknown)
   }
 
   return(open_data_results)

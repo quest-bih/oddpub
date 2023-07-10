@@ -185,6 +185,7 @@ test_that("file_formats",
             expect_true(.detect_keywords("Table 1 (XLSX)", "file_formats"))
             expect_true(.detect_keywords("Table 1 (csv)", "file_formats"))
             expect_true(.detect_keywords("Table 1 (fasta)", "file_formats"))
+            expect_false(.detect_keywords("are displayed in Table 1", "file_formats"))
             expect_false(.detect_keywords("unzip the file", "file_formats"))
           })
 
@@ -268,15 +269,15 @@ test_that("supp_table_data",
 
 test_that("data_availability_statement",
           {
-            expect_true(.detect_keywords("data availability word word word word word doi", "data_availability_statement"))
-            expect_true(.detect_keywords("data sharing word word word word word GSE77534", "data_availability_statement"))
-            expect_true(.detect_keywords("availability of data and materials word word word word word figshare", "data_availability_statement"))
-            expect_true(.detect_keywords("Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), "data_availability_statement"))
-            expect_true(.detect_keywords("data availability word word word word word word word word word word word word word word word word word word word word word word doi", "data_availability_statement"))
-            expect_true(.detect_keywords("Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower(), "data_availability_statement"))
-            expect_true(.detect_keywords("Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), "data_availability_statement"))
-            # expect_false(.detect_keywords("doi word word word word word data availability", "data_availability_statement"))
-            # expect_false(.detect_keywords("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", "data_availability_statement"))
+            expect_true(.has_DAS("<section> data availability word word word word word doi", keywords))
+            expect_true(.has_DAS("<section> data sharing word word word word word GSE77534", keywords))
+            expect_true(.has_DAS("<section> availability of data and materials word word word word word figshare", keywords))
+            expect_true(.has_DAS("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
+            expect_true(.has_DAS("<section> data availability word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
+            expect_true(.has_DAS("<section> Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower(), keywords))
+            expect_true(.has_DAS("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
+            expect_false(.has_DAS("doi word word word word word data availability", keywords))
+            expect_false(.has_DAS("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
           })
 
 
@@ -344,6 +345,11 @@ test_that("paste_accession_nr",
             expect_equal(.correct_tokenization(c("accession no.", "123")), "accession no. 123")
             expect_equal(.correct_tokenization(c("accession nrs.", "123")), "accession nrs. 123")
             expect_equal(.correct_tokenization(c("accession nos.", "123")), "accession nos. 123")
+            expect_equal(.correct_tokenization(c("acc no.", "123")), "acc no. 123")
+            expect_equal(.correct_tokenization(c("fig.", "S1")), "fig. S1")
+            expect_equal(.correct_tokenization(c("zenodo.", "org/sometext")), "zenodo. org/sometext")
+            expect_equal(.correct_tokenization(c("doi.", "org/sometext")), "doi. org/sometext")
+            expect_equal(.correct_tokenization(c("et al.", "for their data")), "et al. for their data")
           })
 
 
@@ -369,3 +375,4 @@ test_that("open_data_sentences",
             expect_equivalent(open_data_search(example_text)$open_data_statements,
                               c("deposited in geo with accession number gse77534", ""))
           })
+
