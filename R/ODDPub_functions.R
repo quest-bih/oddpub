@@ -68,10 +68,19 @@
     dplyr::pull(dac) |>
     as.logical()
   # if ralc is detected, force single-column layout
-  if (ralc_statement_present == TRUE) return (1)
+  generated_statement_present <- text_data |>
+    dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "The" &
+                                         dplyr::lead(text) == "following" &
+                                         stringr::str_detect(dplyr::lead(text, n = 2), "datasets?") &
+                                         stringr::str_detect(dplyr::lead(text, n = 3), "was|were") &
+                                         dplyr::lead(text, n = 4) == "generated:" &
+                                         dplyr::lead(space, n = 4) == FALSE,
+                                       1, 0)) |>
+    dplyr::summarise(dac = sum(dac)) |>
+    dplyr::pull(dac) |>
+    as.logical()
 
-
-
+  if (ralc_statement_present == TRUE | generated_statement_present == TRUE) return (1)
 
   # determine y of reference section for later exclusion
   reference_y <- text_data |>
@@ -133,7 +142,7 @@ Mode <- function(x) {
 .reformat_columns <- function(text_data) {
 
   y_ref <- text_data |>
-    dplyr::filter(stringr::str_detect(text, "REFERENCES|References"),
+    dplyr::filter(stringr::str_detect(text, "REFERENCES|References"), # TODO: put ref stuff to third column??
                   space == FALSE) |>
     dplyr::pull(y) |>
     min(743) # if no references found, set to y value of footer
@@ -262,6 +271,15 @@ Mode <- function(x) {
   #   pull(font_size) |>
   #   Mode()
   # str_detect("[B,b]old|\\.[B,b]|PSHN-H$|PA5D1$")
+  heading_font_regex <- c("[B,b]old",
+                           "\\.[B,b]",
+                           "AdvPSHN-H$",
+                           "AdvPA5D1$",
+                           "AdvOTd67905e7$",
+                           "AdvTT99c4c969$",
+                           "Bd(Cn)?$") |>
+    paste(collapse = "|")
+
 
   res <- text_data |>
     dplyr::mutate(
@@ -269,10 +287,10 @@ Mode <- function(x) {
         abs(font_size - dplyr::lag(font_size)) > 1.4 |
           !stringr::str_detect(text, "[[:lower:]]") | # only caps
         # font_size - regular_font_size > 1 |
-          stringr::str_detect(font_name, "[B,b]old|\\.[B,b]|AdvPSHN-H$|AdvPA5D1$|AdvOTd67905e7$|AdvTT99c4c969$"), TRUE, FALSE),
-      newline_heading = line_n == 1 & is.na(heading_font) |
+          stringr::str_detect(font_name, heading_font_regex), TRUE, FALSE),
+      newline_heading = line_n == 1 & is.na(heading_font) | # very first line
         line_n > dplyr::lag(line_n) &
-        stringr::str_detect(dplyr::lag(text), "\\.$") &
+        stringr::str_detect(dplyr::lag(text), "\\.$|@|www") &
         (font_name != dplyr::lag(font_name)),
       paragraph_start = abs(jump_size) > section_jump,
       # for the three-column science layout DAS may start within the line
@@ -283,7 +301,8 @@ Mode <- function(x) {
         text == "Submitted",
       # for some journals with das on first page (e.g. elsevier jclinepi, erj, etc.)
       plain_section =
-        dplyr::lag(space) == FALSE & stringr::str_detect(text, "^[A-Z]") &
+        # should follow a new line should start with a capital, but not end on a capital (with or without fullstop) or a comma
+        dplyr::lag(space) == FALSE & stringr::str_detect(text, "^[A-Z]") & !stringr::str_detect(dplyr::lag(text), "(,|[A-Z]\\.?)$") &
         (stringr::str_detect(text, ":$") | # e.g. Funding:
            stringr::str_detect(dplyr::lead(text), ":$") & line_n == dplyr::lead(line_n) | # e.g. Data sharing:
            stringr::str_detect(dplyr::lead(text, 2), ":$") & line_n == dplyr::lead(line_n, 2) | # e.g. Conflict of interest:
@@ -314,15 +333,15 @@ Mode <- function(x) {
 .correct_tokenization <- function(PDF_text)
 {
   regex_to_correct <- c(
-    "a?cc(ession)? nrs?\\.",
-    "a?cc(ession)? nos?\\.",
-    "fig\\.",
-    "doi\\.",
+    "a?cc(ession)? nrs?\\.$",
+    "a?cc(ession)? nos?\\.$",
+    "fig\\.$",
+    "doi\\.$",
     "zenodo\\.",
-    "et al\\.",
-    "ncbi\\.",
-    "www\\.",
-    "https?:\\/\\/",
+    "et al\\.$",
+    "ncbi\\.$",
+    "www\\.$",
+    "https?:\\/\\/$",
     "^(<section> )?\\w\\.$",
     "^(<section> )?\\d\\.\\d\\.$"
   ) |>
@@ -396,7 +415,7 @@ Mode <- function(x) {
 {
   keyword_list <- list()
 
-  available <- c("included",
+  available <- c("(?<!which )included",
                  "deposited",
                  "archived",
                  "released",
@@ -421,7 +440,7 @@ Mode <- function(x) {
                  "are public on",
                  "we (have )?added",
                  "(?<=data) at",
-                 "doi: ") |>
+                 "(?<!\\d(-|\\))?(\\.|;) )doi: ") |> # exclude dois in references
     .format_keyword_vector()
   keyword_list[["available"]] <- available
 
@@ -487,9 +506,11 @@ Mode <- function(x) {
     "Array[ ,-]*Express",
     "BBMRI.nl",
     "bbmri.nl",
+    "biocollections",
     "Biological General Repository for Interaction Datasets",
     "Biological Magnetic Resonance Data Bank",
     "BioProject",
+    "BioSample",
     "BMRB",
     "Broad Institute",
     "Cambridge Crystallographic Data Centre",
@@ -500,11 +521,12 @@ Mode <- function(x) {
     "CCMS",
     "Cell Image Library",
     "ChEMBL",
-    "clinicaltrials.gov",
-    "ClinVar",
+    # "clinicaltrials.gov", does not cover our data criteria
+    # "ClinVar", does not cover our data criteria
     "Coherent X-ray Imaging Data Bank",
     "Computational Chemistry Datasets",
     "ConnectomeDB",
+    "Conserved domains",
     "CPTAC",
     "Crystallography Open Database",
     "CXIDB",
@@ -545,11 +567,13 @@ Mode <- function(x) {
     "GESIS",
     "GHDx",
     "GigaDB",
+    "Gin",
     "Global Biodiversity Information Facility",
     "gmgc",
     "GPCRMD",
     "GWAS",
     "HIV Data Archive Program",
+    "hPSCreg",
     "Image Data Resource",
     "ImmPort",
     "Influenza Research Database",
@@ -577,7 +601,7 @@ Mode <- function(x) {
     "National Center for Biotechnology Information",
     "National Database for Autism Research",
     "National Database for Clinical Trials related to Mental Illness",
-    "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?(pubmed|pmc))",
+    "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?(pubmed|pmc|clinvar))", # exclude some repositories
     "NDAR",
     "NDCT",
     "NDEx",
@@ -647,6 +671,7 @@ Mode <- function(x) {
                     "10.6073",
                     "10.15468",
                     "10.5063",
+                    "10.12751", #GIN
                     "fcon_1000\\.projects\\.nitrc\\.org", # URL for INDI
                     "[[:digit:]]{6}",
                     "[A-Z]{2,3}_[:digit:]{5,}",
@@ -662,8 +687,10 @@ Mode <- function(x) {
   keyword_list[["accession_nr"]] <- accession_nr
 
   repositories <- c("available online *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
+                    "open data repository (\\(|\\[)\\d{1,4}",
                     "(is|are) available *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
                     "10\\.17617/3.", # Edmond
+                    "10\\.17632", # Mendeley Data
                     "10\\.18452", # edoc HU
                     "10\\.13130", # UNIMI Dataverse
                     "10\\.1038 */s41597-", # scientific data
@@ -680,7 +707,7 @@ Mode <- function(x) {
                     "GigaScience database",
                     "harvard dataverse",
                     "heidata",
-                    "mendeley",
+                    "mendeley data",
                     "OpenNeuro",
                     "open science framework",
                     "osf",
@@ -789,6 +816,7 @@ Mode <- function(x) {
                     "without undue reservation",
                     "the corresponding author",
                     "the lead contact",
+                    "the techincal contact",
                     "requests.* should be (directed|submitted) to",
                     "data requests?")|>
     .format_keyword_vector()
@@ -816,6 +844,7 @@ Mode <- function(x) {
                          "Accessibility of data",
                          "Availability and implementation",
                          "Accession codes",
+                         "Accession numbers sequence data",
                          "Open practices") |>
     .format_keyword_vector()
   keyword_list[["data_availability"]] <- data_availability
@@ -1111,9 +1140,17 @@ Mode <- function(x) {
 
   DAS_start <- which(DAS_detections)
 
-  # if more than one detections of DAS were made, then return full document
+
   if (length(DAS_start) == 2) {
-        DAS_start <- min(DAS_start)
+    statement_detections <- PDF_text_sentences[DAS_start] |>
+      stringr::str_detect("statement")
+    if (sum(statement_detections) == 1) {
+      DAS_start <- DAS_start[statement_detections]
+    } else {
+      DAS_start <- min(DAS_start)
+    }
+
+    # if more than two detections of DAS were made, then return full document
   } else if (length(DAS_start) != 1 ) {
     return(PDF_text_sentences)
   }
@@ -1126,33 +1163,41 @@ Mode <- function(x) {
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
-    DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
+  DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
                                          \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
-      which() - 1
-  # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
-    completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
-                                                 \(sentence) stringr::str_detect(sentence, "\\.$"))
+    which() - 1
+  # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
+  completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
+                                               \(sentence) stringr::str_detect(sentence, "\\.$"))
 
-    if (stringr::str_length(str_DAS_sameline) < 5) {
-      # first_sentence <- DAS_start + 1
+  if (stringr::str_length(str_DAS_sameline) < 5) {
+    # first_sentence <- DAS_start + 1
 
-      DAS_end <- DAS_end_candidates[-1][completed_sentences[-1]][1]#
+    DAS_end <- DAS_end_candidates[-1][completed_sentences[-1]][1]#
 
-    } else {
-      DAS_end <- DAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+  } else {
+    DAS_end <- DAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
 
-      if (DAS_start / length(DAS_detections) < 0.1 & DAS_end != 0) { # for plos journals with DAS on first page
+    if (DAS_start / length(DAS_detections) < 0.1 & DAS_end != 0) { # for plos journals with DAS on first page
 
-        DAS_second_part <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
-                                                 \(sentence) stringr::str_detect(sentence, "<section> funding:"))
-        if (sum(DAS_second_part) == 0) {
-          DAS_end <- DAS_end
+      DAS_second_part <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
+                                               \(sentence) stringr::str_detect(sentence, "<section> funding:"))
+
+      if (sum(DAS_second_part) == 0) {
+        DAS_end <- DAS_end
         } else {
           DAS_end <- DAS_end + which(DAS_second_part) - 1
         }
-      }
     }
+  }
 
+  if (is.na(DAS_end)) {
+    DAS_end <- min(DAS_end_candidates)
+  }
+
+  if (DAS_start + DAS_end > length(PDF_text_sentences)) {
+    DAS_end <- DAS_start
+  }
 
   DAS_end <- DAS_start + DAS_end
 
@@ -1220,6 +1265,14 @@ Mode <- function(x) {
     CAS_end <- CAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
   }
 
+  if (is.na(CAS_end)) {
+    CAS_end <- min(CAS_end_candidates)
+  }
+
+  if (CAS_start + CAS_end > length(PDF_text_sentences)) {
+    CAS_end <- CAS_start
+  }
+
   CAS_end <- CAS_start + CAS_end
 
   PDF_text_sentences[CAS_start:CAS_end] |>
@@ -1232,6 +1285,27 @@ Mode <- function(x) {
     stringr::str_remove("funding.*") |> # remove funding
     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
     .correct_tokenization()
+
+}
+
+#'
+#' @noRd
+.remove_references <- function(PDF_text_sentences)
+{
+  ref_start <- PDF_text_sentences |>
+    stringr::str_detect("<section> r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
+    which() - 1
+
+  if (sum(ref_start) == 0) {
+
+    return(PDF_text_sentences)
+
+  } else {
+
+    return(PDF_text_sentences[1:ref_start])
+
+  }
+
 
 }
 
@@ -1413,7 +1487,7 @@ Mode <- function(x) {
   #check if any of the combined columns was positive to determine if the publication has Open Data or Open Code
   open_data_publication <- keyword_results_combined |>
     dplyr::mutate(is_open_data = com_specific_repo | com_general_repo |
-                    com_github_data | is_data_journal,
+                    is_data_journal,
                   is_open_code = com_code | com_suppl_code,
                   is_supplement = dataset | com_file_formats | com_supplemental_data,
                   is_general_purpose = com_general_repo | com_github_data,

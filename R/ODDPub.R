@@ -98,6 +98,8 @@ pdf_load <- function(pdf_text_folder)
 #' @export
 open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
 {
+  PDF_text_sentences <- furrr::future_map(PDF_text_sentences, .remove_references)
+
   # PDF_text_sentences <- DAS_text_sentences
   DAS_text_sentences <- PDF_text_sentences |>
     furrr::future_map(.extract_DAS)
@@ -143,7 +145,7 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
   }
 
   #extract detected sentences as well
-  if(extract_sentences)
+  if(extract_sentences == TRUE)
   {
     detected_sentences <- .open_data_sentences(PDF_text_sentences, DAS_text_sentences, sentences_with_DAS,
                                                CAS_text_sentences, keyword_results)
@@ -159,3 +161,4 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
 
   return(open_data_results)
 }
+
