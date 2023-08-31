@@ -91,7 +91,9 @@
 
   funding_y <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Funding:")) |>
-    dplyr::pull(y)
+    dplyr::pull(y) |>
+    max()
+
 
   if (length(funding_y) == 0) funding_y <- 0
 
