@@ -80,6 +80,8 @@
     dplyr::pull(dac) |>
     as.logical()
 
+
+
   if (ralc_statement_present == TRUE | generated_statement_present == TRUE) return (1)
 
   # determine y of reference section for later exclusion
@@ -87,7 +89,15 @@
     dplyr::filter(stringr::str_detect(text, "References") & space == FALSE) |>
     dplyr::pull(y)
 
+  funding_y <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "Funding:")) |>
+    dplyr::pull(y)
+
+  if (length(funding_y) == 0) funding_y <- 0
+
   if (length(reference_y) == 0) reference_y <- max(text_data$y) + 1
+
+  if (reference_y < funding_y) return(1)
 
   cols <- text_data |>
     dplyr::arrange(y, x) |>
@@ -114,7 +124,7 @@
     dplyr::filter(midpage_words > 0) |>
     nrow()
 
-  if (midpage_words < 20) return (2)
+  if (midpage_words < 15) return (2)
 
   rows_over_one <- cols |>
     dplyr::filter(ret_per_line > 1) |>
