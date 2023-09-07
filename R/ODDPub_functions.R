@@ -458,6 +458,7 @@ Mode <- function(x) {
                      "were (used|analy[z,s]ed) in this study",
                      "were downloaded( and analy[z,s]ed)?",
                      "this study used .* publicly available",
+                     "data ?set used previously",
                      "existing publicly available",
                      "data .* reanaly[z,s]ed here",
                      "used data from a public",
@@ -622,7 +623,7 @@ Mode <- function(x) {
     "Protein Circular Dichroism Data Bank",
     "Protein Data *Bank",
     "proteindiffraction.org",
-    "Proteome *EXchange",
+    "Proteome ?e?Xchange",
     "PubChem",
     "Rat Genome Database",
     "RdoCdb",
@@ -776,6 +777,8 @@ Mode <- function(x) {
 
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
+  citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
+
   keyword_list[["weblink"]] <- weblink
 # str_detect(publ_sentences, source_code)
   reuse <- .near_wd(was_available,
@@ -784,6 +787,7 @@ Mode <- function(x) {
                       field_specific_repo,
                       repositories,
                       weblink,
+                      citation,
                       github,
                       "cited as reference",
                       sep = "|"),
