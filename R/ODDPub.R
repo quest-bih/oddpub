@@ -28,8 +28,8 @@ pdf_convert <- function(PDF_folder, output_folder)
   # requires the pdftools library
   # some PDFs make take a very long time to process!
   conversion_success <-
-    furrr::future_map_lgl(PDF_filenames,
-                          \(x) .pdf_to_text(x, output_folder), .progress = TRUE)
+    suppressWarnings(furrr::future_map_lgl(PDF_filenames,
+                          \(x) .pdf_to_text(x, output_folder), .progress = TRUE))
 
   return(conversion_success)
 }

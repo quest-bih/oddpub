@@ -45,6 +45,7 @@
   return(success)
 }
 
+
 #' calculate the estimated number of columns, based on the mean return symbol per line
 #'
 #' @noRd
@@ -91,13 +92,13 @@
 
   funding_y <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Funding:")) |>
-    dplyr::pull(y) |>
-    max()
+    dplyr::pull(y)
 
+  funding_y <- max(funding_y, 0)
 
-  if (length(funding_y) == 0) funding_y <- 0
+  # if (length(funding_y) == 0) funding_y <- 0
 
-  if (length(reference_y) == 0) reference_y <- max(text_data$y) + 1
+  if (length(reference_y) != 1) reference_y <- max(text_data$y) + 1
 
   if (reference_y < funding_y) return(1)
 
@@ -109,24 +110,24 @@
                   y > 21, # exclude upper margin
                   font_size > 4) |>
     .add_line_n()
-#
-#   midpage_words <- cols |>
-#     dplyr::filter(between(x, 285, 300)) |>
-#     nrow()
+
+  if (nrow(cols) == 0) return (1)
+
+  midpage_gap <- .find_midpage_x(text_data)
+
+  if (midpage_gap == 0) return(1)
 
   cols <- cols |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(ret_per_line = sum(space == FALSE),
-                     midpage_words = sum(dplyr::between(x, 285, 300)),
+                     midpage_words = sum(dplyr::between(x, midpage_gap, midpage_gap + 20)),
                      max_x = max(x))
-
-  if (nrow(cols) == 0) return (1)
 
   midpage_words <- cols |>
     dplyr::filter(midpage_words > 0) |>
     nrow()
 
-  if (midpage_words < 15) return (2)
+  if (midpage_words / nrow(cols) < 0.2) return (2) # if words cross midpage gap less than 0.2 of rows assume 2col layout
 
   rows_over_one <- cols |>
     dplyr::filter(ret_per_line > 1) |>
@@ -164,6 +165,24 @@ Mode <- function(x) {
     dplyr::arrange(y, x)
 }
 
+#' find y coordinate of header for exclusion
+#' @noRd
+.find_header_y <- function(text_data) {
+
+  header_candidate <- suppressWarnings(text_data |>
+    dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
+    # dplyr::arrange(y) |>
+    dplyr::filter(y < 70, y != min(y)) |>
+    dplyr::filter(jump_size == max(jump_size)) |>
+    # dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
+    # dplyr::filter(line_n == 1) |>
+    dplyr::pull(y))
+
+  if (length(header_candidate) == 0) return(55)
+
+  min(max(header_candidate) - 1, 55)
+}
+
 
 #' add line numbers, but check if rearranging needed first
 #' @noRd
@@ -177,6 +196,27 @@ Mode <- function(x) {
 }
 
 
+#' find x coordinate of the gap in between two columns on a 2col layout
+#' @noRd
+.find_midpage_x <- function(text_data) {
+  gaps <- suppressMessages(text_data |>
+    dplyr::filter(between(x, 200, 350)) |>
+    dplyr::mutate(bins = round(x, -1)) |>
+    dplyr::count(bins) |>
+    dplyr::right_join(tibble::tibble(bins = seq(200, 350, by = 10))) |>
+    tidyr::replace_na(list(n = 0)) |>
+    dplyr::filter(n < 2) |>
+    dplyr::pull(bins))
+
+
+  if (length(gaps) == 0){
+    return(0)
+  } else {
+    return(min(gaps))
+  }
+
+}
+
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
 #' to be saved as a txt for further processing
 #' @noRd
@@ -188,7 +228,7 @@ Mode <- function(x) {
   if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.ecl")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "DOHGPO+AdvP48722B",
-                    font_size > 7) |>
+                    font_size > 6.5) |>
       dplyr::mutate(text = stringr::str_remove(text, "Tag$"))
 
   } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41531")) {
@@ -208,7 +248,7 @@ Mode <- function(x) {
   col3_x <- col2_x
   min_x <- dplyr::case_when(
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals
-    cols == 2 ~ 295,
+    cols == 2 ~ .find_midpage_x(text_data),
    # cols == 3 ~ 150,
     .default = 150
   )
@@ -221,18 +261,18 @@ Mode <- function(x) {
     # estimate the x coordinate of the second column, usually around 303 - 306
     col2_x_est <- text_data |>
       dplyr::filter(x > min_x & dplyr::lag(space) == FALSE) |>
-      dplyr::count(x) |>
-      dplyr::filter(n > 3) |>
+      # dplyr::count(x) |>
+      # dplyr::filter(n > 3) |>
       dplyr::pull(x) |>
       min()
 
     # if (cols == 3) {
-      col3_x_est <- text_data |>
+      col3_x_est <- suppressWarnings(text_data |>
         dplyr::filter(x > col2_x_est + 100 & dplyr::lag(space) == FALSE) |>
         dplyr::count(x) |>
         dplyr::filter(n > 5) |>
         dplyr::pull(x) |>
-        min()
+        min())
     # } else {
     #   col3_x_est <- col3_x
     # }
@@ -247,14 +287,14 @@ Mode <- function(x) {
     if (col3_x - col3_x_est > 100) col3_x <- col3_x_est
  }
 
-  min_y <- 37 #min(37, min(text_data$y) + 3) # remove header in most journals
-  max_y <- max(750, max(text_data$y)) # remove footer in most journals
+  min_y <- .find_header_y(text_data) # remove header in most journals
+  max_y <- 750 # remove footer in most journals
   max_x <- 563 # remove right margin in most journals
 
   text_data <- text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the very first line on top of the page
-    dplyr::filter(!(stringr::str_detect(text, "^\\d+\\.*$") & space == FALSE),
+    dplyr::filter(!(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE),
                   y > min_y, # remove header
                   y < max_y, # remove footer
                   x < max_x) |> # remove margin text, e.g. 'downloaded from...'
@@ -269,29 +309,44 @@ Mode <- function(x) {
   text_data <- text_data |>
       dplyr::arrange(column, y, x)
 
-  text_data <- .add_line_n(text_data) |>
-    dplyr::arrange(column, line_n, x) |>
-    dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0))
+  page_width <- max(text_data$x) - min(text_data$x)
+  col_width <- page_width/2 # quick approximation perhaps sufficient?
 
+
+  text_data <- .add_line_n(text_data) |>
+  # text_data2 <- .add_line_n(text_data) |>
+    dplyr::arrange(column, line_n, x) |>
+    dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
+    dplyr::group_by(line_n) |>
+    dplyr::mutate(prop_blank = case_when( # calculate approx. prop. blank space on line
+      cols == 1 ~ 1 - sum(width)/page_width,
+      cols == 2 ~ 1 - sum(width)/col_width,
+      .default = 1 - sum(width)/(col_width/3)
+    )) |>
+    # ),
+    # line_ends_dot = x == max(x) & stringr::str_detect(text, "\\.$")) |>
+    dplyr::ungroup()
 
 
   section_jump <- text_data$jump_size[text_data$jump_size > 0] |>
-    Mode() * 1.4
+    Mode() * 1.3
 
+  section_jump <- min(section_jump, 25) # some manuscripts are double-spaced
   # regular_font_size <- text_data |>
   #   filter(font_size > 7) |>
   #   pull(font_size) |>
   #   Mode()
   # str_detect("[B,b]old|\\.[B,b]|PSHN-H$|PA5D1$")
   heading_font_regex <- c("[B,b]old",
-                           "\\.[B,b]",
-                           "AdvPSHN-H$",
-                           "AdvPA5D1$",
-                           "AdvOTd67905e7$",
-                           "AdvTT99c4c969$",
-                           "Bd(Cn)?$") |>
+                          "\\.[B,b]",
+                          "CharisSIL-Italic$",
+                          "AdvTT47f7fe79.I$",
+                          "AdvPSHN-H$",
+                          "AdvPA5D1$",
+                          "AdvOTd67905e7$",
+                          "AdvTT99c4c969$",
+                          "Bd(Cn)?$") |>
     paste(collapse = "|")
-
 
   res <- text_data |>
     dplyr::mutate(
@@ -302,7 +357,8 @@ Mode <- function(x) {
           stringr::str_detect(font_name, heading_font_regex), TRUE, FALSE),
       newline_heading = line_n == 1 & is.na(heading_font) | # very first line
         line_n > dplyr::lag(line_n) &
-        stringr::str_detect(dplyr::lag(text), "\\.$|@|www") &
+        (stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") | # end of line can be full stop or some email or url
+           (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]"))) & # some lines end with citation superscripts
         (font_name != dplyr::lag(font_name)),
       paragraph_start = abs(jump_size) > section_jump,
       # for the three-column science layout DAS may start within the line
@@ -326,7 +382,10 @@ Mode <- function(x) {
         # (text == "Data" & dplyr::lead(text) == "sharing" & dplyr::lead(text, 2) == "statement:") |
         # text == "Funding:" |
         text == "*" & dplyr::lag(space) == FALSE,
-      section_start = (paragraph_start & heading_font) | newline_heading | science_section | plain_section,
+      section_start = (paragraph_start & (heading_font | prop_blank > 0.35)) |
+        (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
+        (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !stringr::str_detect(text, "\\.$")) |
+        newline_heading | science_section | plain_section,
       text = dplyr::if_else(section_start == FALSE | is.na(section_start), text, paste("\n<section>", text))) |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(text = paste(text, collapse = " ")) |>
@@ -460,7 +519,7 @@ Mode <- function(x) {
                      "(was|were)? previously published",
                      "(was|were|have been)? published previously",
                      "(was|were) contained in",
-                     "(was|were) available",
+                     "(was|were|made) available",
                      "(was|were) accessible",
                      "(was|were) deposited by",
                      "(has (been )?)? previously (been )?deposited",
@@ -472,7 +531,7 @@ Mode <- function(x) {
                      "this study used .* publicly available",
                      "data ?set used previously",
                      "existing publicly available",
-                     "data .* reanaly[z,s]ed here",
+                     "data .*reanaly[z,s]ed (here|in (the present|this) study)",
                      "used data from a public",
                      "all data we used are public",
                      "covers public",
@@ -614,7 +673,7 @@ Mode <- function(x) {
     "National Center for Biotechnology Information",
     "National Database for Autism Research",
     "National Database for Clinical Trials related to Mental Illness",
-    "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?(pubmed|pmc|clinvar))", # exclude some repositories
+    "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?(pubmed|pmc|clinvar|books))", # exclude some repositories
     "NDAR",
     "NDCT",
     "NDEx",
@@ -686,7 +745,7 @@ Mode <- function(x) {
                     "10.5063",
                     "10.12751", #GIN
                     "fcon_1000\\.projects\\.nitrc\\.org", # URL for INDI
-                    "[[:digit:]]{6}",
+                    "()[[:digit:]]{6}",
                     "[A-Z]{2,3}_[:digit:]{5,}",
                     "[A-Z]{2,3}-[:digit:]{4,}",
                     "[A-Z]{2}[:digit:]{5}-[A-Z]{1}",
@@ -790,6 +849,9 @@ Mode <- function(x) {
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
+  grant <- "grant"
+
+  keyword_list[["grant"]] <- grant
 
   keyword_list[["weblink"]] <- weblink
 # str_detect(publ_sentences, source_code)
@@ -827,8 +889,7 @@ Mode <- function(x) {
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["file_formats"]] <- file_formats
 
-
-  upon_request <- c("(up)?on( reasonable)? request",
+upon_request <- c("(up)?on( reasonable)? request",
                     "without undue reservation",
                     "the corresponding author",
                     "the lead contact",
@@ -844,11 +905,12 @@ Mode <- function(x) {
                          "Data sharing statement",
                          "Data sharing",
                          "Data availability statement & Data deposition",
-                         "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y S ?t ?a ?t ?e ?m ?e ?n ?t",
-                         "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y P ?o ?l ?i ?c ?y",
-                         "Data A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y",
+                         "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y S ?t ?a ?t ?e ?m ?e ?n ?t",
+                         "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y P ?o ?l ?i ?c ?y",
+                         "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y",
                          "Data and code availability",
                          "Data and ma-*te-*ri-*als a-*vai-*la-*bi-*li-*ty",
+                         "Data, Materials, and Software Availability",
                          "Data deposition",
                          "Deposited Data",
                          "Data Archiving",
@@ -1059,6 +1121,7 @@ Mode <- function(x) {
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
                                 "reuse",
+                                "grant",
                                 "file_formats", "upon_request", "dataset", "protocol")
 
   # search for all relevant keyword categories
@@ -1156,7 +1219,6 @@ Mode <- function(x) {
 
   DAS_start <- which(DAS_detections)
 
-
   if (length(DAS_start) == 2) {
     statement_detections <- PDF_text_sentences[DAS_start] |>
       stringr::str_detect("statement")
@@ -1167,9 +1229,11 @@ Mode <- function(x) {
     }
 
     # if more than two detections of DAS were made, then return full document
-  } else if (length(DAS_start) != 1 ) {
+  } else if (length(DAS_start) != 1) {
     return(PDF_text_sentences)
   }
+
+  if (length(PDF_text_sentences) - DAS_start < 2) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
 
   str_DAS <- PDF_text_sentences[DAS_start] |>
     stringr::str_trim()
@@ -1308,17 +1372,19 @@ Mode <- function(x) {
 #' @noRd
 .remove_references <- function(PDF_text_sentences)
 {
-  ref_start <- PDF_text_sentences |>
+  line_before_refs <- PDF_text_sentences |>
     stringr::str_detect("<section> r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
 
-  if (sum(ref_start) == 0) {
+  if (length(line_before_refs) > 1) line_before_refs <- line_before_refs[length(line_before_refs)]
+
+  if (sum(line_before_refs) == 0) {
 
     return(PDF_text_sentences)
 
   } else {
 
-    return(PDF_text_sentences[1:ref_start])
+    return(PDF_text_sentences[1:line_before_refs])
 
   }
 
@@ -1347,7 +1413,7 @@ Mode <- function(x) {
     purrr::map(dplyr::mutate, com_code = source_code & available &
                  !not_available & !was_available & !upon_request) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
-    purrr::map(dplyr::mutate, com_reuse = reuse) |>
+    purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
                 com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request)
@@ -1359,7 +1425,7 @@ Mode <- function(x) {
 #' @noRd
 .keyword_search_tokenized <- function(keyword_results_combined)
 {
-  # summarze results over all sentences of each publication to see if any match was found for each keyword category
+  # summarize results over all sentences of each publication to see if any match was found for each keyword category
   keyword_results_tokenized <- keyword_results_combined |>
     purrr::map(\(x) dplyr::select(x, -publ_sentences)) |>
     purrr::map(\(x) apply(x, MARGIN = 2, FUN = any))
