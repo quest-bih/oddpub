@@ -200,7 +200,7 @@ Mode <- function(x) {
 #' @noRd
 .find_midpage_x <- function(text_data) {
   gaps <- suppressMessages(text_data |>
-    dplyr::filter(between(x, 200, 350)) |>
+    dplyr::filter(dplyr::between(x, 200, 350)) |>
     dplyr::mutate(bins = round(x, -1)) |>
     dplyr::count(bins) |>
     dplyr::right_join(tibble::tibble(bins = seq(200, 350, by = 10))) |>
@@ -318,11 +318,11 @@ Mode <- function(x) {
     dplyr::arrange(column, line_n, x) |>
     dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
     dplyr::group_by(line_n) |>
-    dplyr::mutate(prop_blank = case_when( # calculate approx. prop. blank space on line
+    dplyr::mutate(prop_blank = dplyr::case_when( # calculate approx. prop. blank space on line
       cols == 1 ~ 1 - sum(width)/page_width,
       cols == 2 ~ 1 - sum(width)/col_width,
       .default = 1 - sum(width)/(col_width/3)
-    )) |>
+    )) |> # TODO: !line_ends_dot as a criterion instead of first word ending in dot or similar below
     # ),
     # line_ends_dot = x == max(x) & stringr::str_detect(text, "\\.$")) |>
     dplyr::ungroup()
@@ -907,7 +907,7 @@ upon_request <- c("(up)?on( reasonable)? request",
                          "Data availability statement & Data deposition",
                          "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y S ?t ?a ?t ?e ?m ?e ?n ?t",
                          "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y P ?o ?l ?i ?c ?y",
-                         "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y",
+                         "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i? ?t ?y",
                          "Data and code availability",
                          "Data and ma-*te-*ri-*als a-*vai-*la-*bi-*li-*ty",
                          "Data, Materials, and Software Availability",
@@ -926,7 +926,6 @@ upon_request <- c("(up)?on( reasonable)? request",
                          "Open practices") |>
     .format_keyword_vector()
   keyword_list[["data_availability"]] <- data_availability
-
 
   code_availability <- c("Code sharing",
                          "Code availability statement",
@@ -1220,10 +1219,15 @@ upon_request <- c("(up)?on( reasonable)? request",
   DAS_start <- which(DAS_detections)
 
   if (length(DAS_start) == 2) {
+    # select detection with statement
     statement_detections <- PDF_text_sentences[DAS_start] |>
       stringr::str_detect("statement")
-    if (sum(statement_detections) == 1) {
-      DAS_start <- DAS_start[statement_detections]
+    # select detection without "data
+    quotation_detections <- !stringr::str_detect(PDF_text_sentences[DAS_start], '\\"data')
+    if (sum(quotation_detections) == 1) {
+      DAS_start <- DAS_start[quotation_detections] # select detection without "data
+    } else if (sum(statement_detections) == 1) {
+      DAS_start <- DAS_start[statement_detections] # select detection with statement
     } else {
       DAS_start <- min(DAS_start)
     }
@@ -1233,7 +1237,7 @@ upon_request <- c("(up)?on( reasonable)? request",
     return(PDF_text_sentences)
   }
 
-  if (length(PDF_text_sentences) - DAS_start < 2) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
+  if (length(PDF_text_sentences) - DAS_start <= 2) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
 
   str_DAS <- PDF_text_sentences[DAS_start] |>
     stringr::str_trim()
