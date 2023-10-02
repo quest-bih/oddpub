@@ -162,7 +162,12 @@
       dplyr::filter(ret_per_line > 1)
   }
 
-  stats::median(cols$ret_per_line)
+  cols <- stats::median(cols$ret_per_line)
+
+  if (cols > 3) return(1)
+
+  cols
+
 }
 
 
@@ -219,28 +224,28 @@ Mode <- function(x) {
 
   page_width <- max(text_data$x) - min(text_data$x)
 
-  linejumps <- tibble::tibble(
-    y = sort(unique(text_data$y)),
-    y_jump = dplyr::lead(sort(unique(text_data$y))) - y) |>
-    dplyr::mutate(y_jump = dplyr::if_else(is.na(y_jump), y, y_jump))
-
-
+  # linejumps <- tibble::tibble(
+  #   y = sort(unique(text_data$y)),
+  #   y_jump = dplyr::lead(sort(unique(text_data$y))) - y) |>
+  #   dplyr::mutate(y_jump = dplyr::if_else(is.na(y_jump), 0, y_jump))
 
   footer_candidate <- suppressWarnings(
     text_data |>
-      dplyr::filter(y > 725) |>
+      dplyr::filter(y > max(y) - 30) |>
       dplyr::arrange(y, x) |>
       dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
                     line_n = abs(jump_size) > 4,
-                    line_n = cumsum(line_n),
-                    x_jump = x - dplyr::lag(x, default = 0)) |>
+                    line_n = cumsum(line_n)) |>
       dplyr::group_by(line_n) |>
+      dplyr::arrange(line_n, x) |>
       dplyr::mutate(prop_full = sum(width)/page_width,
-                    max_x_jump = max(x_jump)) |>
-      dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_full < 0.6 & font_size < 9) | max_x_jump > 170 | stringr::str_detect(text, "20\\d{2}")) |>
+                    x_jump = x - dplyr::lag(x, default = 0),
+                    max_x_jump = max(x_jump),
+                    jump_size = max(jump_size)) |>
+      # dplyr::left_join(linejumps, by = "y") |>
+      dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 | stringr::str_detect(text, "20\\d{2}")) |>
       dplyr::ungroup() |>
-      dplyr::filter(y_jump == max(y_jump) & y_jump > 15 | stringr::str_detect(text, "20\\d{2}")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "20\\d{2}")) |>
       dplyr::pull(y)
   )
 
@@ -268,12 +273,12 @@ Mode <- function(x) {
 #' @noRd
 .find_midpage_x <- function(text_data) {
 
-
   # if (any(stringr::str_detect(text_data$text, "https://doi.org/10.1016/j.jclinepi."))) return(300)
 
   gaps <- suppressMessages(
     text_data |>
-      dplyr::filter(dplyr::between(x, 200, 350)) |>
+      dplyr::filter(dplyr::between(x, 200, 350),
+                    font_size > 7) |>
       dplyr::mutate(bins = floor(x/5) * 5) |>
       dplyr::count(bins) |>
       dplyr::full_join(tibble::tibble(bins = seq(200, 345, by = 5))) |>
@@ -334,11 +339,12 @@ Mode <- function(x) {
 
   ### early return for one column only?
 
-  col2_x <- 700 # initial estimate is the maximum, works for single column layouts
+  col2_x <- 800 # initial estimate is the maximum, works for single column layouts
   col3_x <- col_predevider_x_est <- col2_x
 
   min_x <- dplyr::case_when(
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals
+    stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
     cols == 2 ~ .find_midpage_x(text_data),
     .default = 150
   )
@@ -358,18 +364,27 @@ Mode <- function(x) {
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rspb|10\\.3389\\+f")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rspb|10\\.3389\\+f|10\\.3324")) {
     layout_divider_y <- text_data |>
-      dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE,
-                    x < 350) |>
+      dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
+  } else if (stringr::str_detect(PDF_filename, "jneurosci")) {
+    layout_divider_y <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "Significance|Received|Introduction"))
+
+    if (nrow(layout_divider_y) >= 2) {
+      layout_divider_y <- min(layout_divider_y$y[-1])
+    } else {
+      layout_divider_y <- 800
+    }
+    min_x <- .find_midpage_x(text_data |>
+                               dplyr::filter(y > layout_divider_y))
   }
 
 
   has_mixed_layout <- layout_divider_y < 700 & cols > 1
-
 
   if (cols > 1 | is.na(cols)) {
 
@@ -378,14 +393,14 @@ Mode <- function(x) {
       col_predevider_x_est <- suppressWarnings(
         text_data |>
           dplyr::filter(y < layout_divider_y,
-                        x > min_x & dplyr::lag(space) == FALSE,
-                        font_size > 5,
+                        x > min_x & dplyr::lag(space) == FALSE & stringr::str_detect(dplyr::lag(text), "\\."),
+                        # font_size > 5,
                         stringr::str_detect(text, "[[:upper:]]")) |>
           dplyr::pull(x) |>
           min()
       )
 
-      if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est)) col_predevider_x_est <- col2_x
+      if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est) ) col_predevider_x_est <- col2_x
     }
 
     # estimate the x coordinate of the second column, usually around 303 - 306 for 2col layout
@@ -430,7 +445,6 @@ Mode <- function(x) {
       .default = 1)) |>
     dplyr::arrange(column, y, x)
 
-
 }
 
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
@@ -457,11 +471,13 @@ Mode <- function(x) {
   max_x <- 563 # remove right margin in most journals
   max_height <- 300 # remove vertical text, e.g. column separator "......"
 
+  if (text_data |> dplyr::filter(x < max_x) |> nrow() > 200) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
+
   text_data <- text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the header and footer
     dplyr::filter(!(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
-                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section")),
+                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section|and")),
                   y > min_y, # remove header
                   y < max_y, # remove footer
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
@@ -1090,8 +1106,8 @@ upon_request <- c("(up)?on( reasonable)? request",
   data_availability <- c("Data and (Software|Resource) Availability",
                          "Software and Data Availability",
                          "Statistical Analysis and Data Availability",
-                         "Data sharing statement",
-                         "Data sharing",
+                         "Data.sharing statement",
+                         "Data.sharing",
                          "Data availability statement & Data deposition",
                          "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y S ?t ?a ?t ?e ?m ?e ?n ?t",
                          "D ?a ?t ?a A ?v ?a ?i ?l ?a ?b ?i ?l ?i ?t ?y P ?o ?l ?i ?c ?y",
@@ -1495,17 +1511,18 @@ upon_request <- c("(up)?on( reasonable)? request",
     DAS <- .splice_plos_twopager(DAS)
   }
    DAS |>
-    paste(collapse = " ") |>
+     paste(collapse = " ") |>
      stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
      stringr::str_trim() |>
-     # in some cases the references interpolate between DAS title and DAS text
+     # in some cases the references or other sections interpolate between DAS title and DAS text
      stringr::str_remove("<section> references.*") |> # remove references
      stringr::str_remove("<section> authors.*") |> # remove author contributions
+     stringr::str_remove("<section> additional contr.*") |> # remove author contributions
      stringr::str_remove_all(" <section>") |>
      stringr::str_replace("(?<=repository)\\. ", ": ") |>  # for the weird cases when after repository a . and not : follows
-    stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
-    tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
-    .correct_tokenization()
+     stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
+     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
+     .correct_tokenization()
 
 }
 
