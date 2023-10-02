@@ -93,8 +93,6 @@
   reference_y <- reference_yx$y
   reference_x <- reference_yx$x
 
-
-
   funding_y <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Funding:")) |>
     dplyr::pull(y)
@@ -146,7 +144,7 @@
   cols <- cols |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(ret_per_line = sum(space == FALSE),
-                     midpage_words = sum(dplyr::between(x, midpage_gap, midpage_gap + 20)),
+                     midpage_words = sum(dplyr::between(x, midpage_gap, midpage_gap + 15)),
                      max_x = max(x))
 
   midpage_words <- cols |>
@@ -202,7 +200,8 @@ Mode <- function(x) {
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump)) |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170) |>
+      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170,
+                    !stringr::str_detect(font_name, "Bold")) |>
       dplyr::ungroup() |>
       dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}")) & y_jump > 13) |>
       dplyr::pull(y)
@@ -361,7 +360,8 @@ Mode <- function(x) {
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
   } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rspb|10\\.3389\\+f")) {
     layout_divider_y <- text_data |>
-      dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE) |>
+      dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE,
+                    x < 350) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
@@ -461,7 +461,7 @@ Mode <- function(x) {
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the header and footer
     dplyr::filter(!(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
-                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement")),
+                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section")),
                   y > min_y, # remove header
                   y < max_y, # remove footer
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
@@ -566,7 +566,7 @@ Mode <- function(x) {
         # (text == "Data" & dplyr::lead(text) == "sharing" & dplyr::lead(text, 2) == "statement:") |
         # text == "Funding:" |
         text == "*" & dplyr::lag(space) == FALSE,
-      section_start = (paragraph_start & (heading_font | prop_blank > 0.35)) |
+      section_start = (paragraph_start & (heading_font | prop_blank > 0.35 | dplyr::lag(prop_blank) > 0.35)) |
         (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
         (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
         newline_heading | science_section | plain_section,
