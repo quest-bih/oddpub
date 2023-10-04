@@ -205,7 +205,7 @@ Mode <- function(x) {
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump)) |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170,
+      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 | prop_width < 0.2,
                     !stringr::str_detect(font_name, "Bold")) |>
       dplyr::ungroup() |>
       dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}")) & y_jump > 13) |>
@@ -231,7 +231,7 @@ Mode <- function(x) {
 
   footer_candidate <- suppressWarnings(
     text_data |>
-      dplyr::filter(y > max(y) - 30) |>
+      dplyr::filter(y > max(max(y) - 30, 720)) |>
       dplyr::arrange(y, x) |>
       dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
                     line_n = abs(jump_size) > 4,
@@ -243,9 +243,10 @@ Mode <- function(x) {
                     max_x_jump = max(x_jump),
                     jump_size = max(jump_size)) |>
       # dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 | stringr::str_detect(text, "20\\d{2}")) |>
+      dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
+                      stringr::str_detect(text, "20\\d{2}|\\.org|release")) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "20\\d{2}")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "20\\d{2}|\\.org|release")) |>
       dplyr::pull(y)
   )
 
