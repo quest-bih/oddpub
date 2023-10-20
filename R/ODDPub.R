@@ -105,7 +105,7 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
     furrr::future_map(.extract_DAS)
 
   sentences_with_DAS <- DAS_text_sentences |>
-    purrr::map_lgl(\(x) length(x) < 31) |> # It is assumed a DAS will not have more than 30 sentences
+    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(PDF_text_sentences[[idx]])) |> # It is assumed a DAS will not have more than 30 sentences
     which()
 
   CAS_text_sentences <- PDF_text_sentences |>
@@ -117,13 +117,15 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
   keyword_results <- .keyword_search_full(DAS_CAS)
   open_data_results <- .open_data_detection(DAS_CAS, keyword_results)
 
+  # kw <- keyword_results[[1]]
   sentences_second_pass <- open_data_results |>
-    dplyr::filter(is_open_data == FALSE & is_reuse == FALSE) |> # consider second pass also for software?
+    dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
+                    !stringr::str_detect(open_data_category, "github")) |> # consider second pass also for software?
     dplyr::pull(article) # extract the not open data cases for double-check in second pass
 
   # restrict to cases with DAS only, since full texts were already screened for rest
   sentences_second_pass <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_DAS)]
-  # kw <- keyword_second_pass[[1]]
+  # kw2 <- keyword_second_pass[[1]]
   # screen full text of second-pass cases
   # do this only for subset of cases, as this is the most time-consuming step
   if (length(sentences_second_pass) > 0) {
@@ -139,10 +141,10 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
     keyword_results <- keyword_results |>
       purrr::list_assign(!!!keyword_second_pass)
 
-
     open_data_results <- open_data_results |>
       dplyr::rows_upsert(open_data_second_pass, by = "article")
   }
+  print("Consolidating data:")
 
   #extract detected sentences as well
   if(extract_sentences == TRUE)
@@ -153,12 +155,13 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
       dplyr::as_tibble() |>
       dplyr::mutate(has_only_unknown = .has_url(das) & !is_open_data & !is_reuse, # check for unknown website
         open_data_category = dplyr::case_when(
-          has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url"),
-          has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url",
+          has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url/accnr"),
+          has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url/accnr",
           .default = open_data_category)) |>
       dplyr::select(-has_only_unknown)
   }
 
   return(open_data_results)
 }
+
 

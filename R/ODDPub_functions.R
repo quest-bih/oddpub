@@ -77,10 +77,9 @@
                                          dplyr::lead(text, n = 4) == "generated:" &
                                          dplyr::lead(space, n = 4) == FALSE,
                                        1, 0)) |>
-    dplyr::summarise(dac = sum(dac)) |>
+    dplyr::summarise(dac = sum(dac, na.rm = TRUE)) |>
     dplyr::pull(dac) |>
     as.logical()
-
 
 
   if (ralc_statement_present == TRUE | generated_statement_present == TRUE) return (1)
@@ -203,9 +202,11 @@ Mode <- function(x) {
                     x_jump = x - dplyr::lag(x, default = 0)) |>
       dplyr::group_by(line_n) |>
       dplyr::mutate(prop_width = sum(width)/page_width,
-                    max_x_jump = max(x_jump)) |>
+                    max_x_jump = max(x_jump),
+                    has_original_investigation = text == "Investigation" & dplyr::lag(text) == "Original" &
+                      dplyr::lead(x_jump) > 40) |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 | prop_width < 0.2,
+      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 | prop_width < 0.2 | has_original_investigation,
                     !stringr::str_detect(font_name, "Bold")) |>
       dplyr::ungroup() |>
       dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}")) & y_jump > 13) |>
@@ -223,6 +224,7 @@ Mode <- function(x) {
 .find_footer_y <- function(text_data) {
 
   page_width <- max(text_data$x) - min(text_data$x)
+  min_y <- max(max(text_data$y) - 40, 720)
 
   # linejumps <- tibble::tibble(
   #   y = sort(unique(text_data$y)),
@@ -231,9 +233,9 @@ Mode <- function(x) {
 
   footer_candidate <- suppressWarnings(
     text_data |>
-      dplyr::filter(y > max(max(y) - 30, 720)) |>
+      dplyr::filter(y > min_y) |>
       dplyr::arrange(y, x) |>
-      dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
+      dplyr::mutate(jump_size = y - dplyr::lag(y, default = min_y),
                     line_n = abs(jump_size) > 4,
                     line_n = cumsum(line_n)) |>
       dplyr::group_by(line_n) |>
@@ -246,7 +248,7 @@ Mode <- function(x) {
       dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
                       stringr::str_detect(text, "20\\d{2}|\\.org|release")) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "20\\d{2}|\\.org|release")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "\\.org|release")) |>
       dplyr::pull(y)
   )
 
@@ -472,7 +474,7 @@ Mode <- function(x) {
   max_x <- 563 # remove right margin in most journals
   max_height <- 300 # remove vertical text, e.g. column separator "......"
 
-  if (text_data |> dplyr::filter(x < max_x) |> nrow() > 200) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
+  if (text_data |> dplyr::filter(x > max_x, height > 20) |> nrow() == 0) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
 
   text_data <- text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
@@ -687,7 +689,7 @@ Mode <- function(x) {
 {
   keyword_list <- list()
 
-  available <- c("(?<!which )included",
+  available <- c("(?<!which )included(?! (\\d|only))", # research this
                  "deposited",
                  "archived",
                  "released",
@@ -720,13 +722,14 @@ Mode <- function(x) {
                      "(was|were)? previously published",
                      "(was|were|have been)? published previously",
                      "(was|were) contained in",
-                     "(was|were|made) available",
+                     "(was|were|(?<!(has|have) been )made) available",
                      "(was|were) accessible",
                      "(was|were) deposited by",
                      "(has (been )?)? previously (been )?deposited",
                      "(was|were) reproduced",
-                     "were open source data",
+                     "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
+                     "from( a)? publicly available data( ?sets?)?",
                      "were (used|analy[z,s]ed) in this study",
                      "were downloaded( and analy[z,s]ed)?",
                      "this study used .* publicly available",
@@ -738,6 +741,7 @@ Mode <- function(x) {
                      "covers public",
                      "available in .* previous",
                      "(we|was|were) obtained",
+                     "(?<!code) we used .* data",
                      "checked .* on .* freely available") |>
     .format_keyword_vector()
   keyword_list[["was_available"]] <- was_available
@@ -757,10 +761,12 @@ Mode <- function(x) {
                      "not available",
                      "not accessible",
                      "not submitted",
-                     "(few|no|not enough) \\w.* (is|are) available"
+                     "(few|no|not enough) \\w.* (is|are) available",
+                     "includes no"
                      ) |>
     .format_keyword_vector()
   keyword_list[["not_available"]] <- not_available
+
   # str_detect(publ_sentences, accession_nr[1])field_specific_repo
  # stringr::str_detect("http://www.ncbi. nlm.nih.gov/ pubmed", "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?pubmed)")
   # field_specific_repo |> sort() |> paste(collapse = ",\n")
@@ -789,6 +795,7 @@ Mode <- function(x) {
     "Cambridge Crystallographic Data Centre",
     "caNanoLab",
     "Cancer Imaging Archive",
+    "cancergenome\\. ?nih\\. ?gov",
     "CATS",
     "CCDC",
     "CCMS",
@@ -844,8 +851,9 @@ Mode <- function(x) {
     "Global Biodiversity Information Facility",
     "gmgc",
     "GPCRMD",
-    "GWAS",
+    "GWAS(?! summary)",
     "HIV Data Archive Program",
+    "Human Connectome Project",
     "hPSCreg",
     "Image Data Resource",
     "ImmPort",
@@ -856,6 +864,7 @@ Mode <- function(x) {
     "IoChem-BD",
     "ITIS",
     "Japanese Genotype-phenotype Archive",
+    "JCB DataViewer",
     "KiMoSys",
     "Kinetic Models of Biological Systems",
     "Knowledge Network for Biocomplexity",
@@ -880,6 +889,7 @@ Mode <- function(x) {
     "NDEx",
     "Neuroimaging Informatics Tools and Resources Collaboratory",
     "NeuroMorpho",
+    "NeuroVault",
     "NIMH Data Archive",
     "NIST",
     "NITRC",
@@ -889,6 +899,7 @@ Mode <- function(x) {
     "PCDDB",
     "PDB",
     "PeptideAtlas",
+    "pdgenetics",
     "PGS Catalog",
     "PhysioNet",
     "PRIDE",
@@ -945,13 +956,14 @@ Mode <- function(x) {
                     "10.15468",
                     "10.5063",
                     "10.12751", #GIN
-                    "fcon_1000\\.projects\\.nitrc\\.org", # URL for INDI
+                    "fcon_ ?1000\\.projects\\.nitrc\\.org", # URL for INDI
                     "()[[:digit:]]{6}",
                     "[A-Z]{2,3}_[:digit:]{5,}",
                     "[A-Z]{2,3}-[:digit:]{4,}",
                     "[A-Z]{2}[:digit:]{5}-[A-Z]{1}",
                     "DIP:[:digit:]{3}",
                     "FR-FCM-[[:alnum:]]{4}",
+                    "Collections?(:|\\/)[:digit:]{4}", # Neurovault
                     "ICPSR [:digit:]{4}",
                     "SN [:digit:]{4}",
                     "key resources table",
@@ -959,9 +971,9 @@ Mode <- function(x) {
     .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
 
-  repositories <- c("available online *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
+  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
                     "open data repository (\\(|\\[)\\d{1,4}",
-                    "(is|are) available *(\\(|\\[)+.*\\d{1,4}(\\)|\\])+",
+                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
                     "10\\.17617/3.", # Edmond
                     "10\\.17632", # Mendeley Data
                     "10\\.18452", # edoc HU
@@ -969,7 +981,7 @@ Mode <- function(x) {
                     "10\\.1038 */s41597-", # scientific data
                     "10\\.11588", # hei DATA
                     # "doi\\.org/[[:graph:]]* (?!received)",
-                    "code ocean *(capsule)?",
+                    "code ocean ?(capsule)?.{2,}", # at least two symbols before end of string
                     "cyverse",
                     "dataverse(\\.harvard.\\edu)?",
                     "DataverseNL",
@@ -984,13 +996,13 @@ Mode <- function(x) {
                     "mendeley data",
                     "OpenNeuro",
                     "open science framework",
-                    "osf",
+                    "osf(?! group)",
                     "tu datalib",
                     "UNIMI",
                     "zivahub",
                     "zenodo"
                     ) |>
-    .format_keyword_vector(end_boundary = TRUE)
+    .format_keyword_vector()
   keyword_list[["repositories"]] <- repositories
 
   github <- c("github") |>
@@ -1026,30 +1038,33 @@ Mode <- function(x) {
     .format_keyword_vector()
   keyword_list[["not_data"]] <- not_data
 
-  source_code <- c("source code",
+  source_code <- c("source codes?",
                    "code files?",
-                   "analysis script",
-                   "data (and )?code",
+                   "analysis (script|codes?)",
+                   "data (and )?codes?",
                    "github",
                    "gitlab",
                    "bitbucket",
+                   "preprocessing software",
                    "code ocean",
-                   "SAS script",
-                   "SPSS script",
+                   "the (script|codes?) for",
+                   "codes? used for",
+                   "SAS scripts?",
+                   "SPSS scripts?",
                    "r[-, ]+script",
-                   "r[-, ]+code",
+                   "r[-, ]+codes?",
                    "r[-, ]+package",
                    "python script",
-                   "python code",
+                   "python codes?",
                    # "software",
                    "matlab script",
-                   "matlab code",
-                   "macro") |>
+                   "matlab codes?",
+                   "macro\\b") |>
     .format_keyword_vector()
   keyword_list[["source_code"]] <- source_code
 
 # str_detect("my.email@haha.com", weblink)
-  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
+  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
   grant <- c("grant",
              "funding",
@@ -1088,18 +1103,20 @@ Mode <- function(x) {
                     "zip",
                     "xls",
                     "xlsx",
+                    "Excel (table|spreadsheet)",
                     "sav",
                     "cif",
                     "fasta") |>
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["file_formats"]] <- file_formats
 
-upon_request <- c("(up)?on( reasonable)? request",
+  upon_request <- c("(up)?on( reasonable)? request",
+                    "via a direct request to",
                     "without undue reservation",
                     "the corresponding author",
                     "the lead contact",
                     "the techincal contact",
-                    "requests.* should be (directed|submitted) to",
+                    "requests.* should be (directed|submitted) (to|through|via)",
                     "data requests?")|>
     .format_keyword_vector()
   keyword_list[["upon_request"]] <- upon_request
@@ -1126,6 +1143,7 @@ upon_request <- c("(up)?on( reasonable)? request",
                          "Data Access",
                          "Accessibility of data and code",
                          "Accessibility of data",
+                         "Code and data availability statement",
                          "Availability and implementation",
                          "Accession codes",
                          "Accession numbers sequence data",
@@ -1163,7 +1181,8 @@ upon_request <- c("(up)?on( reasonable)? request",
                       "supplementary data set [[:digit:]]{1,2}",
                       "supplemental data [[:digit:]]{1,2}",
                       "supplemental dataset [[:digit:]]{1,2}",
-                      "supplemental data set [[:digit:]]{1,2}")
+                      "supplemental data set [[:digit:]]{1,2}",
+                      "supplemental data can be found online")
   dataset_name <- c("data", "dataset", "datasets", "data set", "data sets")
   dataset_number <- c("S[[:digit:]]{1,2}")
   dataset <- .outer_str(dataset_name, dataset_number)
@@ -1171,7 +1190,8 @@ upon_request <- c("(up)?on( reasonable)? request",
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["dataset"]] <- dataset
 
-  protocol <- c("protocols?") |>
+  protocol <- c("protocols?",
+                "procedures can be found") |>
     .format_keyword_vector()
   keyword_list[["protocol"]] <- protocol
 
@@ -1194,14 +1214,14 @@ upon_request <- c("(up)?on( reasonable)? request",
 
 
   #special regex pattern that looks for word closeness instead of words being in the same sentence
-  #effect: all_data & file_format words are at most 10 words apart from each other
-  all_data_file_formats <- .near_wd_sym(all_data, file_formats, dist = 10)
+  #effect: all_data & file_format words are at most 12 words apart from each other
+  all_data_file_formats <- .near_wd_sym(all_data, file_formats, dist = 12)
   keyword_list[["all_data_file_formats"]] <- all_data_file_formats
 
 
   supp_table_data <- .near_wd_sym(supplemental_table,
                                  paste(file_formats, all_data, sep = "|"),
-                                 dist = 10)
+                                 dist = 12)
   keyword_list[["supp_table_data"]] <- supp_table_data
 
   # data_in_DAS <- .near_wd(data_availability,
@@ -1215,7 +1235,6 @@ upon_request <- c("(up)?on( reasonable)? request",
 
   return(keyword_list)
 }
-
 
 #' standardize the format of different keyword vectors
 #' @noRd
@@ -1263,7 +1282,6 @@ upon_request <- c("(up)?on( reasonable)? request",
   return(combined)
 }
 
-
 #' create Regex that searches for cases where words x and y are at max dist words apart,
 #' assymetric version where only the case with x before y is checked
 #' @noRd
@@ -1278,8 +1296,6 @@ upon_request <- c("(up)?on( reasonable)? request",
 
   return(combined)
 }
-
-
 
 #---------------------------------------------------------------------
 # 4 - Open data identification
@@ -1574,6 +1590,12 @@ upon_request <- c("(up)?on( reasonable)? request",
 
   if (is.na(CAS_end)) {
     CAS_end <- min(CAS_end_candidates)
+
+    if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
+      CAS_end <- length(PDF_text_sentences) - CAS_start
+    } else {
+      CAS_end <- min(CAS_end_candidates[CAS_end_candidates > 0], length(PDF_text_sentences) - CAS_start)
+    }
   }
 
   if (CAS_start + CAS_end > length(PDF_text_sentences)) {
@@ -1643,14 +1665,14 @@ upon_request <- c("(up)?on( reasonable)? request",
   keyword_results_combined <- open_data_categories  |>
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
-                 accession_nr & available & !not_available & !was_available & !protocol & !grant
+                 accession_nr & available & !not_available & !was_available & (!protocol | data) & !grant
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & !protocol) |>
+                 !not_available & !was_available & (!protocol | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &
-                 !not_available & !was_available & !upon_request) |>
+                 !not_available & !was_available & (!upon_request|stringr::str_detect(publ_sentences, "git|www|http"))) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
     purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
@@ -1746,7 +1768,7 @@ upon_request <- c("(up)?on( reasonable)? request",
                          suppl,
                          reuse,
                          request,
-                         # unknown,
+                         github,
                          data_journal)
 {
   category = vector()
@@ -1768,6 +1790,9 @@ upon_request <- c("(up)?on( reasonable)? request",
   if(request == TRUE) {
     category <- category |> c("upon request")
   }
+  if (github == TRUE) {
+    category <- category |> c("github")
+  }
   # if(unknown == TRUE) {
   #   category <- category |> c("unknown repository")
   # }
@@ -1782,15 +1807,13 @@ upon_request <- c("(up)?on( reasonable)? request",
 #' check if data availability statement (das) contains a url that is not a git url
 #' @noRd
 .has_url <- function(das){
-  stringr::str_detect(das, "(https?|ftp|smtp):\\/\\/(?! ?git)")
+  stringr::str_detect(das, "(((https?|ftp|smtp):\\/\\/(?! ?git)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-z0-9#]+\\/?)*)|(?<!git(hub|lab)?)\\.(com|org)")
 }
-
 
 #---------------------------------------------------------------------
 # 5 - Combine search steps to obtain Open Data status &
 #     detected sentences
 #---------------------------------------------------------------------
-
 
 #' @noRd
 .open_data_detection <- function(PDF_text_sentences, keyword_results)
@@ -1811,10 +1834,11 @@ upon_request <- c("(up)?on( reasonable)? request",
                     is_data_journal,
                   is_open_code = com_code | com_suppl_code,
                   is_supplement = dataset | com_file_formats | com_supplemental_data,
-                  is_general_purpose = com_general_repo | com_github_data,
+                  is_general_purpose = com_general_repo,
                   is_reuse = com_reuse,
                   open_data_category = furrr::future_pmap_chr(list(com_specific_repo, is_general_purpose,
                                                                    is_supplement, is_reuse, com_request,
+                                                                   com_github_data,
                                                                    is_data_journal), .OD_category)) |>
     tibble::add_column(article = names(PDF_text_sentences)) |>
     dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code)
@@ -1870,7 +1894,7 @@ upon_request <- c("(up)?on( reasonable)? request",
                   ) |>
     # copy over das to cas if das is actually also a cas
     dplyr::mutate(
-      cas = ifelse(stringr::str_detect(stringr::str_sub(das, 1, 30), "code|software|materials"), das, cas),
+      cas = ifelse(stringr::str_detect(stringr::str_sub(das, 1, 30), "(?<!accession) code|software|materials"), das, cas),
       open_code_statements =
         paste(com_code, com_suppl_code, sep = " ") |>
         trimws()
