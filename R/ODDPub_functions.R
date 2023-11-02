@@ -371,7 +371,7 @@ Mode <- function(x) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
       dplyr::pull(y)
-    if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
+    if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
   } else if (stringr::str_detect(PDF_filename, "jneurosci")) {
     layout_divider_y <- text_data |>
