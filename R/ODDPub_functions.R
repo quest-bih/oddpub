@@ -68,6 +68,20 @@
     dplyr::summarise(dac = sum(dac)) |>
     dplyr::pull(dac) |>
     as.logical()
+
+  cochrane_statement_present <- text_data |>
+    dplyr::mutate(contrib = dplyr::if_else(dplyr::lag(space) == FALSE & text == "C" &
+                                         dplyr::lead(text) == "O" &
+                                         dplyr::lead(text, n = 2) == "N" &
+                                         dplyr::lead(text, n = 3) == "T" &
+                                         dplyr::lead(text, n = 4) == "R" &
+                                         dplyr::lead(text, n = 5) == "I" &
+                                         dplyr::lead(text, n = 6) == "B" &
+                                         dplyr::lead(text, n = 7) == "U",
+                                         1, 0)) |>
+    dplyr::summarise(contrib = sum(contrib, na.rm = TRUE)) |>
+    dplyr::pull(contrib) |>
+    as.logical()
   # if ralc is detected, force single-column layout
   generated_statement_present <- text_data |>
     dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "The" &
@@ -82,7 +96,8 @@
     as.logical()
 
 
-  if (ralc_statement_present == TRUE | generated_statement_present == TRUE) return (1)
+  if (ralc_statement_present == TRUE | generated_statement_present == TRUE |
+      cochrane_statement_present == TRUE) return (1)
 
   # determine y of reference section for later exclusion
   reference_yx <- text_data |>
@@ -115,6 +130,19 @@
                   y > 21, # exclude upper margin
                   font_size > 4) |>
     .add_line_n()
+
+  potential_headings <- cols |>
+    dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]")) |>
+    dplyr::count(x) |>
+    dplyr::slice_max(order_by = n, n = 4) |>
+    dplyr::filter(n > 2) |>
+    dplyr::arrange(x) |>
+    dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
+    dplyr::filter(x_jump > 50 | x == x_jump)
+  potential_headings
+  ### experimental
+  if (nrow(potential_headings) > 1 & nrow(potential_headings) < 4) return(nrow(potential_headings))
+#178 not but 50 and 306
 
   if (nrow(cols) == 0) return (1)
 
@@ -209,7 +237,7 @@ Mode <- function(x) {
       dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 | prop_width < 0.2 | has_original_investigation,
                     !stringr::str_detect(font_name, "Bold")) |>
       dplyr::ungroup() |>
-      dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}")) & y_jump > 13) |>
+      dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}|\\u00a9")) & y_jump > 13) |>
       dplyr::pull(y)
     )
 
@@ -246,9 +274,9 @@ Mode <- function(x) {
                     jump_size = max(jump_size)) |>
       # dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
-                      stringr::str_detect(text, "20\\d{2}|\\.org|release")) |>
+                      stringr::str_detect(text, "20\\d{2}|\\.org|release|\\u00a9")) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "\\.org|release")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "\\.org|release|\\u00a9")) |>
       dplyr::pull(y)
   )
 
@@ -373,6 +401,15 @@ Mode <- function(x) {
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
+  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41467")) {
+    layout_divider_y <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "\\u00a9") &
+                      stringr::str_detect(dplyr::lead(text), "The") &
+                      stringr::str_detect(dplyr::lead(text, 2), "Author\\(s\\)")) |>
+      dplyr::mutate(y = y + 20) |>
+      dplyr::pull(y)
+    min_x <- .find_midpage_x(text_data |>
+                               dplyr::filter(y > layout_divider_y))
   } else if (stringr::str_detect(PDF_filename, "jneurosci")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Significance|Received|Introduction"))
@@ -388,6 +425,8 @@ Mode <- function(x) {
 
 
   has_mixed_layout <- layout_divider_y < 700 & cols > 1
+  # predivider_text <- text_data
+
 
   if (cols > 1 | is.na(cols)) {
 
@@ -402,6 +441,8 @@ Mode <- function(x) {
           dplyr::pull(x) |>
           min()
       )
+      # predivider_text <- text_data |>
+      #   dplyr::filter(y < layout_divider_y)
 
       if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est) ) col_predevider_x_est <- col2_x
     }
@@ -486,7 +527,7 @@ Mode <- function(x) {
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
                   x > 10, # remove margin text, e.g. 'downloaded from...'
                   height < max_height,
-                  width > 1) |> # remove zero width spaces
+                  width > 1 & text != "I") |> # remove zero width spaces
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0))
 
   if (stringr::str_detect(PDF_filename, "10\\.7554")) { # elife always 1 col, hardcoded to prevent confusion from tables
@@ -516,7 +557,7 @@ Mode <- function(x) {
     dplyr::ungroup()
 
 
-  section_jump <- text_data$jump_size[text_data$jump_size > 0] |>
+  section_jump <- text_data$jump_size[text_data$jump_size > 3] |>
     Mode() * 1.3
 
   section_jump <- min(section_jump, 25) # some manuscripts are double-spaced
