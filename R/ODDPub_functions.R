@@ -131,18 +131,10 @@
                   font_size > 4) |>
     .add_line_n()
 
-  potential_headings <- cols |>
-    dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]")) |>
-    dplyr::count(x) |>
-    dplyr::slice_max(order_by = n, n = 4) |>
-    dplyr::filter(n > 2) |>
-    dplyr::arrange(x) |>
-    dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
-    dplyr::filter(x_jump > 50 | x == x_jump)
-  potential_headings
-  ### experimental
-  if (nrow(potential_headings) > 1 & nrow(potential_headings) < 4) return(nrow(potential_headings))
-#178 not but 50 and 306
+  cols_x <- .find_cols_x(cols)
+
+  if (nrow(cols_x) > 1 & nrow(cols_x) < 4) return(nrow(cols_x))
+#178 not but 50 and 306 # find out typical 3-col values!
 
   if (nrow(cols) == 0) return (1)
 
@@ -300,41 +292,64 @@ Mode <- function(x) {
 }
 
 
+#' find x coordinates of the potential columns on a page
+#' @noRd
+.find_cols_x <- function(text_data) {
+  text_data |>
+    dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]")) |>
+    dplyr::count(x) |>
+    dplyr::slice_max(order_by = n, n = 4) |>
+    dplyr::filter(n > 2) |>
+    dplyr::arrange(x) |>
+    dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
+    dplyr::filter(x_jump > 50 | x == x_jump)
+}
+
+
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
 .find_midpage_x <- function(text_data) {
 
+  gaps <- .find_cols_x(text_data) |>
+    dplyr::filter(x >= 280) |>
+    dplyr::pull(x)
+
+
   # if (any(stringr::str_detect(text_data$text, "https://doi.org/10.1016/j.jclinepi."))) return(300)
 
-  gaps <- suppressMessages(
-    text_data |>
-      dplyr::filter(dplyr::between(x, 200, 350),
-                    font_size > 7) |>
-      dplyr::mutate(bins = floor(x/5) * 5) |>
-      dplyr::count(bins) |>
-      dplyr::full_join(tibble::tibble(bins = seq(200, 345, by = 5))) |>
-      tidyr::replace_na(list(n = 0)) |>
-      dplyr::arrange(bins) |>
-      # dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
-      # dplyr::slice_max(dist_next_bin) |>
-      dplyr::filter(n == min(n) & n < 2)
-    )
-
-  if (min(gaps$bins) >= 280) {
-    gaps <- gaps$bins
-
-  } else {
-    gaps <- gaps |>
-      dplyr::arrange(bins) |>
-      dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
-      dplyr::filter(dist_next_bin == 5, dplyr::lead(dist_next_bin) == 5) |>
-      dplyr::pull(bins)
-  }
+  # gaps <- suppressMessages(
+  #   text_data |>
+  #     dplyr::filter(dplyr::between(x, 200, 350),
+  #                   font_size > 7) |>
+  #     dplyr::mutate(bins = floor(x/5) * 5) |>
+  #     dplyr::count(bins) |>
+  #     dplyr::full_join(tibble::tibble(bins = seq(200, 345, by = 5))) |>
+  #     tidyr::replace_na(list(n = 0)) |>
+  #     dplyr::arrange(bins) |>
+  #     # dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
+  #     # dplyr::slice_max(dist_next_bin) |>
+  #     dplyr::filter(n == min(n) & n < 2)
+  #   )
+  #
+  # if (min(gaps$bins) >= 280) {
+  #   gaps <- gaps$bins
+  #
+  # } else {
+  #   # TODO: get gaps via mode x
+  #   cols_x <- .find_cols_x(text_data)
+  #
+  #
+  #  # gaps <- gaps |>
+  #  #    dplyr::arrange(bins) |>
+  #  #    dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
+  #  #    dplyr::filter(dist_next_bin == 5, dplyr::lead(dist_next_bin) == 5) |>
+  #  #    dplyr::pull(bins)
+  # }
 
   if (length(gaps) == 0){
     return(290)
   } else {
-    return(min(gaps))
+    return(min(gaps) - 2)
   }
 
 }
@@ -401,15 +416,21 @@ Mode <- function(x) {
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41467")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "\\u00a9") &
                       stringr::str_detect(dplyr::lead(text), "The") &
                       stringr::str_detect(dplyr::lead(text, 2), "Author\\(s\\)")) |>
       dplyr::mutate(y = y + 20) |>
       dplyr::pull(y)
-    min_x <- .find_midpage_x(text_data |>
-                               dplyr::filter(y > layout_divider_y))
+
+    if (!rlang::is_empty(layout_divider_y)) {
+      min_x <- .find_midpage_x(text_data |>
+                                 dplyr::filter(y > layout_divider_y))
+    } else {
+      layout_divider_y <- 800
+    }
+
   } else if (stringr::str_detect(PDF_filename, "jneurosci")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Significance|Received|Introduction"))
@@ -505,7 +526,7 @@ Mode <- function(x) {
                     font_size > 6.5) |>
       dplyr::mutate(text = stringr::str_remove(text, "Tag$"))
 
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41531")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "BBKNAK+AdvTT6780a46b")
   }
