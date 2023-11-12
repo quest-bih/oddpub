@@ -223,10 +223,13 @@ Mode <- function(x) {
       dplyr::group_by(line_n) |>
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump),
+                    has_coded_break = stringr::str_detect(text, "\\\b"),
                     has_original_investigation = text == "Investigation" & dplyr::lag(text) == "Original" &
                       dplyr::lead(x_jump) > 40) |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 | prop_width < 0.2 | has_original_investigation,
+      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 |
+                      prop_width < 0.2 | has_original_investigation |
+                      has_coded_break,
                     !stringr::str_detect(font_name, "Bold")) |>
       dplyr::ungroup() |>
       dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}|\\u00a9")) & y_jump > 13) |>
@@ -268,7 +271,7 @@ Mode <- function(x) {
       dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
                       stringr::str_detect(text, "20\\d{2}|\\.org|release|\\u00a9")) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "\\.org|release|\\u00a9")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "(?<!orcid)\\.org|release|\\u00a9")) |>
       dplyr::pull(y)
   )
 
@@ -296,9 +299,9 @@ Mode <- function(x) {
 #' @noRd
 .find_cols_x <- function(text_data) {
   text_data |>
-    dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]")) |>
+    dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]|\\d{1,3}|\\[")) |>
     dplyr::count(x) |>
-    dplyr::slice_max(order_by = n, n = 4) |>
+    dplyr::slice_max(order_by = n, n = 5) |>
     dplyr::filter(n > 2) |>
     dplyr::arrange(x) |>
     dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
@@ -311,7 +314,7 @@ Mode <- function(x) {
 .find_midpage_x <- function(text_data) {
 
   gaps <- .find_cols_x(text_data) |>
-    dplyr::filter(x >= 280) |>
+    dplyr::filter(x >= 250) |>
     dplyr::pull(x)
 
 
@@ -392,6 +395,7 @@ Mode <- function(x) {
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals
     stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
     cols == 2 ~ .find_midpage_x(text_data),
+    cols == 3 ~ .find_cols_x(text_data)$x[2],
     .default = 150
   )
 
@@ -442,8 +446,17 @@ Mode <- function(x) {
     }
     min_x <- .find_midpage_x(text_data |>
                                dplyr::filter(y > layout_divider_y))
+  } else if (stringr::str_detect(PDF_filename, "10\\.2196")) {
+    layout_divider_y <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "Acknowledgments") & dplyr::lag(space) == FALSE) |>
+      dplyr::mutate(y = y - 10) |>
+      dplyr::pull(y)
+    if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) {
+      layout_divider_y <- 800
+    } else {
+      min_x <- 800
+    }
   }
-
 
   has_mixed_layout <- layout_divider_y < 700 & cols > 1
   # predivider_text <- text_data
@@ -453,15 +466,16 @@ Mode <- function(x) {
 
     if (has_mixed_layout) {
 
-      col_predevider_x_est <- suppressWarnings(
-        text_data |>
-          dplyr::filter(y < layout_divider_y,
-                        x > min_x & dplyr::lag(space) == FALSE & stringr::str_detect(dplyr::lag(text), "\\."),
-                        # font_size > 5,
-                        stringr::str_detect(text, "[[:upper:]]")) |>
-          dplyr::pull(x) |>
-          min()
-      )
+      col_predevider_x_est <- .find_midpage_x(text_data |>
+                          dplyr::filter(y < layout_divider_y))
+      #   text_data |>
+      #     dplyr::filter(y < layout_divider_y,
+      #                   x > min_x & dplyr::lag(space) == FALSE & stringr::str_detect(dplyr::lag(text), "\\."),
+      #                   # font_size > 5,
+      #                   stringr::str_detect(text, "[[:upper:]]")) |>
+      #     dplyr::pull(x) |>
+      #     min()
+      # )
       # predivider_text <- text_data |>
       #   dplyr::filter(y < layout_divider_y)
 
@@ -469,12 +483,13 @@ Mode <- function(x) {
     }
 
     # estimate the x coordinate of the second column, usually around 303 - 306 for 2col layout
-    col2_x_est <- text_data |>
-      dplyr::filter(x > min_x & dplyr::lag(space) == FALSE,
-                    font_size > 5,
-                    stringr::str_detect(text, "[[:upper:]]|\\[|\\d\\.$")) |>
-      dplyr::pull(x) |>
-      min()
+    col2_x_est <- min_x
+      # text_data |>
+      # dplyr::filter(x > min_x & dplyr::lag(space) == FALSE,
+      #               font_size > 5,
+      #               stringr::str_detect(text, "[[:upper:]]|\\[|\\d\\.$")) |>
+      # dplyr::pull(x) |>
+      # min()
 
     # if (cols == 3) {
     col3_x_est <- suppressWarnings(
@@ -546,15 +561,16 @@ Mode <- function(x) {
                   y > min_y, # remove header
                   y < max_y, # remove footer
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
-                  x > 10, # remove margin text, e.g. 'downloaded from...'
+                  x > 18, # remove margin text, e.g. 'downloaded from...'
                   height < max_height,
-                  width > 1 & text != "I") |> # remove zero width spaces
+                  width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
+                  text != ".") |> # remove zero width spaces and single dots
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0))
 
   if (stringr::str_detect(PDF_filename, "10\\.7554")) { # elife always 1 col, hardcoded to prevent confusion from tables
     cols <- 1
   } else {
-    cols <- .est_col_n(text_data)
+    cols <- .est_col_n(text_data) |> floor()
   }
 
   if (nrow(text_data) < 2) return("")
@@ -619,6 +635,10 @@ Mode <- function(x) {
            (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]"))) & # some lines end with citation superscripts
         (font_name != dplyr::lag(font_name)),
       paragraph_start = abs(jump_size) > section_jump,
+      sameline_title = line_n > dplyr::lag(line_n) & heading_font &
+        (dplyr::lead(font_name) != font_name |
+           dplyr::lead(font_name, 2) != font_name |
+           dplyr::lead(font_name, 3) != font_name),
       # for the three-column science layout DAS may start within the line
       science_section =
         # (
@@ -649,6 +669,7 @@ Mode <- function(x) {
         text == "*" & dplyr::lag(space) == FALSE,
       section_start = (paragraph_start & (heading_font | prop_blank > 0.35 | dplyr::lag(prop_blank) > 0.35)) |
         (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
+        sameline_title |
         (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
         newline_heading | science_section | plain_section,
       text = dplyr::if_else(section_start == FALSE | is.na(section_start), text, paste("\n<section>", text))) |>
