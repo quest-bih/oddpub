@@ -152,13 +152,14 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
     detected_sentences <- .open_data_sentences(PDF_text_sentences, DAS_text_sentences, sentences_with_DAS,
                                                CAS_text_sentences, keyword_results)
     open_data_results <- cbind(open_data_results, detected_sentences[, -1]) |>
-      dplyr::as_tibble() |>
-      dplyr::mutate(has_only_unknown = .has_url(das) & !is_open_data & !is_reuse, # check for unknown website
-        open_data_category = dplyr::case_when(
-          has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url/accnr"),
-          has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url/accnr",
-          .default = open_data_category)) |>
-      dplyr::select(-has_only_unknown)
+      dplyr::as_tibble()
+    # |>
+    #   dplyr::mutate(has_only_unknown = .has_url(das) & !is_open_data & !is_reuse, # check for unknown website
+    #     open_data_category = dplyr::case_when(
+    #       has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url/accnr"),
+    #       has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url/accnr",
+    #       .default = open_data_category)) |>
+    #   dplyr::select(-has_only_unknown)
   }
 
   return(open_data_results)

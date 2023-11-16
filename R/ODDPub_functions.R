@@ -49,7 +49,7 @@
 #' calculate the estimated number of columns, based on the mean return symbol per line
 #'
 #' @noRd
-.est_col_n <- function(text_data) {
+.est_col_n <- function(text_data, PDF_filename) {
 
   ralc <- space <- text <- y <- x <- line_n <- has_jama <- NULL
 
@@ -69,8 +69,9 @@
     dplyr::pull(dac) |>
     as.logical()
 
+
   cochrane_statement_present <- text_data |>
-    dplyr::mutate(contrib = dplyr::if_else(dplyr::lag(space) == FALSE & text == "C" &
+    dplyr::mutate(contrib = dplyr::if_else((dplyr::lag(space) == FALSE | is.na(dplyr::lag(space))) & text == "C" &
                                          dplyr::lead(text) == "O" &
                                          dplyr::lead(text, n = 2) == "N" &
                                          dplyr::lead(text, n = 3) == "T" &
@@ -81,7 +82,7 @@
                                          1, 0)) |>
     dplyr::summarise(contrib = sum(contrib, na.rm = TRUE)) |>
     dplyr::pull(contrib) |>
-    as.logical()
+    as.logical() & stringr::str_detect(PDF_filename, "14651858")
   # if ralc is detected, force single-column layout
   generated_statement_present <- text_data |>
     dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "The" &
@@ -254,6 +255,9 @@ Mode <- function(x) {
   #   y_jump = dplyr::lead(sort(unique(text_data$y))) - y) |>
   #   dplyr::mutate(y_jump = dplyr::if_else(is.na(y_jump), 0, y_jump))
 
+  months <- lubridate::month(1:12, label = TRUE, abbr = FALSE) |>
+    paste(collapse = "|")
+
   footer_candidate <- suppressWarnings(
     text_data |>
       dplyr::filter(y > min_y) |>
@@ -269,9 +273,9 @@ Mode <- function(x) {
                     jump_size = max(jump_size)) |>
       # dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
-                      stringr::str_detect(text, "20\\d{2}|\\.org|release|\\u00a9")) |>
+                      stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|", months))) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, "(?<!orcid)\\.org|release|\\u00a9")) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|", months))) |>
       dplyr::pull(y)
   )
 
@@ -298,6 +302,26 @@ Mode <- function(x) {
 #' find x coordinates of the potential columns on a page
 #' @noRd
 .find_cols_x <- function(text_data) {
+  # has_table <- which(stringr::str_detect(text_data$text, "table \\d"))
+  table_y <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "(T|t)able") |
+             stringr::str_detect(text, "T") &
+             stringr::str_detect(dplyr::lead(text), "A") &
+             stringr::str_detect(dplyr::lead(text, 2), "B") &
+             stringr::str_detect(dplyr::lead(text, 3), "L") &
+             stringr::str_detect(dplyr::lead(text, 4), "E")
+           ) |>
+    dplyr::pull(y)
+
+  if (!rlang::is_empty(table_y)) {
+    table_max_x <- text_data |>
+      dplyr::filter(y == table_y) |>
+      dplyr::pull(x) |>
+      max(na.rm = TRUE)
+  } else {
+    table_max_x <- min(text_data$x, na.rm = TRUE) + 1
+  }
+
   text_data |>
     dplyr::filter(dplyr::lag(space) == FALSE, stringr::str_detect(text, "[A-Za-z]|\\d{1,3}|\\[")) |>
     dplyr::count(x) |>
@@ -305,16 +329,17 @@ Mode <- function(x) {
     dplyr::filter(n > 2) |>
     dplyr::arrange(x) |>
     dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
-    dplyr::filter(x_jump > 50 | x == x_jump)
+    dplyr::filter(x_jump > 50 | x == x_jump,
+                  !dplyr::between(x, min(x, na.rm = TRUE) + 1, table_max_x))
 }
 
 
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
-.find_midpage_x <- function(text_data) {
+.find_midpage_x <- function(text_data, min_x = 250) {
 
   gaps <- .find_cols_x(text_data) |>
-    dplyr::filter(x >= 250) |>
+    dplyr::filter(x >= min_x) |>
     dplyr::pull(x)
 
 
@@ -357,6 +382,15 @@ Mode <- function(x) {
 
 }
 
+#' filter out a table or figure caption from the text
+#' @noRd
+.filter_tabfig <- function(text_data) {
+
+  text_data |>
+    dplyr::filter(x >= min_x) |>
+    dplyr::pull(x)
+}
+
 #' find the y coordinate of the horizontal split in mixed layout page (first page) in Elsevier
 #' @noRd
 .get_elsevier_divider_y <- function(text_data) {
@@ -392,8 +426,9 @@ Mode <- function(x) {
   col3_x <- col_predevider_x_est <- col2_x
 
   min_x <- dplyr::case_when(
-    stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals
+    stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
     stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
+    stringr::str_detect(PDF_filename, "10\\.3389\\+f") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers
     cols == 2 ~ .find_midpage_x(text_data),
     cols == 3 ~ .find_cols_x(text_data)$x[2],
     .default = 150
@@ -570,7 +605,7 @@ Mode <- function(x) {
   if (stringr::str_detect(PDF_filename, "10\\.7554")) { # elife always 1 col, hardcoded to prevent confusion from tables
     cols <- 1
   } else {
-    cols <- .est_col_n(text_data) |> floor()
+    cols <- .est_col_n(text_data, PDF_filename) |> floor()
   }
 
   if (nrow(text_data) < 2) return("")
@@ -1426,7 +1461,7 @@ Mode <- function(x) {
                                 "not_data", "source_code", "supplement",
                                 "reuse",
                                 "grant",
-                                "file_formats", "upon_request", "dataset", "protocol")
+                                "file_formats", "upon_request", "dataset", "protocol", "weblink")
 
   # search for all relevant keyword categories
   publ_keywords <- sentence_search_keywords  |>
@@ -1759,8 +1794,10 @@ Mode <- function(x) {
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
     purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
+    purrr::map(dplyr::mutate, com_unknown_source = data & available & weblink &
+                 !not_available & !com_specific_repo & !com_general_repo & !com_github_data & !supplement) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
-                com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request)
+                com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request, com_unknown_source)
 
   return(keyword_results_combined)
 }
@@ -1852,7 +1889,9 @@ Mode <- function(x) {
                          reuse,
                          request,
                          github,
-                         data_journal)
+                         unknown_source,
+                         data_journal
+                         )
 {
   category = vector()
 
@@ -1876,9 +1915,9 @@ Mode <- function(x) {
   if (github == TRUE) {
     category <- category |> c("github")
   }
-  # if(unknown == TRUE) {
-  #   category <- category |> c("unknown repository")
-  # }
+  if(unknown_source == TRUE) {
+    category <- category |> c("unknown url")
+  }
   if(data_journal == TRUE) {
     category <- category |> c("data journal")
   }
@@ -1922,6 +1961,7 @@ Mode <- function(x) {
                   open_data_category = furrr::future_pmap_chr(list(com_specific_repo, is_general_purpose,
                                                                    is_supplement, is_reuse, com_request,
                                                                    com_github_data,
+                                                                   com_unknown_source,
                                                                    is_data_journal), .OD_category)) |>
     tibble::add_column(article = names(PDF_text_sentences)) |>
     dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code)
@@ -1948,7 +1988,7 @@ Mode <- function(x) {
 
   CAS_sentences <- CAS_sentences |>
     furrr::future_map_chr(\(x) paste(x, collapse = " ") |>  unlist())
-
+  # DAS_sentences <- CAS_sentences <- ""
 # tib <- tibble::tibble(text = DAS_sentences)
   #identifies the text fragments in which the Open Data keywords were detected
   open_data_sentences <- furrr::future_map(keyword_results, .text_fragments)
@@ -1962,7 +2002,7 @@ Mode <- function(x) {
                                      "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_reuse",
                                      "com_request",
-                                     # "com_unknown",
+                                     "com_unknown_source",
                                      "com_file_formats", "com_supplemental_data", "das", "cas")
   open_data_sentences[is.na(open_data_sentences)] = "" #unify empty fields
 
@@ -1972,7 +2012,7 @@ Mode <- function(x) {
       open_data_statements =
         paste(com_specific_repo, com_general_repo,
               com_github_data, dataset, com_file_formats,
-              com_supplemental_data, com_reuse, sep = " ") |>
+              com_supplemental_data, com_reuse, com_unknown_source, sep = " ") |>
         trimws()
                   ) |>
     # copy over das to cas if das is actually also a cas
