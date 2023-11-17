@@ -1252,6 +1252,7 @@ Mode <- function(x) {
                          "Data and ma-*te-*ri-*als a-*vai-*la-*bi-*li-*ty",
                          "Information on author access to data",
                          "Data, Materials, and Software Availability",
+                         "Data Transparency Statement",
                          "Data deposition",
                          "Deposited Data",
                          "Data Archiving",
