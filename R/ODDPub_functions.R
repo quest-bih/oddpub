@@ -562,6 +562,85 @@ Mode <- function(x) {
 
 }
 
+# insert_label <- "Appendix"
+#' find instances of tables, figures, or other inserts are on the page
+#' @noRd
+.find_inserts <- function(text_data, insert_label) {
+  text_data |>
+    dplyr::filter(stringr::str_detect(text, insert_label),
+                  is.na(dplyr::lag(space)) | dplyr::lag(space) == FALSE)
+}
+
+
+#' find a table or figure starting y coordinate
+#' @noRd
+.find_insert_min_y <- function(text_data, insert_label) {
+  first_insert <- text_data |>
+    .find_inserts(insert_label) |>
+    dplyr::filter(x == min(x))
+
+  first_insert |>
+    dplyr::pull(y)
+}
+
+#' find a table or figure starting x coordinate
+#' @noRd
+.find_insert_min_x <- function(text_data, insert_label) {
+
+  # start_y <- .find_insert_min_y(text_data, insert_label)
+
+  # min_x_start_y <- text_data |>
+  #   dplyr::filter(y == start_y) |>
+  #   dplyr::pull(x) |>
+  #   min()
+  text_data |>
+    .find_inserts(insert_label) |>
+    dplyr::filter(x == min(x)) |>
+    dplyr::pull(x)
+}
+
+#' find a table or figure ending x coordinate
+#' @noRd
+.find_insert_max_x <- function(text_data, insert_label) {
+
+  start_x <- .find_insert_min_x(text_data, insert_label)
+  if (start_x > 200) return(800)
+
+  start_y <- .find_insert_min_y(text_data, insert_label)
+
+  cols <- text_data |>
+    dplyr::filter(y < start_y + 50) |>
+    dplyr::arrange(y, x) |>
+    .add_line_n() |>
+    dplyr::filter(line_n == 1) |>
+    dplyr::summarize(n_breaks = sum(space == FALSE, na.rm = TRUE))
+
+  if (cols == 1) {
+    return(800)
+  } else {
+    text_data |>
+      .find_inserts(insert_label) |>
+      dplyr::mutate(x = x - 2) |>
+      dplyr::pull(x) |>
+      max(na.rm = TRUE)
+  }
+
+}
+
+#' find a table or figure ending x coordinate
+#' @noRd
+.find_insert_max_y <- function(text_data, insert_label) {
+  t2 <- text_data |>
+    dplyr::filter(y > .find_insert_min_y(text_data, insert_label),
+                  x < .find_insert_max_x(text_data, insert_label))
+
+}
+
+
+.add_table_cell_info <- function(text_data, min_x, max_x, min_y, max_y) {
+
+}
+
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
 #' to be saved as a txt for further processing
 #' @noRd
