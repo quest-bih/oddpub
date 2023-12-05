@@ -34,41 +34,6 @@ pdf_convert <- function(PDF_folder, output_folder)
   return(conversion_success)
 }
 
-#' Load converted PDFs.
-#'
-#' Loads the text files into a list of string vectors that can subsequently be searched by the text-mining algorithm.
-#' The returned object has a list structure with one list element per document.
-#' Each list element is a vector of strings containing the sentences of the document.
-#' First use the function pdf_convert to create the converted files, if you have them in PDF format.
-#'
-#' @param pdf_text_folder String of the folder name from which the converted files will be loaded.
-#'
-#' @return List with one element per document.
-#' Each document is split into its sentences and saved as a vector of strings.
-#'
-#' @examples
-#' \dontrun{
-#' pdf_load("examples/")
-#' }
-#' @export
-pdf_load <- function(pdf_text_folder)
-{
-
-  # read in full text from .txt files
-  txt_filenames <- list.files(pdf_text_folder)
-  txt_filenames <- txt_filenames[!stringr::str_detect(txt_filenames,stringr::fixed(".pdf"))]
-  txt_filenames_short <- txt_filenames # used as names for the text/results tables later
-  txt_filenames <- paste0(pdf_text_folder, txt_filenames)
-
-  # produce version of the full texts where all sentences are separate vector elements
-  PDF_text_sentences <- txt_filenames |>
-    furrr::future_map(.tokenize_sections, .progress = TRUE)
-
-  names(PDF_text_sentences) <- txt_filenames_short
-
-  return(PDF_text_sentences)
-}
-
 
 #' Seach for open data & open code keywords.
 #'
