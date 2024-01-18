@@ -130,7 +130,7 @@
                   font_size > 4) |>
     .add_line_n()
 
-  cols_x <- .find_cols_x(cols)
+  cols_x <- .find_cols_left_x(cols)
 
   if (nrow(cols_x) > 1 & nrow(cols_x) < 4) return(nrow(cols_x))
   #178 not but 50 and 306 # find out typical 3-col values!
@@ -214,30 +214,42 @@ Mode <- function(x) {
   #   Mode()
 
   header_candidate <- suppressWarnings(
-    text_data |>
-      dplyr::filter(y < 70,
-                    !stringr::str_detect(text, "\\.")) |>
+    # ht <-
+      text_data |>
+      dplyr::filter(y < min(y) + 20,
+                    !stringr::str_detect(text, "\\.$")) |>
       dplyr::arrange(y, x) |>
-      dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
-                    line_n = abs(jump_size) > 4,
-                    line_n = cumsum(line_n),
-                    x_jump = x - dplyr::lag(x, default = 0)) |>
+      .add_line_n() |>
+      dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0) -
+                      dplyr::lag(width, default = 0)) |>
       dplyr::group_by(line_n) |>
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump),
                     has_coded_break = stringr::str_detect(text, "\\\b"),
-                    has_original_investigation = text == "Investigation" & dplyr::lag(text) == "Original" &
-                      dplyr::lead(x_jump) > 40,
-                    n_breaks = sum(space == FALSE, na.rm = TRUE),
-                    is_insert = any(.str_has_insert(text))) |>
+                    # has_original_investigation = text == "Investigation" & dplyr::lag(text) == "Original" &
+                    #   dplyr::lead(x_jump) > 40,
+                    potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
+                      space == FALSE & (x < 100 | x > 500),
+                    ins_phrase = stringr::str_detect(text, "^Table|^Fig(u|\\.)|^Appendix|^FIG|^TABLE") |
+                      stringr::str_detect(text, "^TA?") & stringr::str_detect(dplyr::lead(text), "^B$|^A$") |
+                      stringr::str_detect(text, "^F$") & stringr::str_detect(dplyr::lead(text), "^I$"),
+                    is_insert = any(ins_phrase, na.rm = TRUE)) |>
+      dplyr::ungroup() |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_width < 0.4 & font_size < 9) | max_x_jump > 170 |
-                      prop_width < 0.2 | has_original_investigation |
+      dplyr::filter(
+      (prop_width < 0.4 & font_size < 9) | max_x_jump > 170 |
+                      prop_width < 0.2 |
+        # has_original_investigation |
+        potential_page_n |
                       has_coded_break,
                     is_insert == FALSE,
-                    !stringr::str_detect(font_name, "Bold")) |>
-      dplyr::ungroup() |>
-      dplyr::filter((y_jump == max(y_jump) | stringr::str_detect(text, "20\\d{2}|\\u00a9")) & y_jump > 13) |>
+                    !stringr::str_detect(font_name, "Bold")
+      ) |>
+      dplyr::filter((y_jump == max(y_jump) |
+                       # stringr::str_detect(text, "[C,c]ontinued") |
+                       stringr::str_detect(text, "20\\d{2}|\\u00a9"))
+                    # & y_jump > 13
+                    ) |>
       dplyr::pull(y)
       )
 
@@ -252,7 +264,7 @@ Mode <- function(x) {
 .find_footer_y <- function(text_data) {
 
   page_width <- max(text_data$x) - min(text_data$x)
-  min_y <- max(max(text_data$y) - 40, 720)
+  min_y <- min(max(text_data$y) - 50, 700)
 
   # linejumps <- tibble::tibble(
   #   y = sort(unique(text_data$y)),
@@ -263,8 +275,10 @@ Mode <- function(x) {
     paste(collapse = "|")
 
   footer_candidate <- suppressWarnings(
-    text_data |>
-      dplyr::filter(y > min_y) |>
+    ft <- text_data |>
+      dplyr::filter(y > min_y,
+                    height < 20,
+                    ) |>
       dplyr::arrange(y, x) |>
       dplyr::mutate(jump_size = y - dplyr::lag(y, default = min_y),
                     line_n = abs(jump_size) > 4,
@@ -272,20 +286,26 @@ Mode <- function(x) {
       dplyr::group_by(line_n) |>
       dplyr::arrange(line_n, x) |>
       dplyr::mutate(prop_full = sum(width)/page_width,
-                    x_jump = x - dplyr::lag(x, default = 0),
+                    x_jump = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
                     max_x_jump = max(x_jump),
-                    jump_size = max(jump_size)) |>
+                    jump_size = max(jump_size),
+                    potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
+                      space == FALSE & (x < 100 | x > 500),
+                    candidate = any(prop_full < 0.6 & round(font_size) < 9) |
+                      any(max_x_jump > 170) |
+                      potential_page_n |
+                      any(stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|Published|", months)))) |>
       # dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter((prop_full < 0.6 & round(font_size) < 9) | max_x_jump > 170 |
-                      stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|", months))) |>
+      dplyr::filter(candidate == TRUE,
+                    !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}")) |>
       dplyr::ungroup() |>
-      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|", months))) |>
+      dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months))) |>
       dplyr::pull(y)
   )
 
-  if (length(footer_candidate) == 0) return(max(text_data$y) + 1) # in case no footer is detected
+  if (length(footer_candidate) == 0) return(max(text_data$y) + 3) # in case no footer is detected
 
-  min(footer_candidate) - 1
+  min(footer_candidate)
 }
 
 #' add line numbers, but check if rearranging needed first
@@ -303,28 +323,10 @@ Mode <- function(x) {
 }
 
 
-#' find x coordinates of the potential columns on a page
+#' find left x coordinates of the potential columns on a page
 #' @noRd
-.find_cols_x <- function(text_data) {
-  # has_table <- which(stringr::str_detect(text_data$text, "table \\d"))
-  # table_y <- text_data |>
-  #   dplyr::filter(stringr::str_detect(text, "(T|t)able") |
-  #            stringr::str_detect(text, "T") &
-  #            stringr::str_detect(dplyr::lead(text), "A") &
-  #            stringr::str_detect(dplyr::lead(text, 2), "B") &
-  #            stringr::str_detect(dplyr::lead(text, 3), "L") &
-  #            stringr::str_detect(dplyr::lead(text, 4), "E")
-  #          ) |>
-  #   dplyr::pull(y)
-  #
-  # if (!rlang::is_empty(table_y)) {
-  #   table_max_x <- text_data |>
-  #     dplyr::filter(y == table_y) |>
-  #     dplyr::pull(x) |>
-  #     max(na.rm = TRUE)
-  # } else {
-  #   table_max_x <- min(text_data$x, na.rm = TRUE) + 1
-  # }
+.find_cols_left_x <- function(text_data) {
+
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
@@ -344,55 +346,50 @@ Mode <- function(x) {
     dplyr::filter(x_jump > 50 | x == x_jump)
 }
 
+#' find right x coordinates of the potential columns on a page
+#' @noRd
+.find_cols_right_x <- function(text_data) {
+  text_data <- text_data |>
+    dplyr::filter(insert == 0)
+
+  if (nrow(text_data) == 0) return(tibble::tibble(x = 0))
+
+  if (min(text_data$x) > 200) return(tibble::tibble(x = max(text_data$x)))
+
+  text_data |>
+    dplyr::filter(x > 150, space == FALSE,
+                  stringr::str_detect(text, "^[a-z]|\\W$")) |>
+    dplyr::mutate(x = x + width + 2) |>
+    dplyr::count(x) |>
+    dplyr::slice_max(order_by = n, n = 5) |>
+    dplyr::filter(n > 2) |>
+    dplyr::arrange(x) |>
+    dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
+    dplyr::filter(x_jump > 50 | x == x_jump)
+}
+
 
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
 .find_midpage_x <- function(text_data, min_x = 250) {
 
-  gaps <- .find_cols_x(text_data) |>
+  gaps_r <- .find_cols_left_x(text_data) |>
     dplyr::filter(x >= min_x) |>
     dplyr::pull(x)
 
+  gaps_l <- .find_cols_right_x(text_data) |>
+    dplyr::filter(x < min_x * 2,
+                  x != 0) |>
+    dplyr::pull(x)
 
-  # if (any(stringr::str_detect(text_data$text, "https://doi.org/10.1016/j.jclinepi."))) return(300)
-
-  # gaps <- suppressMessages(
-  #   text_data |>
-  #     dplyr::filter(dplyr::between(x, 200, 350),
-  #                   font_size > 7) |>
-  #     dplyr::mutate(bins = floor(x/5) * 5) |>
-  #     dplyr::count(bins) |>
-  #     dplyr::full_join(tibble::tibble(bins = seq(200, 345, by = 5))) |>
-  #     tidyr::replace_na(list(n = 0)) |>
-  #     dplyr::arrange(bins) |>
-  #     # dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
-  #     # dplyr::slice_max(dist_next_bin) |>
-  #     dplyr::filter(n == min(n) & n < 2)
-  #   )
-  #
-  # if (min(gaps$bins) >= 280) {
-  #   gaps <- gaps$bins
-  #
-  # } else {
-  #   # TODO: get gaps via mode x
-  #   cols_x <- .find_cols_x(text_data)
-  #
-  #
-  #  # gaps <- gaps |>
-  #  #    dplyr::arrange(bins) |>
-  #  #    dplyr::mutate(dist_next_bin = dplyr::lead(bins) - bins) |>
-  #  #    dplyr::filter(dist_next_bin == 5, dplyr::lead(dist_next_bin) == 5) |>
-  #  #    dplyr::pull(bins)
-  # }
-
-  if (length(gaps) == 0){
+  if (length(gaps_l) == 0 | length(gaps_r) == 0 | # for no consistent midgap
+      length(gaps_r) > length(gaps_l)) { # or for tabular data?
     return(290)
   } else {
-    return(min(gaps) - 2)
+    return(mean(c(gaps_l, gaps_r)))
   }
 
 }
-
 
 #' find the y coordinate of the horizontal split in mixed layout page (first page) in Elsevier
 #' @noRd
@@ -423,17 +420,17 @@ Mode <- function(x) {
 #' @noRd
 .add_column_info <- function(text_data, cols, PDF_filename) {
 # text_data <- flagged_text_data
-  ### early return for one column only?
 
   col2_x <- 800 # initial estimate is the maximum, works for single column layouts
   col3_x <- col_predevider_x_est <- col2_x
 
   min_x <- dplyr::case_when(
+    cols == 1 ~ 150,
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
     stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
     stringr::str_detect(PDF_filename, "10\\.3389\\+f") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers
     cols == 2 ~ .find_midpage_x(text_data),
-    cols == 3 ~ .find_cols_x(text_data)$x[2],
+    cols == 3 ~ .find_cols_left_x(text_data)$x[2],
     .default = 150
   )
 
@@ -506,28 +503,12 @@ Mode <- function(x) {
 
       col_predevider_x_est <- .find_midpage_x(text_data |>
                                                 dplyr::filter(y < layout_divider_y))
-      #   text_data |>
-      #     dplyr::filter(y < layout_divider_y,
-      #                   x > min_x & dplyr::lag(space) == FALSE & stringr::str_detect(dplyr::lag(text), "\\."),
-      #                   # font_size > 5,
-      #                   stringr::str_detect(text, "[[:upper:]]")) |>
-      #     dplyr::pull(x) |>
-      #     min()
-      # )
-      # predivider_text <- text_data |>
-      #   dplyr::filter(y < layout_divider_y)
 
       if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est) ) col_predevider_x_est <- col2_x
     }
 
     # estimate the x coordinate of the second column, usually around 303 - 306 for 2col layout
     col2_x_est <- min_x
-    # text_data |>
-    # dplyr::filter(x > min_x & dplyr::lag(space) == FALSE,
-    #               font_size > 5,
-    #               stringr::str_detect(text, "[[:upper:]]|\\[|\\d\\.$")) |>
-    # dplyr::pull(x) |>
-    # min()
 
     # if (cols == 3) {
     col3_x_est <- suppressWarnings(
@@ -552,9 +533,9 @@ Mode <- function(x) {
     if (col3_x - col3_x_est > 100) col3_x <- col3_x_est
   }
 
-  # n_inserts <- max(text_data$insert)
 
   cols_w_inserts <- text_data |>
+    dplyr::arrange(insert) |>
     dplyr::mutate(column = dplyr::case_when(
       insert == 0 & x >= col_predevider_x_est & y < layout_divider_y & has_mixed_layout ~ 2,
       insert == 0 & x >= col2_x & x < col3_x & !has_mixed_layout ~ 2,
@@ -565,21 +546,21 @@ Mode <- function(x) {
       insert > 0 ~ insert + cols,
       .default = 1),
       text = dplyr::case_when(
-        insert > 0 & dplyr::lag(insert, default = 0) == 0 ~ paste("\n<insert>", text),
-        insert > 0 & dplyr::lead(insert, default = 0) == 0 ~ paste(text, "\n<iend>"),
+        insert > 0 & dplyr::lag(insert, default = 0) != insert ~ paste("\n<insert>", text),
+        insert > 0 & dplyr::lead(insert, default = 0) != insert ~ paste(text, "\n<iend>"),
         .default = text)
       )
 
-  # main_text <- cols_w_inserts |>
-  #   dplyr::filter(insert == 0) |>
-  #   dplyr::arrange(column, y, x)
-### TODO: order by insert as well??
-cols_w_inserts |>
-  dplyr::arrange(insert, column, y, x)
+  main_text <- cols_w_inserts |>
+    dplyr::filter(insert == 0) |>
+    dplyr::arrange(column, y, x)
+# cols_w_inserts |>
+#   dplyr::arrange(insert, column, y, x)
   #
-  # cols_w_inserts |>
-  #   dplyr::filter(insert > 0) |>
-  #   dplyr::bind_rows(main_text)
+  cols_w_inserts |>
+    dplyr::filter(insert > 0) |>
+    dplyr::arrange(column) |>
+    dplyr::bind_rows(main_text)
 
 }
 
@@ -588,23 +569,34 @@ cols_w_inserts |>
 #' @noRd
 .find_inserts <- function(text_data) {
   text_data |>
-    dplyr::mutate(y_jump = abs(y - dplyr::lag(y, default = 0)),
+    # dplyr::arrange(y, x) |>
+    dplyr::filter(!stringr::str_detect(text, "\\u25c2")) |>
+    dplyr::mutate(
+      x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
+      y_jump = abs(y - dplyr::lag(y, default = 0)),
                   leads = stringr::str_detect(dplyr::lead(text, 1), "[A-Z]") |
-                                stringr::str_detect(dplyr::lead(text, 2), "[A-Z]")) |>
-    dplyr::filter(.str_has_insert(text) & (y_jump > 16 | (x > 300 & y < 100)),
-                  stringr::str_length(text) > 2 | (stringr::str_detect(text, "^TA?$|^F$") &
+                                stringr::str_detect(dplyr::lead(text, 2), "[A-Z]"),
+      vertical = width <= height & stringr::str_length(text) > 2 &
+        !stringr::str_detect(text, "^F")) |>
+    dplyr::filter(.str_has_insert(text) & (y_jump >= 14 | (x > 300 & y < 100) |
+                                             x_jump_size < -250) |
+                    stringr::str_detect(text, "^REAGENT$") &
+                    stringr::str_detect(dplyr::lead(text, 1), "^or$") &
+                    stringr::str_detect(dplyr::lead(text, 2), "^RESOURCE$"),
+                  stringr::str_length(text) > 2 |
+                    (stringr::str_detect(text, "^TA?$|^F$") &
                        stringr::str_detect(dplyr::lead(text, 1), "^A$|^B$|^I$") &
                        stringr::str_detect(dplyr::lead(text, 2), "^B$|^L$|^G$")),
-
-                  is.na(dplyr::lag(space)) | dplyr::lag(space) == FALSE,
-                  leads == TRUE,
-                  !stringr::str_detect(dplyr::lead(text, 1), "\\."))
+                  # is.na(dplyr::lag(space)) | dplyr::lag(space) == FALSE,
+                  leads == TRUE
+                  ) |>
+    dplyr::select(-leads)
 }
 
 #' detect if a string has the regex for insert
 #' @noRd
 .str_has_insert <- function(string) {
-  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table|^Fig|^Appendix")
+  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table|^Fig(u|\\.)|^Appendix|^FIG|^TABLE|^KEY$|^REAGENT$")
 }
 
 #' find a table or figure starting y coordinate
@@ -612,11 +604,22 @@ cols_w_inserts |>
 .find_insert_min_y <- function(text_data) {
   first_insert <- text_data |>
     .find_inserts() |>
-    dplyr::filter(x == min(x)) |>
+    dplyr::filter(x == min(x)) |> # has to happen in two steps!!!
     dplyr::filter(y == min(y))
 
-  first_insert |>
-    dplyr::pull(y)
+  if (first_insert$vertical == FALSE) {
+    min_y <- first_insert |>
+      dplyr::pull(y)
+
+  } else { # if vertical table
+    min_y <- text_data |>
+      dplyr::filter(height > width) |>
+      dplyr::filter(y == min(y)) |>
+      dplyr::summarise(y = dplyr::first(y)) |>
+      dplyr::pull(y)
+  }
+
+  min_y
 }
 
 #' find a table or figure starting x coordinate
@@ -628,10 +631,20 @@ cols_w_inserts |>
 
   if (nrow(inserts) == 0) return (800)
 
-  inserts |>
+  first_insert <- inserts |>
     dplyr::filter(x == min(x)) |>
-    dplyr::pull(x) |>
-    min()
+    dplyr::filter(y == min(y))
+
+  midpage_gap <- .find_midpage_x(text_data)
+  # col_width <- .get_page_width(text_data) / 2
+  min_x <- text_data$x |> min()
+
+  if (!dplyr::between(first_insert$x, min_x, midpage_gap) |
+      first_insert$vertical == TRUE) {
+    min_x <- first_insert$x
+  }
+
+  min_x
 }
 
 #' find a table or figure ending x coordinate
@@ -639,36 +652,132 @@ cols_w_inserts |>
 .find_insert_max_x <- function(text_data) {
   # text_data <- flagged_text_data |> filter(insert == 0)
   start_x <- .find_insert_min_x(text_data)
-  if (start_x > 200) return(800)
+  if (start_x > 199) return(800)
 
   start_y <- .find_insert_min_y(text_data)
 
+  midpage <- .find_midpage_x(text_data)
+
+  inserts <- text_data |>
+    .find_inserts()
+
+  first_insert <- inserts |>
+    dplyr::filter(x == min(x)) |> # has to happen in two steps!!!
+    dplyr::filter(y == min(y))
+
+  if (first_insert$vertical == TRUE) {
+
+    mean_widths <- text_data |>
+      dplyr::mutate(first_col = dplyr::if_else(x < midpage, "col1", "col2")) |>
+      dplyr::group_by(first_col) |>
+      dplyr::summarise(width = mean(width)) |>
+      tidyr::pivot_wider(names_from = first_col, values_from = width)
+
+    if (mean_widths$col2 > 10) { # if second column horizontal
+      return(midpage)
+    } else { # if full page vertical
+      return(800)
+    }
+
+
+  }
+
+  col_width <- .get_page_width(text_data) / 2
+
+
   cols <- text_data |>
-    dplyr::filter(y >= start_y - 10,
-                  y < start_y + 50) |>
+    dplyr::filter(y >= start_y - 20,
+                  y < start_y + 50,
+                  is_subpscript == FALSE,
+                  dplyr::lead(is_subpscript, default = FALSE) == FALSE,
+                  text != "="
+                  ) |>
     dplyr::arrange(y, x) |>
     .add_line_n() |>
+    dplyr::mutate(first_col = x < midpage) |>
+    dplyr::arrange(line_n, x) |>
     dplyr::group_by(line_n) |>
-    dplyr::mutate(line_start_y = start_y %in% y) |>
-    dplyr::filter(line_start_y == TRUE) |>
-    # dplyr::ungroup() |>
-    dplyr::summarize(n_breaks = sum(space == FALSE, na.rm = TRUE)) |>
-    dplyr::pull(n_breaks)
+    dplyr::mutate(next_space_width = dplyr::lead(x) - x - width,
+                  prop_space = next_space_width /
+                    mean(next_space_width, na.rm = TRUE),
+                  widths_left = as.numeric(first_col) * width |>
+                    dplyr::na_if(0),
+                  widths_right = as.numeric(first_col == FALSE) * width |>
+                    dplyr::na_if(0),
+                  prop_widths_left = sum(widths_left, na.rm = TRUE) / col_width,
+                  prop_widths_right = sum(widths_right, na.rm = TRUE) / col_width,
+                  line_start_y = any(.str_has_insert(text)),
+                  n_cols = sum(space == FALSE),
+                  n_cols_left = sum(first_col == TRUE & space == FALSE) |>
+                    dplyr::na_if(0),
+                  n_cols_right = sum(first_col == FALSE & space == FALSE) |>
+                    dplyr::na_if(0)
 
-  if (cols == 1) {
+                  ) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(mean_cols = mean(n_cols, na.rm = TRUE),
+                  mean_cols_left = mean(n_cols_left, na.rm = TRUE),
+                  mean_cols_right = mean(n_cols_right, na.rm = TRUE),
+                  mean_prop_widths_right = mean(prop_widths_right |> dplyr::na_if(0),
+                                                na.rm = TRUE)) |>
+    dplyr::filter(line_start_y == TRUE) |>
+    dplyr::filter(line_n == min(line_n))
+
+  short_title_followed_by_2col <- cols |>
+    dplyr::summarise(two_col_layout = max(x, na.rm = TRUE) < midpage &
+                       dplyr::first(n_cols) < dplyr::first(mean_cols) &
+                       dplyr::first(mean_cols) > 1 &
+                       dplyr::first(mean_cols) < 2.5) |>
+    dplyr::pull(two_col_layout)
+
+  multicol_layout <- cols |> # e.g. when caption in first col, nature
+    dplyr::summarise(multicol = dplyr::first(n_cols) > 2 &
+                       dplyr::first(mean_cols) > 2 &
+                       dplyr::first(prop_widths_left) < 0.7,
+                     twocol = dplyr::first(n_cols) == 2 &
+                       dplyr::first(mean_cols_left) > 1
+                     )
+  # empty_second_col <- cols |>
+  #     dplyr::summarise(second_col = dplyr::first(prop_widths_right) == 0 &
+  #                        max(x) < midpage &
+  #                        dplyr::first(mean_prop_widths_right) > 0.5,
+  #                        n() > 1
+  #                      ) |> # single word on line
+  #     dplyr::pull(second_col)
+
+    if (short_title_followed_by_2col == TRUE
+        # |
+        # empty_second_col == TRUE
+        ) {
+      cols <- 2
+    } else if (multicol_layout$multicol == TRUE) {
+      cols <- 0
+    } else {
+      cols <- cols |>
+        dplyr::summarise(
+          n_breaks = sum(space == FALSE &
+                           (is.na(prop_space) | (prop_space > 1 & next_space_width > 5)),
+                         na.rm = TRUE)
+        ) |>
+        dplyr::pull(n_breaks)
+    }
+
+  if (cols < 2) {
     return(800)
   } else {
-    inserts <- text_data |>
-      .find_inserts()
+
     # if two-col layout with inserts in each column
-    if (nrow(inserts) > 1 & length(unique(inserts$x)) > 1) {
+    if (nrow(inserts) > 1 & length(unique(round(inserts$x, - 1))) > 1) {
       max_x <- inserts |>
         dplyr::mutate(x = x - 2) |>
         dplyr::pull(x) |>
         max(na.rm = TRUE)
-    } else { # if multiple inserts in same column
+    } else if (multicol_layout$twocol == TRUE) { # two-column captions
+      return(800)
+    } else { # if multiple inserts in same column or no inserts
       max_x <- text_data |>
-        .find_midpage_x()
+        .find_midpage_x() |>
+        round()
     }
   }
   max_x
@@ -678,36 +787,59 @@ cols_w_inserts |>
 #' @noRd
 .find_insert_max_y <- function(text_data) {
   # text_data <- flagged_text_data |> dplyr::filter(insert == 0)
-  y_min <- .find_insert_min_y(text_data)
-  x_min <- .find_insert_min_x(text_data)
-  x_max <- .find_insert_max_x(text_data)
+
+  first_insert <- text_data |>
+    .find_inserts() |>
+    dplyr::filter(x == min(x)) |> # has to happen in two steps!!!
+    dplyr::filter(y == min(y))
+
+  if (first_insert$vertical == TRUE |
+      max(text_data$x) > 600) return(max(text_data$y + 2))
+
+  min_x <- .find_insert_min_x(text_data)
+  min_y <- .find_insert_min_y(text_data)
+  max_x <- .find_insert_max_x(text_data)
+
+
+  min_y_next_insert <- .find_inserts(text_data) |>
+    dplyr::filter(x <= max_x,
+                  y > min_y) |>
+    dplyr::pull(y)
+  min_y_next_insert <- min(max(text_data$y) + 2, min_y_next_insert - 2)
 
   last_row <- text_data |>
-    dplyr::filter(y > y_min,
-                  x >= x_min,
-                  x <= x_max) |>
+    dplyr::filter(y >= min_y - 2,
+                  y < min_y_next_insert,
+                  x >= min_x,
+                  x <= max_x,
+                  is_subpscript == FALSE) |>
+    dplyr::ungroup() |>
     dplyr::arrange(y, x) |>
     dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y) |>
-    dplyr::filter(y_jump >= 24)
+    dplyr::filter(abs(y_jump) >= round(2.5 * font_size) | # for 7.5 font it is 20, for 7 it is 18
+                    y_jump > 19 |
+                    y == max(y)
+                  ) |>
+    dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y,
+                  max_y_before_last = dplyr::if_else(dplyr::lead(y == max(y), default = 0), 1, 0) * y_jump,
+                  y_exceeded = dplyr::if_else(y_jump <= 0 &
+                                                max(max_y_before_last, na.rm = TRUE) > 80, 1, 0)) |>
+    dplyr::filter(y_exceeded == 0)
+
 
   if (nrow(last_row) == 0) return(800)
 
-  last_row <- last_row |>  #== max(y_jump)) |>
-    dplyr::filter(font_name == dplyr::first(font_name)) |>
-    dplyr::pull(y)
+  last_row <- last_row |>
+    dplyr::filter(font_size <= ceiling(dplyr::first(font_size))
+                  )
 
-  if (text_data |>
-      dplyr::filter(x == x_min, y == y_min) |>
-      dplyr::pull(text) |>
-      stringr::str_detect("Fig|^F")) {
-    last_row <- min(last_row)
+  last_row <- last_row |>
+      dplyr::pull(y) |>
+      max()
 
-  } else {
-    last_row <- max(last_row)
-  }
   last_row
 }
-# text_data <- flagged_text_data |> filter(insert == 0)
+# text_data <- flagged_text_data |> dplyr::filter(insert == 0)
 #
 
 #' flag a single table or figure as insert
@@ -719,15 +851,15 @@ cols_w_inserts |>
   text_data |>
     dplyr::mutate(insert = dplyr::case_when(
       x >= coord_vec[1] & x <= coord_vec[2] &
-        y >= coord_vec[3] & y <= coord_vec[4] ~ insert_n,
+        y >= coord_vec[3] - 3 & y <= coord_vec[4] ~ insert_n,
       .default = insert
     ))
 }
 
+#' flag all inserts: figures, tables, appendix tables containing Authorship Info
+#' @noRd
 .flag_all_inserts <- function(text_data) {
-  # figures/tables/appendices
 
-  # insert_label <- "^Figure|^Table|^Appendix"
   inserts <- .find_inserts(text_data)
 
   flagged_text_data <- text_data |>
@@ -736,48 +868,28 @@ cols_w_inserts |>
   if (nrow(inserts) == 0) return(flagged_text_data)
 
   for (i in 1:nrow(inserts)) {
-    # i <- 1
+    # i <- 2
     flagged_text_data <- flagged_text_data |>
       .flag_as_insert(c(.find_insert_min_x(flagged_text_data |>
-                                             dplyr::filter(insert == 0)),
+                                             dplyr::filter(insert == 0)) - 2,
                         .find_insert_max_x(flagged_text_data |>
                                              dplyr::filter(insert == 0)),
                         .find_insert_min_y(flagged_text_data |>
-                                             dplyr::filter(insert == 0)),
+                                             dplyr::filter(insert == 0)) - 2,
                         .find_insert_max_y(flagged_text_data |>
-                                             dplyr::filter(insert == 0))),
+                                             dplyr::filter(insert == 0)) + 2),
                       insert_n = i)
-
-    # flagged_text_data |>
-    #   dplyr::select(x, y, insert, insert_i)
-    # text_data |>
-    #   dplyr::anti_join(flagged_text_data, by = c("x", "y"))
 
   }
 
   flagged_text_data
-
-
 }
 
-# t2 <- text_data |>
-#   # dplyr::mutate(insert = FALSE) |>
-#   .flag_as_insert(c(.find_insert_min_x(text_data, insert_label),
-#                                         .find_insert_max_x(text_data, insert_label),
-#                                         .find_insert_min_y(text_data, insert_label),
-#                                         .find_insert_max_y(text_data, insert_label)))
-
-# t2 |>
-
-
-#' convert the dataframe extracted by pdftools::pdf_data into a one-column string
-#' to be saved as a txt for further processing
+#' detect margins and remove text from them, as well as from hidden text layers
 #' @noRd
-.textbox_to_str <- function(text_data, PDF_filename) {
+.clear_margins <- function(text_data, PDF_filename) {
 
-  if (nrow(text_data) == 0) return("")
-
-  # remove hidden text tags in Elsevier Journals
+  # remove hidden text tags and layers in various journals
   if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.ecl")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "DOHGPO+AdvP48722B",
@@ -787,45 +899,65 @@ cols_w_inserts |>
   } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "BBKNAK+AdvTT6780a46b")
+  } else if (stringr::str_detect(PDF_filename, "10\\.1371")) {
+    text_data <- text_data |>
+      dplyr::filter(!stringr::str_detect(font_name, "LMNJSZ"))
+  } else if (stringr::str_detect(PDF_filename, "10\\.3390")) {
+    text_data <- text_data |>
+      dplyr::filter(!stringr::str_detect(font_name, "AEG"))
   }
 
-  min_y <- .find_header_y(text_data) # remove header in most journals
-  max_y <- .find_footer_y(text_data) # remove footer in most journals
-  max_x <- 563 # remove right margin in most journals
-  max_height <- 300 # remove vertical text, e.g. column separator "......"
+  min_y <- .find_header_y(text_data) # detect header in most journals
+  max_y <- .find_footer_y(text_data) # detect footer in most journals
+  max_x <- 563 # detect right margin in most journals
+  max_height <- 300 # detect vertical text, e.g. column separator "......"
 
   if (text_data |> dplyr::filter(x > max_x, height > 20) |> nrow() == 0) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
 
-  text_data <- text_data |>
+  text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the header and footer
     dplyr::filter(!(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
                       !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section|and")),
-                  y > min_y, # remove header
-                  y < max_y, # remove footer
+                  y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
+                  y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
                   x > 18, # remove margin text, e.g. 'downloaded from...'
                   height < max_height,
                   width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
                   text != "\\.") |> # remove zero width spaces and single dots
-    dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0))
+    dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
+                  is_subpscript = abs(x_jump_size) < 5 & dplyr::lag(font_size, default = 100) > font_size &
+                    dplyr::lead(font_size, default = 100) > font_size
+    )
+
+}
+
+#' Estimate the width of the page
+#' @noRd
+.get_page_width <- function(text_data) {
+  max(text_data$x) - min(text_data$x)
+}
+
+#' convert the dataframe extracted by pdftools::pdf_data into a one-column string
+#' to be saved as a txt for further processing
+#' @noRd
+.textbox_to_str <- function(text_data, PDF_filename) {
+
+  if (nrow(text_data) == 0) return("")
 
   text_data <- text_data |>
+    .clear_margins(PDF_filename) |>
     .flag_all_inserts()
 
-  # if (stringr::str_detect(PDF_filename, "10\\.7554")) { # elife always 1 col, hardcoded to prevent confusion from tables
-  #   cols <- 1
-  # } else {
   cols <- .est_col_n(text_data, PDF_filename) |> floor()
-  # }
 
   if (nrow(text_data) < 2) return("")
 
   text_data <- text_data |>
     .add_column_info(cols, PDF_filename)
 
-  page_width <- max(text_data$x) - min(text_data$x)
-  col_width <- page_width/2 # quick approximation perhaps sufficient?
+  page_width <- .get_page_width(text_data)
 
   text_data <- .add_line_n(text_data) |>
     # text_data2 <- .add_line_n(text_data) |>
@@ -834,7 +966,7 @@ cols_w_inserts |>
     dplyr::group_by(line_n) |>
     dplyr::mutate(prop_blank = dplyr::case_when( # calculate approx. prop. blank space on line
       cols == 1 ~ 1 - sum(width)/page_width,
-      cols == 2 ~ 1 - sum(width)/col_width,
+      cols == 2 ~ 1 - sum(width)/(page_width/2),
       .default = 1 - sum(width)/(page_width/3)
     )) |>
     dplyr::ungroup()
@@ -844,11 +976,7 @@ cols_w_inserts |>
     Mode() * 1.3
 
   section_jump <- min(section_jump, 25) # some manuscripts are double-spaced
-  # regular_font_size <- text_data |>
-  #   filter(font_size > 7) |>
-  #   pull(font_size) |>
-  #   Mode()
-  # str_detect("[B,b]old|\\.[B,b]|PSHN-H$|PA5D1$")
+
   heading_font_regex <- c("[B,b]old",
                           "\\.[B,b]",
                           "CharisSIL-Italic$",
