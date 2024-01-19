@@ -230,7 +230,7 @@ Mode <- function(x) {
                     #   dplyr::lead(x_jump) > 40,
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
-                    ins_phrase = stringr::str_detect(text, "^Table|^Fig(u|\\.)|^Appendix|^FIG|^TABLE") |
+                    ins_phrase = stringr::str_detect(text, "^Table|^Fig(u|\\.)|^Appendix(?!,)|^FIG|^TABLE") |
                       stringr::str_detect(text, "^TA?") & stringr::str_detect(dplyr::lead(text), "^B$|^A$") |
                       stringr::str_detect(text, "^F$") & stringr::str_detect(dplyr::lead(text), "^I$"),
                     is_insert = any(ins_phrase, na.rm = TRUE)) |>
@@ -336,8 +336,12 @@ Mode <- function(x) {
 
   text_data |>
     dplyr::filter(dplyr::lag(space) == FALSE,
+                  # space == TRUE,
+                  # font_size > 6,
                   stringr::str_detect(text, "[A-Za-z]|\\d{1,3}|\\["),
-                  !stringr::str_detect(text, "\\(")) |>
+                  !stringr::str_detect(text, "\\(")
+
+                  ) |>
     dplyr::count(x) |>
     dplyr::slice_max(order_by = n, n = 5) |>
     dplyr::filter(n > 2) |>
@@ -568,7 +572,7 @@ Mode <- function(x) {
 #' find instances of tables, figures, or other inserts are on the page
 #' @noRd
 .find_inserts <- function(text_data) {
-  text_data |>
+  insert_candidates <- text_data |>
     # dplyr::arrange(y, x) |>
     dplyr::filter(!stringr::str_detect(text, "\\u25c2")) |>
     dplyr::mutate(
@@ -576,10 +580,16 @@ Mode <- function(x) {
       y_jump = abs(y - dplyr::lag(y, default = 0)),
                   leads = stringr::str_detect(dplyr::lead(text, 1), "[A-Z]") |
                                 stringr::str_detect(dplyr::lead(text, 2), "[A-Z]"),
-      vertical = width <= height & stringr::str_length(text) > 2 &
-        !stringr::str_detect(text, "^F")) |>
-    dplyr::filter(.str_has_insert(text) & (y_jump >= 14 | (x > 300 & y < 100) |
-                                             x_jump_size < -250) |
+      vertical = width <= height & stringr::str_length(text) > 2,
+      verticality = mean(vertical, na.rm = TRUE)) |>
+    dplyr::filter(
+      # y_jump != 0,
+                  .str_has_insert(text) &
+                    (y_jump >= 14 |
+                       (x > 300 & y < 100 & dplyr::lag(space) == FALSE)
+                     |
+                       (x_jump_size < -260)
+                     ) |
                     stringr::str_detect(text, "^REAGENT$") &
                     stringr::str_detect(dplyr::lead(text, 1), "^or$") &
                     stringr::str_detect(dplyr::lead(text, 2), "^RESOURCE$"),
@@ -591,12 +601,28 @@ Mode <- function(x) {
                   leads == TRUE
                   ) |>
     dplyr::select(-leads)
+
+  insert_candidates <- insert_candidates |>
+    dplyr::mutate(vertical = dplyr::if_else(verticality > 0.3 & vertical == TRUE,
+                                            TRUE,
+                                            FALSE))
+
+  if (any(insert_candidates$vertical)) {
+
+
+    max_y <- max(text_data$y)
+    min_x <- min(text_data$x)
+
+    insert_candidates <- insert_candidates |>
+      dplyr::filter(y > max_y - 20 | x < min_x + 20)
+  }
+  insert_candidates
 }
 
 #' detect if a string has the regex for insert
 #' @noRd
 .str_has_insert <- function(string) {
-  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table|^Fig(u|\\.)|^Appendix|^FIG|^TABLE|^KEY$|^REAGENT$")
+  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table|^Fig(u|\\.)|^Appendix(?!,)|^FIG|^TABLE|^KEY$|^REAGENT$")
 }
 
 #' find a table or figure starting y coordinate
@@ -656,7 +682,9 @@ Mode <- function(x) {
 
   start_y <- .find_insert_min_y(text_data)
 
-  midpage <- .find_midpage_x(text_data)
+  col_width <- .get_page_width(text_data) / 2
+
+  midpage <- min(col_width + min(text_data$x), .find_midpage_x(text_data))
 
   inserts <- text_data |>
     .find_inserts()
@@ -676,14 +704,41 @@ Mode <- function(x) {
     if (mean_widths$col2 > 10) { # if second column horizontal
       return(midpage)
     } else { # if full page vertical
-      return(800)
+
+      next_insert_x <- inserts |>
+        dplyr::filter(x > start_x) |>
+        dplyr::arrange(x) |>
+        dplyr::slice(1) |>
+        dplyr::pull(x)
+
+      if (length(next_insert_x) > 0) {
+        max_x <- next_insert_x - 2
+      } else {
+        max_x <- 800
+      }
+      return(max_x)
     }
-
-
   }
 
-  col_width <- .get_page_width(text_data) / 2
+  x_vals <- unique(round(inserts$x, - 1))
 
+
+  if (length(x_vals) > 1) {
+    sidebyside <- tidyr::expand_grid(f = x_vals, s = x_vals) |>
+      dplyr::mutate(diff = abs(f - s)) |>
+      dplyr::summarise(twocol = any(diff > col_width)) |>
+      dplyr::pull(twocol)
+
+    # if two-col layout with inserts in each column
+    if (sidebyside) {
+      max_x <- inserts |>
+        dplyr::mutate(x = x - 2) |>
+        dplyr::pull(x) |>
+        max(na.rm = TRUE)
+      return(max_x)
+
+    }
+  }
 
   cols <- text_data |>
     dplyr::filter(y >= start_y - 20,
@@ -711,8 +766,9 @@ Mode <- function(x) {
                   n_cols_left = sum(first_col == TRUE & space == FALSE) |>
                     dplyr::na_if(0),
                   n_cols_right = sum(first_col == FALSE & space == FALSE) |>
-                    dplyr::na_if(0)
-
+                    dplyr::na_if(0),
+                  has_fig_caption_right = any(stringr::str_detect(text, "^\\([a-zA-Z]\\)$") &
+                                                first_col == FALSE)
                   ) |>
     dplyr::ungroup() |>
     dplyr::mutate(mean_cols = mean(n_cols, na.rm = TRUE),
@@ -730,13 +786,36 @@ Mode <- function(x) {
                        dplyr::first(mean_cols) < 2.5) |>
     dplyr::pull(two_col_layout)
 
+  cols_left_est <- .find_cols_left_x(text_data)
+
+
   multicol_layout <- cols |> # e.g. when caption in first col, nature
+    # or in two cols, science
+    dplyr::mutate(mean_cols_left = tidyr::replace_na(mean_cols_left, 0)) |>
     dplyr::summarise(multicol = dplyr::first(n_cols) > 2 &
                        dplyr::first(mean_cols) > 2 &
                        dplyr::first(prop_widths_left) < 0.7,
                      twocol = dplyr::first(n_cols) == 2 &
-                       dplyr::first(mean_cols_left) > 1
+                       (dplyr::first(mean_cols_left) > 1 |
+                          dplyr::first(has_fig_caption_right) == TRUE
+                       ),
+                     twothirdscol = dplyr::first(mean_cols_left) == 0 &
+                                            nrow(cols_left_est) > 2
                      )
+#####@@@@@@@
+  if (multicol_layout$twothirdscol == TRUE) {
+    max_x <- cols_left_est |>
+      dplyr::filter(x > midpage) |>
+      dplyr::pull(x)
+
+    if (min(max_x) > 400) {
+      max_x <- 800
+    } else {
+      max_x <- min(max_x) - 2
+    }
+    return(max_x)
+  }
+
   # empty_second_col <- cols |>
   #     dplyr::summarise(second_col = dplyr::first(prop_widths_right) == 0 &
   #                        max(x) < midpage &
@@ -750,7 +829,8 @@ Mode <- function(x) {
         # empty_second_col == TRUE
         ) {
       cols <- 2
-    } else if (multicol_layout$multicol == TRUE) {
+    } else if (multicol_layout$multicol == TRUE |
+               multicol_layout$twocol == TRUE) {
       cols <- 0
     } else {
       cols <- cols |>
@@ -762,25 +842,16 @@ Mode <- function(x) {
         dplyr::pull(n_breaks)
     }
 
-  if (cols < 2) {
+  if (cols < 2) { # 1 col or 2-col captions
     return(800)
-  } else {
+  } else { # if multiple inserts in same column or no inserts
 
-    # if two-col layout with inserts in each column
-    if (nrow(inserts) > 1 & length(unique(round(inserts$x, - 1))) > 1) {
-      max_x <- inserts |>
-        dplyr::mutate(x = x - 2) |>
-        dplyr::pull(x) |>
-        max(na.rm = TRUE)
-    } else if (multicol_layout$twocol == TRUE) { # two-column captions
-      return(800)
-    } else { # if multiple inserts in same column or no inserts
-      max_x <- text_data |>
-        .find_midpage_x() |>
-        round()
-    }
+    max_x <- text_data |>
+      .find_midpage_x() |>
+      round()
   }
   max_x
+
 }
 
 #' find a table or figure ending x coordinate
@@ -796,10 +867,9 @@ Mode <- function(x) {
   if (first_insert$vertical == TRUE |
       max(text_data$x) > 600) return(max(text_data$y + 2))
 
-  min_x <- .find_insert_min_x(text_data)
+  min_x <- .find_insert_min_x(text_data) # consider including figure stuff here as well
   min_y <- .find_insert_min_y(text_data)
   max_x <- .find_insert_max_x(text_data)
-
 
   min_y_next_insert <- .find_inserts(text_data) |>
     dplyr::filter(x <= max_x,
@@ -822,8 +892,14 @@ Mode <- function(x) {
                   ) |>
     dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y,
                   max_y_before_last = dplyr::if_else(dplyr::lead(y == max(y), default = 0), 1, 0) * y_jump,
+                  is_fig_caption = stringr::str_detect(text, "^\\(?\\w\\)?$"),
                   y_exceeded = dplyr::if_else(y_jump <= 0 &
-                                                max(max_y_before_last, na.rm = TRUE) > 80, 1, 0)) |>
+                                                max(max_y_before_last, na.rm = TRUE) > 80, 1, 0),
+                  y_exceeded = dplyr::if_else(stringr::str_detect(first_insert$text, "^F") &
+                                                is_fig_caption,
+                                              1,
+                                              y_exceeded),
+                  y_exceeded = cumsum(y_exceeded)) |>
     dplyr::filter(y_exceeded == 0)
 
 
@@ -868,7 +944,7 @@ Mode <- function(x) {
   if (nrow(inserts) == 0) return(flagged_text_data)
 
   for (i in 1:nrow(inserts)) {
-    # i <- 2
+    # i <- 1
     flagged_text_data <- flagged_text_data |>
       .flag_as_insert(c(.find_insert_min_x(flagged_text_data |>
                                              dplyr::filter(insert == 0)) - 2,
