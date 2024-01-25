@@ -216,7 +216,7 @@ Mode <- function(x) {
   header_candidate <- suppressWarnings(
     # ht <-
       text_data |>
-      dplyr::filter(y < min(y) + 20,
+      dplyr::filter(y < min(y) + 18,
                     !stringr::str_detect(text, "\\.$")) |>
       dplyr::arrange(y, x) |>
       .add_line_n() |>
@@ -291,12 +291,13 @@ Mode <- function(x) {
                     jump_size = max(jump_size),
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
+                    has_insert = any(.str_has_insert(text)),
                     candidate = any(prop_full < 0.6 & round(font_size) < 9) |
                       any(max_x_jump > 170) |
                       potential_page_n |
                       any(stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|Published|", months)))) |>
       # dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter(candidate == TRUE,
+      dplyr::filter(candidate == TRUE & has_insert == FALSE,
                     !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}")) |>
       dplyr::ungroup() |>
       dplyr::filter(jump_size == max(jump_size) & jump_size > 15 | stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months))) |>
@@ -470,7 +471,7 @@ Mode <- function(x) {
     if (!rlang::is_empty(layout_divider_y)) {
       min_x <- .find_midpage_x(text_data |>
                                  dplyr::filter(y > layout_divider_y))
-    } else {
+  } else {
       layout_divider_y <- 800
     }
 
@@ -495,6 +496,22 @@ Mode <- function(x) {
     } else {
       min_x <- 800
     }
+  } else if (stringr::str_detect(PDF_filename, "10\\.1037")) {
+
+    affils <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "Author") &
+                      stringr::str_detect(dplyr::lead(text), "liations\\:") )
+
+    if (nrow(affils) > 0) {
+      layout_divider_y <- text_data |>
+        dplyr::filter(y > affils$y, font_size == affils$font_size) |>
+        dplyr::pull(y) |>
+        max()
+      layout_divider_y <- layout_divider_y + 5
+    } else {
+      layout_divider_y <- 800
+    }
+
   }
 
   has_mixed_layout <- layout_divider_y < 700 & cols > 1
@@ -667,7 +684,7 @@ Mode <- function(x) {
 
   if (!dplyr::between(first_insert$x, min_x, midpage_gap) |
       first_insert$vertical == TRUE) {
-    min_x <- first_insert$x
+    min_x <- min(midpage_gap + 1, first_insert$x)
   }
 
   min_x
@@ -684,7 +701,8 @@ Mode <- function(x) {
 
   col_width <- .get_page_width(text_data) / 2
 
-  midpage <- min(col_width + min(text_data$x), .find_midpage_x(text_data))
+  # midpage <- min(col_width + min(text_data$x), .find_midpage_x(text_data))
+  midpage <- min(col_width + min(text_data$x), 290)
 
   inserts <- text_data |>
     .find_inserts()
@@ -731,11 +749,18 @@ Mode <- function(x) {
 
     # if two-col layout with inserts in each column
     if (sidebyside) {
-      max_x <- inserts |>
-        dplyr::mutate(x = x - 2) |>
-        dplyr::pull(x) |>
-        max(na.rm = TRUE)
-      return(max_x)
+      # next_insert_y <- inserts |>
+      #   dplyr::arrange(y, x) |>
+      #   dplyr::slice(2) |>
+      #   dplyr::pull(y)
+
+      # if (next_insert_y - first_insert$y < 20) {
+        max_x <- inserts |>
+          dplyr::mutate(x = x - 5) |>
+          dplyr::pull(x) |>
+          max(na.rm = TRUE)
+        return(max_x)
+      # }
 
     }
   }
@@ -766,12 +791,12 @@ Mode <- function(x) {
                   n_cols_left = sum(first_col == TRUE & space == FALSE) |>
                     dplyr::na_if(0),
                   n_cols_right = sum(first_col == FALSE & space == FALSE) |>
-                    dplyr::na_if(0),
-                  has_fig_caption_right = any(stringr::str_detect(text, "^\\([a-zA-Z]\\)$") &
-                                                first_col == FALSE)
+                    dplyr::na_if(0)
                   ) |>
     dplyr::ungroup() |>
-    dplyr::mutate(mean_cols = mean(n_cols, na.rm = TRUE),
+    dplyr::mutate(has_fig_caption_right = any(stringr::str_detect(text, "^\\([a-zA-Z]\\)$") &
+                                                                  first_col == FALSE),
+                  mean_cols = mean(n_cols, na.rm = TRUE),
                   mean_cols_left = mean(n_cols_left, na.rm = TRUE),
                   mean_cols_right = mean(n_cols_right, na.rm = TRUE),
                   mean_prop_widths_right = mean(prop_widths_right |> dplyr::na_if(0),
@@ -789,9 +814,11 @@ Mode <- function(x) {
   cols_left_est <- .find_cols_left_x(text_data)
 
 
+
   multicol_layout <- cols |> # e.g. when caption in first col, nature
     # or in two cols, science
-    dplyr::mutate(mean_cols_left = tidyr::replace_na(mean_cols_left, 0)) |>
+    dplyr::mutate(mean_cols_left = tidyr::replace_na(mean_cols_left, 0),
+                  last_col_x = x == max(cols_left_est)) |>
     dplyr::summarise(multicol = dplyr::first(n_cols) > 2 &
                        dplyr::first(mean_cols) > 2 &
                        dplyr::first(prop_widths_left) < 0.7,
@@ -799,7 +826,8 @@ Mode <- function(x) {
                        (dplyr::first(mean_cols_left) > 1 |
                           dplyr::first(has_fig_caption_right) == TRUE
                        ),
-                     twothirdscol = dplyr::first(mean_cols_left) == 0 &
+                     twothirdscol = sum(last_col_x, na.rm = TRUE) > 0 &
+                       # dplyr::first(mean_cols_left) == 0 &
                                             nrow(cols_left_est) > 2
                      )
 #####@@@@@@@
@@ -846,9 +874,7 @@ Mode <- function(x) {
     return(800)
   } else { # if multiple inserts in same column or no inserts
 
-    max_x <- text_data |>
-      .find_midpage_x() |>
-      round()
+    max_x <- midpage
   }
   max_x
 
@@ -993,8 +1019,9 @@ Mode <- function(x) {
   text_data |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the header and footer
-    dplyr::filter(!(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
-                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section|and")),
+    dplyr::filter(
+      !(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
+                      !stringr::str_detect(dplyr::lag(text), "Fig|Table|Supplement|Section|and|FIG|TABLE")),
                   y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
                   y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
                   x < max_x, # remove margin text, e.g. 'downloaded from...'
@@ -1004,7 +1031,7 @@ Mode <- function(x) {
                   text != "\\.") |> # remove zero width spaces and single dots
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
                   is_subpscript = abs(x_jump_size) < 5 & dplyr::lag(font_size, default = 100) > font_size &
-                    dplyr::lead(font_size, default = 100) > font_size
+                                                              dplyr::lead(font_size, default = 100) > font_size
     )
 
 }

@@ -38,11 +38,23 @@ fsf_paper <- pdftools::pdf_data(test_path("10.3324+haematol.2017.168716.pdf"),
                                 font_info = TRUE)
 pnas_paper <- pdftools::pdf_data(test_path("10.1073+pnas.2123476119.pdf"),
                                  font_info = TRUE)
+wkh2_paper <- pdftools::pdf_data(test_path("10.1097+as9.0000000000000095.pdf"),
+                               font_info = TRUE)
 
 # text_data <- wp
 .extract_insert_dim <- function(text_data, insert_num) {
   text_data |>
     dplyr::filter(insert == insert_num) |>
+    dplyr::summarise(min_x = min(x),
+                     max_x = max(x),
+                     min_y = min(y),
+                     max_y = max(y)) |>
+    as.numeric()
+}
+
+.extract_col_dim <- function(text_data, col_num) {
+  text_data |>
+    dplyr::filter(column == col_num) |>
     dplyr::summarise(min_x = min(x),
                      max_x = max(x),
                      min_y = min(y),
@@ -61,6 +73,8 @@ test_that("headers", {
   expect_equal(.find_header_y(science_paper[[7]]), 22) # first text 49
   expect_equal(.find_header_y(wiley_paper[[5]]), 23) # first text 48 (page 3)
   expect_equal(.find_header_y(tand_paper[[4]]), 27) # first text 51
+  expect_equal(.find_header_y(tand_paper[[7]]), 27) # first text 51
+  expect_equal(.find_header_y(wkh2_paper[[4]]), 27) # first text 51
   expect_equal(.find_header_y(asco_paper[[5]]), 28) # first text 56
   expect_equal(.find_header_y(elsevier_paper[[4]]), 33) # first text 51
   expect_equal(.find_header_y(springer_paper[[3]]), 34) # first text 55
@@ -73,10 +87,9 @@ test_that("headers", {
   expect_equal(.find_header_y(mdpi_paper[[6]]), 57) # first text 90
   expect_equal(.find_header_y(cell_paper[[8]]), 69) # first text 101
   expect_equal(.find_header_y(ios_paper[[4]]), 95) # first text 119
-
 })
 
-# text_data <- pnas_paper[[5]]
+# text_data <- wkh2_paper[[4]]
 
 test_that("footers", {
   expect_equal(.find_footer_y(fsf_paper[[4]]), 773) # no footer
@@ -92,6 +105,7 @@ test_that("footers", {
   expect_equal(.find_footer_y(nature_paper[[5]]), 753) # last text 727
   expect_equal(.find_footer_y(elsevier_paper[[4]]), 754) # last text 731
   expect_equal(.find_footer_y(pnas_paper[[5]]), 754) # last text 731
+  expect_equal(.find_footer_y(wkh2_paper[[3]]), 760) # last text 738
   expect_equal(.find_footer_y(cell_paper[[8]]), 756) # last text 727
   expect_equal(.find_footer_y(wkh_paper[[3]]), 756) # last text 731
   expect_equal(.find_footer_y(mdpi_paper[[14]]), 759) # no footer
@@ -102,7 +116,6 @@ test_that("footers", {
   expect_equal(.find_footer_y(r2_paper[[6]]), 767) # last text 741
   expect_equal(.find_footer_y(rs_paper[[6]]), 789) # no footer
   expect_equal(.find_footer_y(frontiers_paper[[8]]), 795) # last text 742
-
 })
 
 # text_data <- springer_paper[[12]]
@@ -223,7 +236,7 @@ test_that("figures", {
     .extract_insert_dim(1) |>
     expect_equal(c(310, 504, 246, 246))
 
-  fsf_paper[[4]] |> # Figure label is too tall and looks like vertical...
+  fsf_paper[[4]] |>
     .clear_margins(PDF_filename = "10.3324") |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -245,13 +258,31 @@ test_that("figures", {
     .clear_margins(PDF_filename = "10.1126") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
-    expect_equal(c(36, 317, 292, 375))
+    expect_equal(c(36, 545, 292, 375))
 
-  # text_data <- pnas_paper[[2]] |>
-  #   .clear_margins(PDF_filename = "10.1073") |>
+  wkh2_paper[[4]] |>
+    .clear_margins(PDF_filename = "10.1097") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(296, 523, 302, 743))
+
+  # sp <- science_paper[[6]] |>
+  #   .clear_margins(PDF_filename = "10.1126") |>
   #   .flag_all_inserts() |>
-  #   .extract_insert_dim(1) |>
-  #   expect_equal(c(316, 537, 391, 415))
+  #   .extract_insert_dim(2) |>
+  #   expect_equal(c(36, 340, 405, 708))
+
+  pnas_paper[[2]] |>
+    .clear_margins(PDF_filename = "10.1073") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(35, 270, 621, 731))
+
+  pnas_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.1073") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(35, 541, 600, 685))
 
 })
 
@@ -371,6 +402,12 @@ test_that("regular tables", {
    .extract_insert_dim(1) |>
    expect_equal(c(74, 495, 116, 404))
 
+  wkh2_paper[[5]] |>
+    .clear_margins(PDF_filename = "10.1097") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(50, 280, 433, 743))
+
 })
 
 test_that("horizontal full page tables", {
@@ -389,7 +426,7 @@ test_that("vertical figures", {
 
 test_that("vertical tables", {
 
- text_data <- tand_paper[[7]] |>
+ tand_paper[[7]] |>
   .clear_margins(PDF_filename = "10.1080") |>
   .flag_all_inserts() |>
   .extract_insert_dim(1) |>
@@ -410,7 +447,7 @@ test_that("vertical tables", {
 })
 
 test_that("appendix table with contributions", {
-  text_data <- wkh_paper[[4]] |>
+  wkh_paper[[4]] |>
     .clear_margins(PDF_filename = "10.1212") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
@@ -434,5 +471,29 @@ test_that("two-column layouts", {
     floor() |>
     expect_equal(2)
 
+  text_data <- pnas_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1037") |>
+    .flag_all_inserts() |>
+    .est_col_n(PDF_filename = "10.1037") |>
+    floor() |>
+    expect_equal(2)
+
+})
+
+test_that("mixed layouts", {
+
+  pnas_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1037") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1037") |>
+    .extract_col_dim(1) |>
+    expect_equal(c(35, 276, 38, 291))
+
+  pnas_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1037") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1037") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(300, 544, 38, 293))
 })
 
