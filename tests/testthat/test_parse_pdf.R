@@ -40,6 +40,14 @@ pnas_paper <- pdftools::pdf_data(test_path("10.1073+pnas.2123476119.pdf"),
                                  font_info = TRUE)
 wkh2_paper <- pdftools::pdf_data(test_path("10.1097+as9.0000000000000095.pdf"),
                                font_info = TRUE)
+embo_paper <- pdftools::pdf_data(test_path("10.15252+embr.202154000.pdf"),
+                                 font_info = TRUE)
+amegr_paper <- pdftools::pdf_data(test_path("10.21037+jgo-20-203.pdf"),
+                             font_info = TRUE)
+degr_paper <- pdftools::pdf_data(test_path("10.1515+jpm-2019-0153.pdf"),
+                                 font_info = TRUE)
+bmc_paper <- pdftools::pdf_data(test_path("10.1186+s42466-019-0022-4.pdf"),
+                                font_info = TRUE)
 
 # text_data <- wp
 .extract_insert_dim <- function(text_data, insert_num) {
@@ -76,7 +84,10 @@ test_that("headers", {
   expect_equal(.find_header_y(tand_paper[[7]]), 27) # first text 51
   expect_equal(.find_header_y(wkh2_paper[[4]]), 27) # first text 51
   expect_equal(.find_header_y(asco_paper[[5]]), 28) # first text 56
+  expect_equal(.find_header_y(degr_paper[[5]]), 31) # first text 64
   expect_equal(.find_header_y(elsevier_paper[[4]]), 33) # first text 51
+  expect_equal(.find_header_y(embo_paper[[2]]), 33) # first text 81
+  expect_equal(.find_header_y(bmc_paper[[3]]), 33) # first text 81
   expect_equal(.find_header_y(springer_paper[[3]]), 34) # first text 55
   expect_equal(.find_header_y(elife_paper[[5]]), 36) # first text 53 (page 2)
   expect_equal(.find_header_y(jama_paper[[5]]), 36) # first text 59
@@ -85,20 +96,24 @@ test_that("headers", {
   expect_equal(.find_header_y(frontiers_paper[[8]]), 43) # first text 91 (page 3)
   expect_equal(.find_header_y(nature_paper[[5]]), 45) # first text 59
   expect_equal(.find_header_y(mdpi_paper[[6]]), 57) # first text 90
+  expect_equal(.find_header_y(amegr_paper[[9]]), 58) # first text 83
   expect_equal(.find_header_y(cell_paper[[8]]), 69) # first text 101
   expect_equal(.find_header_y(ios_paper[[4]]), 95) # first text 119
 })
 
-# text_data <- wkh2_paper[[4]]
+# text_data <- bmc_paper[[4]]
 
 test_that("footers", {
-  expect_equal(.find_footer_y(fsf_paper[[4]]), 773) # no footer
   expect_equal(.find_footer_y(wiley_paper[[10]]), 706) # no footer
+  expect_equal(.find_footer_y(degr_paper[[2]]), 715) # no footer
   expect_equal(.find_footer_y(ios_paper[[6]]), 723) # no footer
+  expect_equal(.find_footer_y(bmc_paper[[3]]), 729) # no footer
   expect_equal(.find_footer_y(science_paper[[7]]), 731) # last text 705
   expect_equal(.find_footer_y(asco_paper[[2]]), 735) # last text 709
+  expect_equal(.find_footer_y(fsf_paper[[4]]), 773) # no footer
   expect_equal(.find_footer_y(jama_paper[[5]]), 737) # last text 711
   expect_equal(.find_footer_y(springer_paper[[12]]), 736) # no visible footer
+  expect_equal(.find_footer_y(amegr_paper[[10]]), 736) # last text 695
   expect_equal(.find_footer_y(tand_paper[[6]]), 745) # no footer
   expect_equal(.find_footer_y(elife_paper[[5]]), 748) # last text 713
   expect_equal(.find_footer_y(plos_paper[[5]]), 750) # last text 701
@@ -107,6 +122,7 @@ test_that("footers", {
   expect_equal(.find_footer_y(pnas_paper[[5]]), 754) # last text 731
   expect_equal(.find_footer_y(wkh2_paper[[3]]), 760) # last text 738
   expect_equal(.find_footer_y(cell_paper[[8]]), 756) # last text 727
+  expect_equal(.find_footer_y(embo_paper[[2]]), 756) # last text 728
   expect_equal(.find_footer_y(wkh_paper[[3]]), 756) # last text 731
   expect_equal(.find_footer_y(mdpi_paper[[14]]), 759) # no footer
   expect_equal(.find_footer_y(tand_paper[[4]]), 760) # no footer
@@ -118,7 +134,7 @@ test_that("footers", {
   expect_equal(.find_footer_y(frontiers_paper[[8]]), 795) # last text 742
 })
 
-# text_data <- springer_paper[[12]]
+# text_data <- degr_paper[[2]]
 # text_data <- asco_paper[[2]] |> .clear_margins("")
 context("insert flagging")
 
@@ -284,6 +300,12 @@ test_that("figures", {
     .extract_insert_dim(1) |>
     expect_equal(c(35, 541, 600, 685))
 
+  embo_paper[[5]] |>
+    .clear_margins(PDF_filename = "10.1073") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(225, 512, 343, 364))
+
 })
 
 test_that("regular tables", {
@@ -408,6 +430,24 @@ test_that("regular tables", {
     .extract_insert_dim(2) |>
     expect_equal(c(50, 280, 433, 743))
 
+  embo_paper[[2]] |>
+    .clear_margins(PDF_filename = "10.15252") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(46, 539, 509, 728))
+
+  bmc_paper[[3]] |>
+    .clear_margins(PDF_filename = "10.15252") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(56, 287, 88, 379))
+
+  bmc_paper[[3]] |>
+    .clear_margins(PDF_filename = "10.15252") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(304, 528, 258, 726))
+
 })
 
 test_that("horizontal full page tables", {
@@ -419,10 +459,10 @@ test_that("horizontal full page tables", {
     expect_equal(c(92, 731, 90, 466))
 })
 
-test_that("vertical figures", {
-
-
-})
+# test_that("vertical figures", {
+#
+#
+# })
 
 test_that("vertical tables", {
 
@@ -443,6 +483,12 @@ test_that("vertical tables", {
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(52, 526, 59, 702))
+
+ amegr_paper[[10]] |>
+   .clear_margins(PDF_filename = "10.21037") |>
+   .flag_all_inserts() |>
+   .extract_insert_dim(1) |>
+   expect_equal(c(44, 526, 86, 698))
 
 })
 
@@ -471,12 +517,37 @@ test_that("two-column layouts", {
     floor() |>
     expect_equal(2)
 
-  text_data <- pnas_paper[[10]] |>
+  pnas_paper[[10]] |>
     .clear_margins(PDF_filename = "10.1037") |>
     .flag_all_inserts() |>
     .est_col_n(PDF_filename = "10.1037") |>
     floor() |>
     expect_equal(2)
+
+})
+
+test_that("three column layouts", {
+
+  embo_paper[[2]] |>
+    .clear_margins(PDF_filename = "10.15252") |>
+    .flag_all_inserts() |>
+    .est_col_n(PDF_filename = "10.15252") |>
+    floor() |>
+    expect_equal(3)
+
+  embo_paper[[6]] |>
+    .clear_margins(PDF_filename = "10.15252") |>
+    .flag_all_inserts() |>
+    .est_col_n(PDF_filename = "10.15252") |>
+    floor() |>
+    expect_equal(3)
+
+  science_paper[[7]] |>
+    .clear_margins(PDF_filename = "10.1126") |>
+    .flag_all_inserts() |>
+    .est_col_n(PDF_filename = "10.1126") |>
+    floor() |>
+    expect_equal(3)
 
 })
 

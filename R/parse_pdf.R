@@ -237,13 +237,13 @@ Mode <- function(x) {
       dplyr::ungroup() |>
       dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter(
-      (prop_width < 0.4 & font_size < 9) | max_x_jump > 170 |
+      (prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
                       prop_width < 0.2 |
         # has_original_investigation |
         potential_page_n |
-                      has_coded_break,
-                    is_insert == FALSE,
-                    !stringr::str_detect(font_name, "Bold")
+        has_coded_break,
+      is_insert == FALSE,
+      !stringr::str_detect(font_name, "Bold")
       ) |>
       dplyr::filter((y_jump == max(y_jump) |
                        # stringr::str_detect(text, "[C,c]ontinued") |
@@ -679,11 +679,13 @@ Mode <- function(x) {
     dplyr::filter(y == min(y))
 
   midpage_gap <- .find_midpage_x(text_data)
+  cols <- .find_cols_left_x(text_data) |> nrow()
   # col_width <- .get_page_width(text_data) / 2
   min_x <- text_data$x |> min()
 
   if (!dplyr::between(first_insert$x, min_x, midpage_gap) |
-      first_insert$vertical == TRUE) {
+      first_insert$vertical == TRUE |
+      (cols == 3 & !stringr::str_detect(first_insert$text, "T|Appendix"))) {
     min_x <- min(midpage_gap + 1, first_insert$x)
   }
 
