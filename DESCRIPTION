@@ -20,4 +20,4 @@ Imports:
   tokenizers, stringr, vctrs, readr, dplyr, purrr, pdftools, furrr, tibble, rlang, tidyr, lubridate
 Suggests: 
   testthat
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.1

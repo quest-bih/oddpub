@@ -134,7 +134,7 @@ test_that("footers", {
   expect_equal(.find_footer_y(frontiers_paper[[8]]), 795) # last text 742
 })
 
-# text_data <- degr_paper[[2]]
+# text_data <- jama_paper[[5]]
 # text_data <- asco_paper[[2]] |> .clear_margins("")
 context("insert flagging")
 
@@ -252,7 +252,7 @@ test_that("figures", {
     .extract_insert_dim(1) |>
     expect_equal(c(310, 504, 246, 246))
 
-  fsf_paper[[4]] |>
+  text_data <- fsf_paper[[4]] |>
     .clear_margins(PDF_filename = "10.3324") |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -493,7 +493,7 @@ test_that("vertical tables", {
 })
 
 test_that("appendix table with contributions", {
-  wkh_paper[[4]] |>
+  text_data <- wkh_paper[[4]] |>
     .clear_margins(PDF_filename = "10.1212") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
