@@ -12,7 +12,7 @@ oxford_paper <- pdftools::pdf_data(test_path("10.1093+ndt+gfaa294.pdf"),
                                    font_info = TRUE)
 frontiers_paper <- pdftools::pdf_data(test_path("10.3389+fimmu.2022.915001.pdf"),
                                       font_info = TRUE)
-jama_paper <- pdftools::pdf_data(test_path("10.1001+jamanetworkopen.2022.44495.pdf"),
+jama_paper <- pdftools::pdf_data(test_path("10.1001+jama.2020.7172.pdf"),
                                  font_info = TRUE)
 tand_paper <- pdftools::pdf_data(test_path("10.1080+21678421.2022.2104649.pdf"),
                                  font_info = TRUE)
@@ -100,12 +100,12 @@ test_that("headers", {
   expect_equal(.find_header_y(asco_paper[[5]]), 28) # first text 56
   expect_equal(.find_header_y(karger_paper[[4]]), 0) # first text 119
   expect_equal(.find_header_y(degr_paper[[5]]), 31) # first text 64
+  expect_equal(.find_header_y(jama_paper[[3]]), 32) # first text 64
   expect_equal(.find_header_y(elsevier_paper[[4]]), 33) # first text 51
   expect_equal(.find_header_y(embo_paper[[2]]), 33) # first text 81
   expect_equal(.find_header_y(bmc_paper[[3]]), 33) # first text 81
   expect_equal(.find_header_y(springer_paper[[3]]), 34) # first text 55
   expect_equal(.find_header_y(elife_paper[[5]]), 36) # first text 53 (page 2)
-  expect_equal(.find_header_y(jama_paper[[5]]), 36) # first text 59
   expect_equal(.find_header_y(plos_paper[[5]]), 40) # first text 77
   expect_equal(.find_header_y(frontiers_paper[[8]]), 43) # first text 91 (page 3)
   expect_equal(.find_header_y(nature_paper[[5]]), 45) # first text 59
@@ -116,7 +116,7 @@ test_that("headers", {
 
 })
 
-# text_data <- karger_paper[[4]]
+# text_data <- jama_paper[[3]]
 
 test_that("footers", {
   expect_equal(.find_footer_y(wiley_paper[[10]]), 706) # no footer
@@ -125,8 +125,8 @@ test_that("footers", {
   expect_equal(.find_footer_y(bmc_paper[[3]]), 729) # no footer
   expect_equal(.find_footer_y(science_paper[[7]]), 731) # last text 705
   expect_equal(.find_footer_y(asco_paper[[2]]), 735) # last text 709
+  expect_equal(.find_footer_y(jama_paper[[3]]), 743) # last text 718
   expect_equal(.find_footer_y(fsf_paper[[4]]), 773) # no footer
-  expect_equal(.find_footer_y(jama_paper[[5]]), 737) # last text 711
   expect_equal(.find_footer_y(springer_paper[[12]]), 736) # no visible footer
   expect_equal(.find_footer_y(amegr_paper[[10]]), 736) # last text 695
   expect_equal(.find_footer_y(tand_paper[[6]]), 745) # no footer
@@ -220,6 +220,12 @@ test_that("figures", {
     .extract_insert_dim(3) |>
     expect_equal(c(301, 542, 290, 363))
 
+  jama_paper[[6]] |>
+    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(72, 524, 70, 606))
+
   tand_paper[[9]] |>
     .clear_margins(PDF_filename = "10.1080") |>
     .flag_all_inserts() |>
@@ -268,7 +274,7 @@ test_that("figures", {
     .extract_insert_dim(1) |>
     expect_equal(c(310, 504, 246, 246))
 
-  text_data <- fsf_paper[[4]] |>
+  fsf_paper[[4]] |>
     .clear_margins(PDF_filename = "10.3324") |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -350,17 +356,11 @@ test_that("regular tables", {
     .extract_insert_dim(2) |>
     expect_equal(c(51, 516, 624, 700))
 
-  jama_paper[[6]] |>
-   .clear_margins(PDF_filename = "10.1001") |>
-   .flag_all_inserts() |>
-   .extract_insert_dim(1) |>
-   expect_equal(c(47, 536, 194, 322))
-
-  jama_paper[[6]] |>
-   .clear_margins(PDF_filename = "10.1001") |>
+  jama_paper[[7]] |>
+   .clear_margins(PDF_filename = "10.1001+jama") |>
    .flag_all_inserts() |>
    .extract_insert_dim(2) |>
-   expect_equal(c(47, 350, 350, 708))
+   expect_equal(c(72, 528, 233, 429))
 
   cell_paper[[14]] |>
    .clear_margins(PDF_filename = "10.1016+j.celrep") |>
@@ -581,12 +581,19 @@ test_that("three column layouts", {
 
 test_that("mixed layouts", {
 
-  pnas_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1037") |>
+  jama_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.1001+jama") |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1037") |>
-    .extract_col_dim(1) |>
-    expect_equal(c(35, 276, 38, 291))
+    .add_column_info(cols = 3, PDF_filename = "10.1001+jama") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(311, 531, 64, 316))
+
+  jama_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 3, PDF_filename = "10.1001+jama") |>
+    .extract_col_dim(3) |>
+    expect_equal(c(72, 206, 345, 716))
 
   pnas_paper[[10]] |>
     .clear_margins(PDF_filename = "10.1037") |>

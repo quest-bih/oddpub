@@ -228,8 +228,6 @@ Mode <- function(x) {
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump),
                     has_coded_break = stringr::str_detect(text, "\\\b"),
-                    # has_original_investigation = text == "Investigation" & dplyr::lag(text) == "Original" &
-                    #   dplyr::lead(x_jump) > 40,
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
                     ins_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid") |
@@ -240,7 +238,7 @@ Mode <- function(x) {
       dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter((prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
                       prop_width < 0.2 |
-        # has_original_investigation |
+        y_jump > 20 |
         potential_page_n |
         has_coded_break,
       is_insert == FALSE,
