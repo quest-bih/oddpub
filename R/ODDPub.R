@@ -10,7 +10,7 @@
 #' @return Logical vector describing the conversion success for each PDF file.
 #'
 #' @export
-pdf_convert <- function(PDF_folder, output_folder)
+pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
 {
 
   #check if dir path has final /, otherwise add
@@ -21,8 +21,8 @@ pdf_convert <- function(PDF_folder, output_folder)
     output_folder <- paste0(output_folder, "/")
   }
 
-  PDF_filenames <- list.files(PDF_folder, recursive = TRUE)
-  PDF_filenames <- paste0(PDF_folder, PDF_filenames)
+  # PDF_filenames <- list.files(PDF_folder, recursive = recursive)
+  PDF_filenames <- list.files(PDF_folder, recursive = recursive, full.names = TRUE)
 
   # converts PDF file to txt file and saves it to output_folder
   # requires the pdftools library
