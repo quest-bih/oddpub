@@ -238,8 +238,7 @@ Mode <- function(x) {
                     is_insert = any(ins_phrase, na.rm = TRUE)) |>
       dplyr::ungroup() |>
       dplyr::left_join(linejumps, by = "y") |>
-      dplyr::filter(
-      (prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
+      dplyr::filter((prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
                       prop_width < 0.2 |
         # has_original_investigation |
         potential_page_n |
@@ -361,7 +360,7 @@ Mode <- function(x) {
 
 #' find right x coordinates of the potential columns on a page
 #' @noRd
-.find_cols_right_x <- function(text_data) {
+.find_cols_right_x <- function(text_data, min_x = 270) {
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
@@ -370,7 +369,7 @@ Mode <- function(x) {
   if (min(text_data$x) > 200) return(tibble::tibble(x = max(text_data$x)))
 
   text_data |>
-    dplyr::filter(x > 150, space == FALSE,
+    dplyr::filter(x > min_x, space == FALSE,
                   stringr::str_detect(text, "^[a-z]|\\W$")) |>
     dplyr::mutate(x = x + width + 2) |>
     dplyr::count(x) |>
@@ -384,18 +383,20 @@ Mode <- function(x) {
 
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
-.find_midpage_x <- function(text_data, min_x = 250) {
+.find_midpage_x <- function(text_data, min_x = 270) {
 
   gaps_r <- .find_cols_left_x(text_data) |>
     dplyr::filter(x >= min_x) |>
     dplyr::pull(x)
 
-  gaps_l <- .find_cols_right_x(text_data) |>
-    dplyr::filter(x < min_x * 2,
+  if (length(gaps_r) == 0) gaps_r <- 304
+
+  gaps_l <- .find_cols_right_x(text_data, min_x = min_x) |>
+    dplyr::filter(x < min(gaps_r),
                   x != 0) |>
     dplyr::pull(x)
 
-  if (length(gaps_l) == 0 | length(gaps_r) == 0 | # for no consistent midgap
+  if (length(gaps_l) == 0 | # for no consistent midgap
       length(gaps_r) > length(gaps_l)) { # or for tabular data?
     return(290)
   } else {
@@ -462,9 +463,10 @@ Mode <- function(x) {
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rspb|10\\.3389\\+f|10\\.3324")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
+      dplyr::mutate(y = y - 10) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
@@ -529,7 +531,6 @@ Mode <- function(x) {
   if (cols > 1 | is.na(cols)) {
 
     if (has_mixed_layout) {
-
       col_predevider_x_est <- .find_midpage_x(text_data |>
                                                 dplyr::filter(y < layout_divider_y))
 
@@ -1093,10 +1094,22 @@ Mode <- function(x) {
       dplyr::filter(!stringr::str_detect(font_name, "Palatino|Font"))
   }
 
+  end_x <- max(text_data$x)
+  if (end_x > 600) {
+    max_x <- end_x + 2
+  } else {
+    max_x <- 563 # right margin in most journals
+  }
+  max_height <- 300 # vertical text, e.g. column separator "......"
+
+  text_data <- text_data |>
+    dplyr::filter(x < max_x, # remove margin text, e.g. 'downloaded from...'
+                  x > 18, # remove margin text, e.g. 'downloaded from...'
+                  height < max_height)
+
+
   min_y <- .find_header_y(text_data) # detect header in most journals
   max_y <- .find_footer_y(text_data) # detect footer in most journals
-  max_x <- 563 # detect right margin in most journals
-  max_height <- 300 # detect vertical text, e.g. column separator "......"
 
   if (text_data |> dplyr::filter(x > max_x, height > 20) |> nrow() == 0) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
 
@@ -1108,9 +1121,6 @@ Mode <- function(x) {
                       !stringr::str_detect(dplyr::lag(text), "Fig(u|\\.)|Table|Supplement|Section|and|FIG(U|\\.)|TABLE")),
                   y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
                   y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
-                  x < max_x, # remove margin text, e.g. 'downloaded from...'
-                  x > 18, # remove margin text, e.g. 'downloaded from...'
-                  height < max_height,
                   width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
                   text != ".") |> # remove zero width spaces and single dots
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),

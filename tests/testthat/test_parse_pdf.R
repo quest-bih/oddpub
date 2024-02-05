@@ -48,6 +48,9 @@ degr_paper <- pdftools::pdf_data(test_path("10.1515+jpm-2019-0153.pdf"),
                                  font_info = TRUE)
 bmc_paper <- pdftools::pdf_data(test_path("10.1186+s42466-019-0022-4.pdf"),
                                 font_info = TRUE)
+karger_paper <- pdftools::pdf_data(test_path("10.1159+000521415.pdf"),
+                                font_info = TRUE)
+
 
 # text_data <- wp
 .extract_insert_dim <- function(text_data, insert_num) {
@@ -70,12 +73,23 @@ bmc_paper <- pdftools::pdf_data(test_path("10.1186+s42466-019-0022-4.pdf"),
     as.numeric()
 }
 
+.extract_gap_coords <- function(text_data) {
+  text_data |>
+    dplyr::group_by(column) |>
+    dplyr::summarise(min_x = min(x),
+                     max_x = max(x)) |>
+    dplyr::summarise(gap_l = mean(if_else(column == 1, max_x, NA), na.rm = TRUE),
+                     gap_r = mean(if_else(column == 2, min_x, NA), na.rm = TRUE)) |>
+    as.numeric()
+}
+
 context("header and footer detection")
 
 test_that("headers", {
   expect_equal(.find_header_y(r2_paper[[6]]), 0) # first text 37
   expect_equal(.find_header_y(wkh_paper[[3]]), 0) # no header first text 34
   expect_equal(.find_header_y(oxford_paper[[4]]), 0) # no header first text 41 (page 3)
+  expect_equal(.find_header_y(rs_paper[[10]]), 44) # first text 44 (page number also on 44)
   expect_equal(.find_header_y(pnas_paper[[5]]), 0) # first text 49
   expect_equal(.find_header_y(fsf_paper[[4]]), 20) # first text 71
   expect_equal(.find_header_y(science_paper[[7]]), 22) # first text 49
@@ -84,6 +98,7 @@ test_that("headers", {
   expect_equal(.find_header_y(tand_paper[[7]]), 27) # first text 51
   expect_equal(.find_header_y(wkh2_paper[[4]]), 27) # first text 51
   expect_equal(.find_header_y(asco_paper[[5]]), 28) # first text 56
+  expect_equal(.find_header_y(karger_paper[[4]]), 0) # first text 119
   expect_equal(.find_header_y(degr_paper[[5]]), 31) # first text 64
   expect_equal(.find_header_y(elsevier_paper[[4]]), 33) # first text 51
   expect_equal(.find_header_y(embo_paper[[2]]), 33) # first text 81
@@ -92,16 +107,16 @@ test_that("headers", {
   expect_equal(.find_header_y(elife_paper[[5]]), 36) # first text 53 (page 2)
   expect_equal(.find_header_y(jama_paper[[5]]), 36) # first text 59
   expect_equal(.find_header_y(plos_paper[[5]]), 40) # first text 77
-  expect_equal(.find_header_y(rs_paper[[6]]), 44) # first text 49
   expect_equal(.find_header_y(frontiers_paper[[8]]), 43) # first text 91 (page 3)
   expect_equal(.find_header_y(nature_paper[[5]]), 45) # first text 59
   expect_equal(.find_header_y(mdpi_paper[[6]]), 57) # first text 90
   expect_equal(.find_header_y(amegr_paper[[9]]), 58) # first text 83
   expect_equal(.find_header_y(cell_paper[[8]]), 69) # first text 101
   expect_equal(.find_header_y(ios_paper[[4]]), 95) # first text 119
+
 })
 
-# text_data <- bmc_paper[[4]]
+# text_data <- karger_paper[[4]]
 
 test_that("footers", {
   expect_equal(.find_footer_y(wiley_paper[[10]]), 706) # no footer
@@ -130,6 +145,7 @@ test_that("footers", {
   expect_equal(.find_footer_y(oxford_paper[[2]]), 764) # last text 725
   expect_equal(.find_footer_y(tand_paper[[7]]), 764) # no footer
   expect_equal(.find_footer_y(r2_paper[[6]]), 767) # last text 741
+  expect_equal(.find_footer_y(karger_paper[[4]]), 780) # last text 738
   expect_equal(.find_footer_y(rs_paper[[6]]), 789) # no footer
   expect_equal(.find_footer_y(frontiers_paper[[8]]), 795) # last text 742
 })
@@ -306,6 +322,12 @@ test_that("figures", {
     .extract_insert_dim(1) |>
     expect_equal(c(225, 512, 343, 364))
 
+  karger_paper[[4]] |>
+    .clear_margins(PDF_filename = "10.1159") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(42, 178, 717, 738))
+
 })
 
 test_that("regular tables", {
@@ -448,11 +470,17 @@ test_that("regular tables", {
     .extract_insert_dim(2) |>
     expect_equal(c(304, 528, 258, 726))
 
+  karger_paper[[3]] |>
+    .clear_margins(PDF_filename = "10.1159") |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(42, 528, 234, 487))
+
 })
 
 test_that("horizontal full page tables", {
 
-  mdpi_paper[[4]] |>
+  text_data <- mdpi_paper[[4]] |>
     .clear_margins(PDF_filename = "10.3390+toxins") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
@@ -493,7 +521,7 @@ test_that("vertical tables", {
 })
 
 test_that("appendix table with contributions", {
-  text_data <- wkh_paper[[4]] |>
+  wkh_paper[[4]] |>
     .clear_margins(PDF_filename = "10.1212") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
@@ -566,5 +594,136 @@ test_that("mixed layouts", {
     .add_column_info(cols = 2, PDF_filename = "10.1037") |>
     .extract_col_dim(2) |>
     expect_equal(c(300, 544, 38, 293))
+
+  asco_paper[[9]] |>
+    .clear_margins(PDF_filename = "10.1200") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1200") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(299, 542, 56, 343))
+
+  frontiers_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.3389+f") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.3389+f") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(309, 531, 267, 728))
+
+  rs_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1098+rsif") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1098+rsif") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(311, 544, 42, 402))
+
+  fsf_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.3324") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.3324") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(314, 542, 71, 609))
+
+  karger_paper[[6]] |>
+    .clear_margins(PDF_filename = "10.1159") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1159") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(304, 536, 62, 104))
+})
+
+test_that("column widths", {
+
+  wiley_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1002") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1002") |>
+    .extract_gap_coords() |>
+    expect_equal(c(282, 306))
+
+  nature_paper[[5]] |>
+    .clear_margins(PDF_filename = "10.1038") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1038") |>
+    .extract_gap_coords() |>
+    expect_equal(c(280, 301))
+
+  springer_paper[[12]] |>
+    .clear_margins(PDF_filename = "10.1007") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1007") |>
+    .extract_gap_coords() |>
+    expect_equal(c(284, 306))
+
+  elsevier_paper[[6]] |>
+    .clear_margins(PDF_filename = "10.1016+j.") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1016+j.") |>
+    .extract_gap_coords() |>
+    expect_equal(c(284, 306))
+
+  pnas_paper[[10]] |>
+    .clear_margins(PDF_filename = "10.1073") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1073") |>
+    .extract_gap_coords() |>
+    expect_equal(c(276, 300))
+
+  tand_paper[[11]] |>
+    .clear_margins(PDF_filename = "10.1080") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1080") |>
+    .extract_gap_coords() |>
+    expect_equal(c(287, 332))
+
+  oxford_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.1093") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1093") |>
+    .extract_gap_coords() |>
+    expect_equal(c(308, 318))
+
+  bmc_paper[[5]] |>
+    .clear_margins(PDF_filename = "10.1186") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1186") |>
+    .extract_gap_coords() |>
+    expect_equal(c(283, 304))
+
+  # asco_paper[[9]] |>
+  #   .clear_margins(PDF_filename = "10.1200") |>
+  #   .flag_all_inserts() |>
+  #   .add_column_info(cols = 2, PDF_filename = "10.1200") |>
+  #   .extract_gap_coords() |>
+  #   expect_equal(c(283, 304))
+
+  wkh_paper[[3]] |>
+    .clear_margins(PDF_filename = "10.1212") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1212") |>
+    .extract_gap_coords() |>
+    expect_equal(c(285, 307))
+
+  degr_paper[[6]] |>
+    .clear_margins(PDF_filename = "10.1515") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.1515") |>
+    .extract_gap_coords() |>
+    expect_equal(c(279, 297))
+
+  fsf_paper[[8]] |>
+    .clear_margins(PDF_filename = "10.3324") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.3324") |>
+    .extract_gap_coords() |>
+    expect_equal(c(298, 314))
+
+
+  amegr_paper[[16]] |>
+    .clear_margins(PDF_filename = "10.21037") |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, PDF_filename = "10.21037") |>
+    .extract_gap_coords() |>
+    expect_equal(c(278, 308))
+
 })
 
