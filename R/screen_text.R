@@ -41,6 +41,7 @@
   was_available <- c("(was|were) provided",
                      "(was|were)? previously published",
                      "(was|were|have been)? published previously",
+                     "(was|were) included in",
                      "(was|were) contained in",
                      "(was|were|(?<!(has|have) been )made) available",
                      "(was|were) accessible",
@@ -49,16 +50,23 @@
                      "(was|were) reproduced",
                      "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
+                     "made their .* available",
                      "from( a)? publicly available data( ?sets?)?",
                      "were (used|analy[z,s]ed) in this study",
                      "were downloaded( and analy[z,s]ed)?",
                      "this study used .* publicly available",
+                     "(existing|made use of) publicly available",
+                     "done using( the)? publicly available",
+                     "used .* publicly accessible",
                      "data ?set used previously",
-                     "existing publicly available",
                      "data .*reanaly[z,s]ed (here|in (the present|this) study)",
                      "used data from a public",
+                     "pre-existing",
+                     "package was used to",
+                     "using .* functions? in .* package",
                      "all data we used are public",
                      "covers public",
+                     "(machine learning )?frameworks? used in this study",
                      "available in .* previous",
                      "(we|was|were) obtained",
                      "(?<!code) we used .* data",
@@ -81,12 +89,16 @@
                      "not available",
                      "not accessible",
                      "not submitted",
+                     "did not .* generate",
+                     "no .* (were|was) generated",
                      "(few|no|not enough) \\w.* (is|are) available",
-                     "includes no"
+                     "includes no",
+                     "does not report original",
+                     "(N|n)ot applicable"
                      ) |>
     .format_keyword_vector()
   keyword_list[["not_available"]] <- not_available
-
+# str_detect("no custom codes were generated", not_available)
   # str_detect(publ_sentences, accession_nr[1])field_specific_repo
  # stringr::str_detect("http://www.ncbi. nlm.nih.gov/ pubmed", "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?pubmed)")
   # field_specific_repo |> sort() |> paste(collapse = ",\n")
@@ -360,29 +372,29 @@
 
   source_code <- c("source codes?",
                    "code files?",
-                   "analysis (script|codes?)",
-                   "data (and )?codes?",
+                   "analysis (script|codes?\\w)",
+                   "data (and )?codes?(?! availabili)",
                    "github",
                    "gitlab",
                    "bitbucket",
                    "preprocessing software",
                    "code ocean",
                    "the (script|codes?) for",
-                   "codes? used for",
+                   "(?<!icd) codes? used for",
                    "SAS scripts?",
                    "SPSS scripts?",
                    "r[-, ]+script",
                    "r[-, ]+codes?",
-                   "r[-, ]+package",
+                   "(?<!(using|via|through)( the)?) r[-, ]+package",
                    "python script",
                    "python codes?",
                    # "software",
                    "matlab script",
                    "matlab codes?",
-                   "macro\\b") |>
+                   "macros?\\s(?!(group|level))") |>
     .format_keyword_vector()
   keyword_list[["source_code"]] <- source_code
-
+stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
@@ -431,6 +443,7 @@
   keyword_list[["file_formats"]] <- file_formats
 
   upon_request <- c("(up)?on( reasonable)? request",
+                    "by request",
                     "via a direct request to",
                     "without undue reservation",
                     "the corresponding author",

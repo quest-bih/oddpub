@@ -232,7 +232,7 @@ Mode <- function(x) {
                     #   dplyr::lead(x_jump) > 40,
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
-                    ins_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$") |
+                    ins_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid") |
                       stringr::str_detect(text, "^TA?") & stringr::str_detect(dplyr::lead(text), "^B$|^A$") |
                       stringr::str_detect(text, "^F$") & stringr::str_detect(dplyr::lead(text), "^I$"),
                     is_insert = any(ins_phrase, na.rm = TRUE)) |>
@@ -302,7 +302,7 @@ Mode <- function(x) {
                       any(stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|Published|", months)))) |>
       # dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter(candidate == TRUE & has_insert == FALSE,
-                    !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}")) |>
+                    !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}|[O,o]rcid|ORCID")) |>
       dplyr::ungroup() |>
       dplyr::filter(jump_size == max(jump_size) & jump_size > 15 |
                       stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months))
