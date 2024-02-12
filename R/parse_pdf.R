@@ -1104,7 +1104,7 @@ Mode <- function(x) {
     dplyr::filter(x < max_x, # remove margin text, e.g. 'downloaded from...'
                   x > 18, # remove margin text, e.g. 'downloaded from...'
                   height < max_height)
-
+  if (nrow(text_data) == 0) return(text_data)
 
   min_y <- .find_header_y(text_data) # detect header in most journals
   max_y <- .find_footer_y(text_data) # detect footer in most journals

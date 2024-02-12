@@ -96,13 +96,21 @@ pdf_load <- function(pdf_text_folder)
 # textfile <- txt_filenames
 .tokenize_sections <- function(textfile)
 {
-  readr::read_lines(textfile) |>
+  tokenized <- readr::read_lines(textfile) |>
     paste(collapse = " ") |>
     stringr::str_replace_all("\n", ".") |>
     stringr::str_squish() |>
     tokenizers::tokenize_sentences(simplify = TRUE, lowercase = TRUE) |>
-    tokenizers::tokenize_regex(pattern = " (?=<section>)", simplify = TRUE) |>
-    purrr::list_c() |>
+    tokenizers::tokenize_regex(pattern = " (?=<section>)", simplify = TRUE)
+
+  if (is.list(tokenized)) {
+    tokenized <- tokenized |>
+      purrr::list_c()
+  } else {
+    warning(paste0(textfile, ": Document could not be parsed into sections! Check if the txt file parsed correctly!"))
+  }
+
+  tokenized |>
     stringr::str_replace_all(pattern = ",", replacement = "") |>
     stringr::str_replace_all(pattern = "- ", replacement = "") |>
     .correct_tokenization() |>
