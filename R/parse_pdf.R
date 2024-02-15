@@ -116,7 +116,7 @@
 
   ackn_y <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Acknowledgements")) |>
-    pull(y)
+    dplyr::pull(y)
 
   ackn_y <- max(ackn_y, 0)
 
