@@ -114,14 +114,22 @@
 
   funding_y <- max(funding_y, 0)
 
+  ackn_y <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "Acknowledgements")) |>
+    pull(y)
+
+  ackn_y <- max(ackn_y, 0)
+
   # if (length(funding_y) == 0) funding_y <- 0
 
   if (length(reference_y) != 1) reference_y <- max(text_data$y) + 1
+  if (ackn_y > reference_y) reference_y <- max(text_data$y) + 1
   if (length(reference_x) != 1) reference_x <- max(text_data$x) + 1
 
   if (reference_y < max(text_data$y)/2 & reference_x > max(text_data$x)/2) return(2)
 
   if (reference_y < funding_y) return(1)
+
 
   cols <- text_data |>
     dplyr::arrange(y, x) |>
@@ -436,6 +444,8 @@ Mode <- function(x) {
   col2_x <- 800 # initial estimate is the maximum, works for single column layouts
   col3_x <- col_predevider_x_est <- col2_x
 
+  has_insert <- max(text_data$insert) > 0
+
   min_x <- dplyr::case_when(
     cols == 1 ~ 150,
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
@@ -443,7 +453,9 @@ Mode <- function(x) {
     stringr::str_detect(PDF_filename, "10\\.3389\\+f") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers
     cols == 2 ~ .find_midpage_x(text_data),
     cols == 3 ~ .find_cols_left_x(text_data)$x[2],
+    cols > 3 & has_insert == FALSE ~ .find_cols_left_x(text_data)$x[2],
     .default = 150
+    # .default = 150
   )
 
   # is_elsevier_mixed_layout <- any(stringr::str_detect(text_data$text, "https://doi.org/10.1016/j.jclinepi."))
@@ -468,17 +480,26 @@ Mode <- function(x) {
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41")) {
-    layout_divider_y <- text_data |>
-      dplyr::filter(stringr::str_detect(text, "\\u00a9") &
-                      stringr::str_detect(dplyr::lead(text), "The") &
-                      stringr::str_detect(dplyr::lead(text, 2), "Author\\(s\\)")) |>
-      dplyr::mutate(y = y + 20) |>
+  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+(s41|ncomms)")) {
+    cc_tag_y <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "creativecommons.org")) |>
+      # dplyr::mutate(y = y + 20) |>
       dplyr::pull(y)
 
-    if (!rlang::is_empty(layout_divider_y)) {
-      min_x <- .find_midpage_x(text_data |>
-                                 dplyr::filter(y > layout_divider_y))
+    if (!rlang::is_empty(cc_tag_y)) {
+
+      layout_divider_y <- text_data |>
+        dplyr::filter(y > cc_tag_y - 10,
+                      font_size > dplyr::first(font_size),
+                      x_jump_size < -200) |>
+        dplyr::summarise(divider = min(y) - 10) |>
+        dplyr::pull(divider)
+
+      if (layout_divider_y == Inf) layout_divider_y <- cc_tag_y + 20
+
+      # min_x <- .find_midpage_x(text_data |>
+      #                            dplyr::filter(y > layout_divider_y))
+      min_x <- 800
   } else {
       layout_divider_y <- 800
     }
@@ -585,6 +606,7 @@ Mode <- function(x) {
 # cols_w_inserts |>
 #   dplyr::arrange(insert, column, y, x)
   #
+  # res <-
   cols_w_inserts |>
     dplyr::filter(insert > 0) |>
     dplyr::arrange(column) |>
@@ -1015,8 +1037,10 @@ Mode <- function(x) {
   }
 
   last_row <- last_row |>
-    dplyr::filter(font_size <= ceiling(dplyr::first(font_size))
-                  )
+    dplyr::filter(
+      font_size <= dplyr::first(font_size) + 0.5
+      # font_size <= ceiling(dplyr::first(font_size))
+      )
 
   last_row <- last_row |>
       dplyr::pull(y) |>
