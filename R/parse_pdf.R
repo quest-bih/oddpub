@@ -273,6 +273,8 @@ Mode <- function(x) {
   page_width <- max(text_data$x) - min(text_data$x)
   min_y <- min(max(text_data$y) - 50, 700)
 
+  if (min_y < 400) return(max(text_data$y) + 3) # in case no footer was detected
+
   # linejumps <- tibble::tibble(
   #   y = sort(unique(text_data$y)),
   #   y_jump = dplyr::lead(sort(unique(text_data$y))) - y) |>
@@ -310,7 +312,9 @@ Mode <- function(x) {
                     !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}|[O,o]rcid|ORCID")) |>
       dplyr::ungroup() |>
       dplyr::filter(jump_size == max(jump_size) & jump_size > 15 |
-                      stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months))
+                      (stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months)) &
+                         !stringr::str_detect(dplyr::lag(text), "(A|a)t") &
+                         max(line_n) - line_n < 3)
       #               # |
       #               #   potential_page_n == TRUE
                     ) |>
@@ -488,17 +492,17 @@ Mode <- function(x) {
 
     if (!rlang::is_empty(cc_tag_y)) {
 
-      layout_divider_y <- text_data |>
+      suppressWarnings(
+        layout_divider_y <- text_data |>
         dplyr::filter(y > cc_tag_y - 10,
                       font_size > dplyr::first(font_size),
                       x_jump_size < -200) |>
         dplyr::summarise(divider = min(y) - 10) |>
         dplyr::pull(divider)
 
-      if (layout_divider_y == Inf) layout_divider_y <- cc_tag_y + 20
+      )
 
-      # min_x <- .find_midpage_x(text_data |>
-      #                            dplyr::filter(y > layout_divider_y))
+      if (layout_divider_y == Inf) layout_divider_y <- 800 # cc_tag_y + 20
       min_x <- 800
   } else {
       layout_divider_y <- 800
