@@ -380,6 +380,7 @@
                    "preprocessing software",
                    "code ocean",
                    "the (script|codes?) for",
+                   "code for .* (analys|model)",
                    "(?<!icd) codes? used for",
                    "SAS scripts?",
                    "SPSS scripts?",
@@ -394,7 +395,8 @@
                    "macros?\\s(?!(group|level))") |>
     .format_keyword_vector()
   keyword_list[["source_code"]] <- source_code
-stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
+
+# stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"

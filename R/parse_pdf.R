@@ -214,6 +214,7 @@ Mode <- function(x) {
   if (.str_has_insert(text_data$text[1])) return(0)
 
   page_width <- max(text_data$x) - min(text_data$x)
+  # page_width / 2
 
   linejumps <- tibble::tibble(
     y = sort(unique(text_data$y)),
@@ -238,18 +239,20 @@ Mode <- function(x) {
                     has_coded_break = stringr::str_detect(text, "\\\b"),
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
-                    ins_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid") |
+                    section_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid|[C,c]ontribut|Acknow") |
                       stringr::str_detect(text, "^TA?") & stringr::str_detect(dplyr::lead(text), "^B$|^A$") |
                       stringr::str_detect(text, "^F$") & stringr::str_detect(dplyr::lead(text), "^I$"),
-                    is_insert = any(ins_phrase, na.rm = TRUE)) |>
+                    is_section = any(section_phrase, na.rm = TRUE)) |>
       dplyr::ungroup() |>
       dplyr::left_join(linejumps, by = "y") |>
+      dplyr::mutate(section_on_line_one = any(is_section == TRUE & line_n == 1)) |>
       dplyr::filter((prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
                       prop_width < 0.2 |
         y_jump > 20 |
         potential_page_n |
         has_coded_break,
-      is_insert == FALSE,
+        section_on_line_one == FALSE,
+      is_section == FALSE,
       !stringr::str_detect(font_name, "Bold")
       ) |>
       dplyr::filter((y_jump == max(y_jump) |
@@ -477,7 +480,7 @@ Mode <- function(x) {
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
       dplyr::mutate(y = y - 10) |>
@@ -496,14 +499,18 @@ Mode <- function(x) {
         layout_divider_y <- text_data |>
         dplyr::filter(y > cc_tag_y - 10,
                       font_size > dplyr::first(font_size),
-                      x_jump_size < -200) |>
+                      x_jump_size < -200,
+                      !stringr::str_detect(text, "AUTHOR")) |>
         dplyr::summarise(divider = min(y) - 10) |>
         dplyr::pull(divider)
 
       )
 
-      if (layout_divider_y == Inf) layout_divider_y <- 800 # cc_tag_y + 20
-      min_x <- 800
+      if (layout_divider_y == Inf) {
+        layout_divider_y <- 800 # cc_tag_y + 20
+      } else {
+        min_x <- 800
+      }
   } else {
       layout_divider_y <- 800
     }
@@ -998,11 +1005,13 @@ Mode <- function(x) {
 
   is_last_insert <- rlang::is_empty(min_y_next_insert)
 
+  has_references <- any(stringr::str_detect(text_data$text, "REFERENCES"))
+
   min_y_next_insert <- min(max(text_data$y) + 2, min_y_next_insert)
 
   if (max(text_data$x) > 600) return(min_y_next_insert - 3)
 
-  if (min_y_next_insert < max(text_data$y) + 2) {
+  if (min_y_next_insert < max(text_data$y) + 2 | has_references) {
     critical_max_y_jump <- 30
   } else {
     critical_max_y_jump <- 80
@@ -1030,7 +1039,8 @@ Mode <- function(x) {
                       max(max_y_before_last, na.rm = TRUE) > critical_max_y_jump, 1, 0),
                   y_exceeded = dplyr::if_else(
                     stringr::str_detect(first_insert$text, "^F") &
-                      is_fig_caption,
+                      is_fig_caption |
+                      has_references & font_size < dplyr::first(font_size),
                     1,
                     y_exceeded),
                   y_exceeded = cumsum(y_exceeded)) |>
