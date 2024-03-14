@@ -78,8 +78,8 @@ karger_paper <- pdftools::pdf_data(test_path("10.1159+000521415.pdf"),
     dplyr::group_by(column) |>
     dplyr::summarise(min_x = min(x),
                      max_x = max(x)) |>
-    dplyr::summarise(gap_l = mean(if_else(column == 1, max_x, NA), na.rm = TRUE),
-                     gap_r = mean(if_else(column == 2, min_x, NA), na.rm = TRUE)) |>
+    dplyr::summarise(gap_l = mean(dplyr::if_else(column == 1, max_x, NA), na.rm = TRUE),
+                     gap_r = mean(dplyr::if_else(column == 2, min_x, NA), na.rm = TRUE)) |>
     as.numeric()
 }
 
@@ -201,7 +201,7 @@ test_that("figures", {
     .clear_margins(PDF_filename = "10.1007") |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
-    expect_equal(c(51, 521, 55, 449))
+    expect_equal(c(51, 521, 55, 449)) ###### 410 if legend caption is missed, decide if should be in our out!
 
   # springer_paper[[5]] |>
   #   .clear_margins() |>

@@ -43,6 +43,7 @@ pdf_load <- function(pdf_text_folder)
     "a?cc(ession)? nos?\\.$",
     "fig\\.$",
     "doi\\.$",
+    "dr\\.",
     "zenodo\\.",
     "et al\\.$",
     "ncbi\\.$",
@@ -89,7 +90,7 @@ pdf_load <- function(pdf_text_folder)
 
   return(PDF_text_pasted)
 }
-
+# tok <- tibble(text = tok)
 #' format
 #' @noRd
 # textfile <- paste0(pdf_text_folder, txt_filenames)
@@ -101,7 +102,7 @@ pdf_load <- function(pdf_text_folder)
     stringr::str_replace_all("\n", ".") |>
     stringr::str_squish() |>
     tokenizers::tokenize_sentences(simplify = TRUE, lowercase = TRUE) |>
-    tokenizers::tokenize_regex(pattern = " (?=<section>)", simplify = TRUE)
+    tokenizers::tokenize_regex(pattern = " (?=<(section|insert)>)", simplify = TRUE)
 
   if (is.list(tokenized)) {
     tokenized <- tokenized |>

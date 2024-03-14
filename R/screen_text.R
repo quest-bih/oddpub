@@ -87,6 +87,7 @@
                      "not provided",
                      "not contained in",
                      "not available",
+                     "when available",
                      "not accessible",
                      "not submitted",
                      "did not .* generate",
@@ -303,9 +304,9 @@
     .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
 
-  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
+  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+",
                     "open data repository (\\(|\\[)\\d{1,4}",
-                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
+                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+",
                     "10\\.17617/3.", # Edmond
                     "10\\.17632", # Mendeley Data
                     "10\\.18452", # edoc HU
@@ -426,7 +427,8 @@
                   "supplement",
                   "supplementa(l|ry) data",
                   "supplementa(l|ry) material",
-                  "supplementa(l|ry) information"
+                  "supplementa(l|ry) information",
+                  "in the additional file"
                   # "provided with this paper",
                   # "(with)?in th(is|e) article",
                   ) |>
@@ -805,7 +807,7 @@
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
   DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
-                                         \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
+                                         \(sentence) stringr::str_detect(sentence, "(section|insert|iend)> (?!d )|^\\d\\.")) |>
     which() - 1
 
   # if (length(PDF_text_sentences) - DAS_start <= 2) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
@@ -817,7 +819,7 @@
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
-                                               \(sentence) stringr::str_detect(sentence, "\\.$"))
+                                               \(sentence) stringr::str_detect(sentence, "\\..?$"))
 
   if (stringr::str_length(str_DAS_sameline) < 5) {
     # first_sentence <- DAS_start + 1

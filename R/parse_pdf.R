@@ -438,7 +438,30 @@ Mode <- function(x) {
       dplyr::slice_max(jump_next) |>
       dplyr::pull(y)
   } else {
-    divider_y <- 800
+    second_page <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "Published") &
+                      stringr::str_detect(dplyr::lead(text), "by") &
+                      stringr::str_detect(dplyr::lead(text, 2), "Elsevier"),
+                    y < 600) |>
+      nrow()
+
+    second_page <- second_page == 1
+
+    if (second_page == TRUE) {
+      divider_y <- text_data |>
+        dplyr::filter(stringr::str_detect(text, "Introduction|ABBREVIATIONS") & font_size > 9 & x < 100) |>
+        dplyr::mutate(y = y - 10) |>
+        dplyr::summarise(y = min(y)) |>
+        dplyr::pull(y)
+
+      if (rlang::is_empty(divider_y)) divider_y <- 800
+    } else {
+      divider_y <- 800
+    }
+
+
+
+
   }
   divider_y
 }
@@ -469,7 +492,7 @@ Mode <- function(x) {
 
   layout_divider_y <- 800
 
-  if (stringr::str_detect(PDF_filename, "j\\.jclinepi")) {
+  if (stringr::str_detect(PDF_filename, "j\\.(jclinepi|ejc)")) {
     layout_divider_y <- .get_elsevier_divider_y(text_data)
     min_x <- .find_midpage_x(text_data |>
                                dplyr::filter(y > layout_divider_y))
@@ -607,7 +630,7 @@ Mode <- function(x) {
       .default = 1),
       text = dplyr::case_when(
         insert > 0 & dplyr::lag(insert, default = 0) != insert ~ paste("\n<insert>", text),
-        insert > 0 & dplyr::lead(insert, default = 0) != insert ~ paste(text, "\n<iend>"),
+        insert > 0 & dplyr::lead(insert, default = 0) != insert ~ paste(text, "\n<iend>\n"),
         .default = text)
       )
 
@@ -649,9 +672,8 @@ Mode <- function(x) {
       # y_jump != 0,
                   .str_has_insert(text) &
                     (y_jump >= 14 |
-                       (x > 300 & y < 100 & dplyr::lag(space) == FALSE)
-                     |
-                      (x_jump_size < -260)
+                       (x > 300 & y < 100 & dplyr::lag(space) == FALSE) |
+                      (x_jump_size < -260) & y_jump < 10
                      ) |
                     stringr::str_detect(text, "^REAGENT$") &
                     stringr::str_detect(dplyr::lead(text, 1), "^or$") &
@@ -1028,7 +1050,10 @@ Mode <- function(x) {
     dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y) |>
     dplyr::filter(abs(y_jump) >= round(2.5 * font_size) | # for 7.5 font it is 20, for 7 it is 18
                     y_jump > 19 |
-                    y_jump > 15 & round(dplyr::lead(font_size)) - round(font_size) > 0 |
+                    (
+                      y_jump > 15 & (round(dplyr::lead(font_size)) > round(font_size) |
+                       stringr::str_detect(dplyr::lead(font_name), "(B|b)old"))
+                     ) |
                     y == max(y)
                   ) |>
     dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y,
@@ -1113,7 +1138,7 @@ Mode <- function(x) {
 .clear_margins <- function(text_data, PDF_filename) {
 
   # remove hidden text tags and layers in various journals
-  if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.ecl")) {
+  if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.(ecl|pul)")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "DOHGPO+AdvP48722B",
                     font_size > 6.5) |>
