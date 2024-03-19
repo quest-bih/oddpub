@@ -95,13 +95,18 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
   # do this only for subset of cases, as this is the most time-consuming step
   if (length(sentences_second_pass) > 0) {
     print("Screening full text of articles with uninformative Data Availability Statements:")
+    open_data_cat_old <- open_data_results |>
+      dplyr::select(article, open_data_cat_old = open_data_category)
+
     keyword_second_pass <- .keyword_search_full(PDF_text_sentences[sentences_second_pass])
-    open_data_second_pass <- .open_data_detection(PDF_text_sentences[sentences_second_pass], keyword_second_pass)
-    # |>
-    #   dplyr::bind_cols(open_data_cat_old = open_data_results$open_data_category) |>
-    #   dplyr::mutate(open_data_category = ifelse(open_data_cat_old != "", paste0(open_data_cat_old, ", ", open_data_category),
-    #                 open_data_category)) |>
-    #   dplyr::select(-open_data_cat_old) # test if this is necessary (if it overwrites categories at all)
+    open_data_second_pass <- .open_data_detection(PDF_text_sentences[sentences_second_pass], keyword_second_pass) |>
+      dplyr::left_join(open_data_cat_old, by = "article") |>
+      dplyr::mutate(open_data_category =
+                      dplyr::case_when(
+                        open_data_cat_old != "" & open_data_category != "" ~ paste0(open_data_cat_old, ", ", open_data_category),
+                        .default = paste0(open_data_cat_old, open_data_category)),
+      open_data_category = purrr::map_chr(open_data_category, .remove_repeats)) |>
+      dplyr::select(-open_data_cat_old)
 
     keyword_results <- keyword_results |>
       purrr::list_assign(!!!keyword_second_pass)

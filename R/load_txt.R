@@ -45,9 +45,12 @@ pdf_load <- function(pdf_text_folder)
     "doi\\.$",
     "dr\\.",
     "zenodo\\.",
+    "neurovault\\.",
     "et al\\.$",
     "ncbi\\.$",
+    "github\\.$",
     "www\\.$",
+    "no\\.",
     "https?:\\/\\/$",
     "^(<section> )?\\w\\.$",
     "^(<section> )?\\d\\.\\d\\.$"

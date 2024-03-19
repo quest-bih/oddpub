@@ -19,8 +19,10 @@
                  "contains",
                  "listed in",
                  "lodged with",
+                 "assign(ed)? a doi",
                  "(?<!the )available",
                  "doi of the data(set)? (is|are)",
+                 "(with regards to|for) data availability.*see:?",
                  "reproduce",
                  "accessible",
                  "(can|may) be (freely )?accessed",
@@ -43,7 +45,7 @@
                      "(was|were|have been)? published previously",
                      "(was|were) included in",
                      "(was|were) contained in",
-                     "(was|were|(?<!(has|have) been )made) available",
+                     "(was|were|(?<!((has|have) been)|are (now)?) made) available",
                      "(was|were) accessible",
                      "(was|were) deposited by",
                      "(has (been )?)? previously (been )?deposited",
@@ -52,21 +54,23 @@
                      "(previous|prior) study",
                      "made their .* available",
                      "from( a)? publicly available data( ?sets?)?",
-                     "were (used|analy[z,s]ed) in this study",
+                     "were (used|analy[z,s]ed)",
                      "were downloaded( and analy[z,s]ed)?",
                      "this study used .* publicly available",
                      "(existing|made use of) publicly available",
                      "done using( the)? publicly available",
+                     "publicly available data(sets)? were analy(z|s)ed",
                      "used .* publicly accessible",
                      "data ?set used previously",
-                     "data .*reanaly[z,s]ed (here|in (the present|this) study)",
+                     "data .*reanaly[z,s]ed",
                      "used data from a public",
                      "pre-existing",
+                     "\\boriginal data accession",
                      "package was used to",
                      "using .* functions? in .* package",
                      "all data we used are public",
                      "covers public",
-                     "(machine learning )?frameworks? used in this study",
+                     "(machine learning )?frameworks? used",
                      "available in .* previous",
                      "(we|was|were) obtained",
                      "(?<!code) we used .* data",
@@ -124,6 +128,7 @@
     "BioProject",
     "BioSample",
     "BMRB",
+    "BONARES",
     "Broad Institute",
     "Cambridge Crystallographic Data Centre",
     "caNanoLab",
@@ -132,8 +137,10 @@
     "CATS",
     "CCDC",
     "CCMS",
+    "cdc\\. ?gov",
     "Cell Image Library",
     "ChEMBL",
+    "civicdb",
     # "clinicaltrials.gov", does not cover our data criteria
     # "ClinVar", does not cover our data criteria
     "Coherent X-ray Imaging Data Bank",
@@ -303,10 +310,15 @@
                     "accession numbers") |>
     .format_keyword_vector()
   keyword_list[["accession_nr"]] <- accession_nr
+# publ_sentences <- tolower("Complete tandem mass tag proteomics data as uploaded to PRIDE [accession N◦.: PXD014572] included 93 significantly enriched immunomodulatory and angiogenic proteins.")
+  # string_sup <- "<section> data availability all data are available in the supplementary tables (tables s1–s3)."
+  # str_detect("<section> data availability all data are available in the supplementary tables (table 1 3)", "data(?! (availability|accessibility)).* (is|are) available *(\\w+\\W+){0,3}(\\(|\\[)?.*\\d{1,4}(\\)|\\])+")
+  # str_detect("all data are available in the supplementary tables (s1–s3)", "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+")
 
-  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+",
+  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
                     "open data repository (\\(|\\[)\\d{1,4}",
-                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+",
+                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)+[^=s]*\\d{1,4}(\\)|\\])+",
+                    "data(?! (availability|accessibility)).* (is|are) available .*\\d{4}\\)",
                     "10\\.17617/3.", # Edmond
                     "10\\.17632", # Mendeley Data
                     "10\\.18452", # edoc HU
@@ -346,6 +358,8 @@
   data <- c("data(?! (availability|accessibility))",
             "datasets?",
             # "databases?",
+            "annotations",
+            "sequences",
             "responses",
             "materials") |>
     .format_keyword_vector(end_boundary = TRUE)
@@ -400,6 +414,7 @@
 # stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
+
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
   grant <- c("grant",
              "funding",
@@ -409,7 +424,7 @@
   keyword_list[["grant"]] <- grant
 
   keyword_list[["weblink"]] <- weblink
-# str_detect(publ_sentences, source_code)
+
   reuse <- .near_wd(was_available,
                     paste(
                       accession_nr,
@@ -419,6 +434,7 @@
                       citation,
                       github,
                       "cited as reference",
+                      "(here|in (the present|this) study)",
                       sep = "|"),
                     dist = 30)
   keyword_list[["reuse"]] <- reuse
@@ -570,7 +586,6 @@
   #                                         dist = 30)
   # keyword_list[["data_in_DAS"]] <- data_in_DAS
 
-
   return(keyword_list)
 }
 
@@ -666,6 +681,7 @@
 
 # publ_sentences <- "data availability source data are provided with this paper."
 # publ_sentences <- PDF_text_sentences[[1]]
+# publ_sentences <- DAS
 
 #' apply all keyword category searches onto each sentence of the publications
 #' @noRd
@@ -970,26 +986,26 @@
     return(PDF_text_sentences)
   }
 
-  # for the Elsevier journals that print useful information after the references
-  line_star <- suppressWarnings(
+  # for journals that print useful information after the references (Elsevier, Science, etc.)
+  line_after_ref <- suppressWarnings(
     PDF_text_sentences |>
-      stringr::str_detect("<section> star\\+methods") |>
+      stringr::str_detect("<section> (star\\+methods|acknowledgments:|open data)") |>
       which() |>
       max()
   )
 
-  if (sum(line_star) <= 0) line_star <- 0
+  if (sum(line_after_ref) <= 0) line_after_ref <- 0
 
   # excise references for special case Elsevier journals
-  if (line_star > line_before_refs) {
+  if (line_after_ref > line_before_refs) {
     return(c(PDF_text_sentences[1:line_before_refs],
-             PDF_text_sentences[line_star:length(PDF_text_sentences)]))
+             PDF_text_sentences[line_before_refs:length(PDF_text_sentences)]))
   }
   # excise references for most journals
   PDF_text_sentences[1:line_before_refs]
 
 }
-
+# kw <- keyword_results_combined[[1]]
 #'
 #' @noRd
 .keyword_search_full <- function(PDF_text_sentences)
@@ -1014,8 +1030,13 @@
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
     purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
-    purrr::map(dplyr::mutate, com_unknown_source = data & available & weblink &
-                 !not_available & !com_specific_repo & !com_general_repo & !com_github_data & !supplement) |>
+    purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
+    purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
+      com_n_weblinks > 1 ~ data & available & weblink &
+        !not_available & !accession_nr & !com_general_repo, # maybe exclude supplements here as well
+      .default = data & available & weblink &
+        !not_available & !accession_nr & !com_general_repo & !com_github_data & !supplement
+    )) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
                 com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request, com_unknown_source)
 
@@ -1247,4 +1268,13 @@
 
 
   return(open_data_sentences)
+}
+# categories <- "re-use"
+# Remove repeated categories listed in a string separated by commas
+#' @noRd
+.remove_repeats <- function(categories) {
+  strsplit(categories, ", ") |>
+    unlist() |>
+    unique() |>
+    paste0(collapse = ", ")
 }

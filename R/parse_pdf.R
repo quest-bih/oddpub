@@ -46,14 +46,29 @@
 #' @noRd
 .est_col_n <- function(text_data, PDF_filename) {
 
-  ralc <- space <- text <- y <- x <- line_n <- has_jama <- NULL
+  ralc <- space <- text <- y <- x <- line_n <- has_jama <- text_left_margin <- NULL
 
-  # for elsevier data and code availability the column estimation is thrown off by the key ressources table
+  if (stringr::str_detect(PDF_filename, "10\\.3390|e(L|l)ife")) return(1)
+
 
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
   if (nrow(text_data) == 0) return(1)
+
+  # for PLoS articles
+  if (stringr::str_detect(PDF_filename, "10\\.1371")) {
+    text_left_margin <- text_data |>
+      dplyr::filter(x < 200) |>
+      nrow()
+    if (text_left_margin > 0) {
+      return(2)
+    } else {
+      return(1)
+    }
+  }
+
+  # for elsevier data and code availability the column estimation is thrown off by the key ressources table
 
   ralc_statement_present <- text_data |>
     dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "REAGENT" &
@@ -137,10 +152,13 @@
     dplyr::filter(!stringr::str_detect(text, "^\\d{1,3}\\.?$"),
                   y < reference_y,
                   y > 21, # exclude upper margin
+                  rel_width > 0.3,
                   font_size > 4) |>
     .add_line_n()
 
   cols_x <- .find_cols_left_x(cols)
+
+
 
   if (nrow(cols_x) > 1 & nrow(cols_x) < 4) return(nrow(cols_x))
   #178 not but 50 and 306 # find out typical 3-col values!
@@ -299,20 +317,22 @@ Mode <- function(x) {
                     line_n = cumsum(line_n)) |>
       dplyr::group_by(line_n) |>
       dplyr::arrange(line_n, x) |>
-      dplyr::mutate(prop_full = sum(width)/page_width,
+      dplyr::mutate(prop_width = sum(width)/page_width,
                     x_jump = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
                     max_x_jump = max(x_jump),
                     jump_size = max(jump_size),
                     potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
                       space == FALSE & (x < 100 | x > 500),
                     has_insert = any(.str_has_insert(text)),
-                    candidate = any(prop_full < 0.6 & round(font_size) < 9) |
+                    candidate = any(prop_width < 0.6 & round(font_size) < 9) |
                       any(max_x_jump > 170) |
                       potential_page_n |
-                      any(stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|Published|", months)))) |>
+                      (any(stringr::str_detect(text, paste0("(?<!orcid)\\.org|release|\\u00a9|Volume|Published|", months))) &
+                         !any(stringr::str_detect(text, "(A|a)ccessed|((A|a)t)")))) |>
       # dplyr::left_join(linejumps, by = "y") |>
       dplyr::filter(candidate == TRUE & has_insert == FALSE,
                     !stringr::str_detect(text, "doi.*(g|t)0\\d{1,2}|[O,o]rcid|ORCID")) |>
+      # dplyr::summarise(jump_criterion = )
       dplyr::ungroup() |>
       dplyr::filter(jump_size == max(jump_size) & jump_size > 15 |
                       (stringr::str_detect(text, paste0("(?<!orcid)\\.org|Journal|release|\\u00a9|Volume|", months)) &
@@ -373,7 +393,7 @@ Mode <- function(x) {
 
 #' find right x coordinates of the potential columns on a page
 #' @noRd
-.find_cols_right_x <- function(text_data, min_x = 270) {
+.find_cols_right_x <- function(text_data, min_x = 250) {
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
@@ -396,14 +416,16 @@ Mode <- function(x) {
 
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
-.find_midpage_x <- function(text_data, min_x = 270) {
+.find_midpage_x <- function(text_data, min_x = 250) {
 
+  # the right edge of the gap (the higher x value)
   gaps_r <- .find_cols_left_x(text_data) |>
     dplyr::filter(x >= min_x) |>
     dplyr::pull(x)
 
   if (length(gaps_r) == 0) gaps_r <- 304
 
+  # the left edge of the gap (the lower x value)
   gaps_l <- .find_cols_right_x(text_data, min_x = min_x) |>
     dplyr::filter(x < min(gaps_r),
                   x != 0) |>
@@ -458,10 +480,6 @@ Mode <- function(x) {
     } else {
       divider_y <- 800
     }
-
-
-
-
   }
   divider_y
 }
@@ -481,6 +499,7 @@ Mode <- function(x) {
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
     stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
     stringr::str_detect(PDF_filename, "10\\.3389\\+f") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers
+
     cols == 2 ~ .find_midpage_x(text_data),
     cols == 3 ~ .find_cols_left_x(text_data)$x[2],
     cols > 3 & has_insert == FALSE ~ .find_cols_left_x(text_data)$x[2],
@@ -503,7 +522,7 @@ Mode <- function(x) {
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182")) {
+  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182|10\\.1128")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
       dplyr::mutate(y = y - 10) |>
@@ -584,8 +603,17 @@ Mode <- function(x) {
   if (cols > 1 | is.na(cols)) {
 
     if (has_mixed_layout) {
-      col_predevider_x_est <- .find_midpage_x(text_data |>
-                                                dplyr::filter(y < layout_divider_y))
+      cols <- .est_col_n(text_data |>
+                           dplyr::filter(y < layout_divider_y), PDF_filename)
+
+      if (cols > 1) {
+        col_predevider_x_est <- .find_midpage_x(text_data |>
+                                                  dplyr::filter(y < layout_divider_y))
+      } else {
+        col_predevider_x_est <- 800
+      }
+
+
 
       if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est) ) col_predevider_x_est <- col2_x
     }
@@ -662,7 +690,8 @@ Mode <- function(x) {
         stringr::str_detect(dplyr::lead(text, 2), "[A-Z]|continued"))
       &
         (!stringr::str_detect(dplyr::lag(text, default = ""), "^see$|^and$|^in$|,|Summary") |
-           dplyr::lag(font_name) != font_name & dplyr::lag(font_size) != font_size)
+           dplyr::lag(font_name) != font_name & dplyr::lag(font_size) != font_size) &
+        !stringr::str_detect(dplyr::lead(text), "^S\\w+:$")
       ,
       # has_insert_text = .str_has_insert(text),
       vertical = width <= height & stringr::str_length(text) > 2 & width < 15,
@@ -799,6 +828,8 @@ Mode <- function(x) {
 
   first_insert <- text_data |>
     .find_first_insert()
+
+  if (first_insert$text == "REAGENT") return(800)
 
   if (nrow(inserts) == 0) inserts <- first_insert
 
@@ -957,7 +988,7 @@ Mode <- function(x) {
                        # dplyr::first(mean_cols_left) == 0 &
                                             nrow(cols_left_est) > 2
                      )
-#####@@@@@@@
+#####
   if (multicol_layout$twothirdscol == TRUE) {
     max_x <- cols_left_est |>
       dplyr::filter(x > midpage) |>
@@ -1007,6 +1038,43 @@ Mode <- function(x) {
 
 }
 
+#' find a horizontal gap on the page if there is a big one
+#' @noRd
+.find_y_gap <- function(text_data, crit_jump_min = 30, crit_jump_max = 100) {
+
+  if (!any(stringr::str_detect(text_data$text, "Table|Appendix"))) {
+    gap_candidates <- text_data |>
+      dplyr::filter(rel_width > 0.05,
+                    stringr::str_length(text) > 1,
+                    !stringr::str_detect(text, "\\*"))
+  } else {
+    gap_candidates <- text_data
+  }
+
+
+  suppressWarnings(
+    gap_candidates <- gap_candidates |>
+    # text_data |>
+      dplyr::arrange(y, x) |>
+      .add_line_n() |>
+      dplyr::group_by(line_n) |>
+      dplyr::summarise(y = max(y) # TODO:perhaps mean here?
+                       # ,
+                       # rel_width = mean(rel_width)
+                       ) |>
+      dplyr::ungroup() |>
+      dplyr::mutate(y_jump = dplyr::lead(y) - y) |>
+      dplyr::filter(y_jump >= crit_jump_min,
+                    y_jump < crit_jump_max)
+  )
+
+    # if (nrow(gap_candidates) > 3) {
+    #   gap_candidates <- gap_candidates |>
+    #     dplyr::filter(y_jump != y_jump)
+    # }
+  gap_candidates
+}
+
 #' find a table or figure ending x coordinate
 #' @noRd
 .find_insert_max_y <- function(text_data) {
@@ -1026,8 +1094,25 @@ Mode <- function(x) {
     dplyr::pull(y)
 
   is_last_insert <- rlang::is_empty(min_y_next_insert)
+  # & !stringr::str_detect(first_insert$text, "^T")
+  if (max_x == 800 & is_last_insert == TRUE) {
+    suppressWarnings(y_gap <- .find_y_gap(text_data) |>
+      dplyr::pull(y) |>
+      min()
+      )
+  } else {
+    y_gap <- 800
+  }
+
+  if (y_gap < 800 & y_gap > min_y) return(y_gap)
+
+  # end_section <- text_data |>
+  #   dplyr::filter(stringr::str_detect(text_data$text, "REFERENCES|Abbreviations"),
+  #                 rel_width < 0.5)
 
   has_references <- any(stringr::str_detect(text_data$text, "REFERENCES"))
+  # has_references <- any(stringr::str_detect(end_section$text, "REFERENCES"))
+  # has_abbreviations <- any(stringr::str_detect(end_section$text, "Abbreviations"))
 
   min_y_next_insert <- min(max(text_data$y) + 2, min_y_next_insert)
 
@@ -1062,10 +1147,11 @@ Mode <- function(x) {
                   y_exceeded = dplyr::if_else(
                     y_jump <= 0 &
                       max(max_y_before_last, na.rm = TRUE) > critical_max_y_jump, 1, 0),
+                  # for inserts on a page with the references
                   y_exceeded = dplyr::if_else(
-                    stringr::str_detect(first_insert$text, "^F") &
-                      is_fig_caption |
-                      has_references & font_size < dplyr::first(font_size),
+                    (stringr::str_detect(first_insert$text, "^F") &
+                      is_fig_caption) |
+                      (has_references & font_size < dplyr::first(font_size)),
                     1,
                     y_exceeded),
                   y_exceeded = cumsum(y_exceeded)) |>
@@ -1074,6 +1160,8 @@ Mode <- function(x) {
   if (nrow(last_row) == 0 | (is_last_insert == FALSE & min_y_next_insert == max(last_row$y) + 2)) {
     return(min_y_next_insert - 3)
   }
+
+
 
   last_row <- last_row |>
     dplyr::filter(
@@ -1183,7 +1271,7 @@ Mode <- function(x) {
                   y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
                   y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
                   width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
-                  text != ".") |> # remove zero width spaces and single dots
+                  !stringr::str_detect(text, "^\\.\\W?$")) |> # remove zero width spaces and single punctuation
     dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
                   is_subpscript = abs(x_jump_size) < 5 & dplyr::lag(font_size, default = 100) > font_size &
                                                               dplyr::lead(font_size, default = 100) > font_size
@@ -1194,7 +1282,25 @@ Mode <- function(x) {
 #' Estimate the width of the page
 #' @noRd
 .get_page_width <- function(text_data) {
+
+  # max_x <- max(text_data$x)
+  # max_x <- text_data |>
+  #   dplyr::filter(x == max_x) |>
+  #   dplyr::mutate(x = x + width) |>
+  #   dplyr::pull(x)
+  # max_x - min(text_data$x)
   max(text_data$x) - min(text_data$x)
+}
+
+#' Add proportional sum of widths for each y value
+#' @noRd
+.add_rel_width <- function(text_data) {
+  page_width <- .get_page_width(text_data)
+
+  text_data |>
+    dplyr::group_by(y) |>
+    dplyr::mutate(rel_width = sum(width)/page_width) |>
+    dplyr::ungroup()
 }
 
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
@@ -1210,6 +1316,7 @@ Mode <- function(x) {
 
   tryCatch({
     text_data <- text_data |>
+      .add_rel_width() |>
       .flag_all_inserts()
   }, error = function(e) {
     print(paste("There were insert parsing issues with", PDF_filename))
@@ -1230,12 +1337,11 @@ Mode <- function(x) {
     dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
     dplyr::group_by(line_n) |>
     dplyr::mutate(prop_blank = dplyr::case_when( # calculate approx. prop. blank space on line
-      cols == 1 ~ 1 - sum(width)/page_width,
+      cols == 1 ~ 1 - rel_width,
       cols == 2 ~ 1 - sum(width)/(page_width/2),
       .default = 1 - sum(width)/(page_width/3)
     )) |>
     dplyr::ungroup()
-
 
   section_jump <- text_data$jump_size[text_data$jump_size > 3] |>
     Mode() * 1.3
@@ -1260,13 +1366,13 @@ Mode <- function(x) {
         is.na(dplyr::lag(text)) ~ 0,
         stringr::str_detect(dplyr::lag(text), "\\.$") ~ 1,
         .default = 0
-
       )),
       heading_font = dplyr::if_else(
-        abs(font_size - dplyr::lag(font_size)) > 1.4 |
-          !stringr::str_detect(text, "[[:lower:]]") | # only caps
+         is_subpscript == FALSE &
+          (abs(font_size - dplyr::lag(font_size)) > 1.4 |
+          !stringr::str_detect(text, "[[:lower:]]|\\)?\\.$") | # only caps and not end of sentence
           # font_size - regular_font_size > 1 |
-          stringr::str_detect(font_name, heading_font_regex), TRUE, FALSE),
+          stringr::str_detect(font_name, heading_font_regex)), TRUE, FALSE),
       newline_heading = line_n == 1 & is.na(heading_font) | # very first line
         line_n > dplyr::lag(line_n) &
         (stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") | # end of line can be full stop or some email or url

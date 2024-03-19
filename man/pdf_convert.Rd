@@ -4,7 +4,7 @@
 \alias{pdf_convert}
 \title{Conversion of PDFs to text.}
 \usage{
-pdf_convert(PDF_folder, output_folder)
+pdf_convert(PDF_folder, output_folder, recursive = TRUE)
 }
 \arguments{
 \item{PDF_folder}{String of the folder name in which the PDFs are located.}
