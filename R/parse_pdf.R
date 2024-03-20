@@ -1093,16 +1093,33 @@ Mode <- function(x) {
                   y > min_y) |>
     dplyr::pull(y)
 
+  y_gap <- 800
+
   is_last_insert <- rlang::is_empty(min_y_next_insert)
   # & !stringr::str_detect(first_insert$text, "^T")
-  if (max_x == 800 & is_last_insert == TRUE) {
-    suppressWarnings(y_gap <- .find_y_gap(text_data) |>
-      dplyr::pull(y) |>
-      min()
+  if (is_last_insert == TRUE) {
+    if (max_x == 800) {
+      suppressWarnings(y_gap <- .find_y_gap(text_data) |>
+                         dplyr::pull(y) |>
+                         min()
       )
+    }
+    text_around_next_insert <- min_y_next_insert
   } else {
-    y_gap <- 800
+    text_around_next_insert <- text_data |>
+      dplyr::select(y) |>
+      dplyr::filter(y > min_y_next_insert - 5,
+                    y <= min_y_next_insert) |>
+      dplyr::pull(y)
   }
+  # if (max_x == 800 & is_last_insert == TRUE) {
+  #   suppressWarnings(y_gap <- .find_y_gap(text_data) |>
+  #     dplyr::pull(y) |>
+  #     min()
+  #     )
+  # } else {
+  #   y_gap <- 800
+  # }
 
   if (y_gap < 800 & y_gap > min_y) return(y_gap)
 
@@ -1114,7 +1131,9 @@ Mode <- function(x) {
   # has_references <- any(stringr::str_detect(end_section$text, "REFERENCES"))
   # has_abbreviations <- any(stringr::str_detect(end_section$text, "Abbreviations"))
 
-  min_y_next_insert <- min(max(text_data$y) + 2, min_y_next_insert)
+
+
+  min_y_next_insert <- min(max(text_data$y) + 2, text_around_next_insert)
 
   if (max(text_data$x) > 600) return(min_y_next_insert - 3)
 
@@ -1312,11 +1331,11 @@ Mode <- function(x) {
 
   text_data <- text_data |>
     .clear_margins(PDF_filename) |>
-    dplyr::mutate(insert = 0)
+    dplyr::mutate(insert = 0) |>
+    .add_rel_width()
 
   tryCatch({
     text_data <- text_data |>
-      .add_rel_width() |>
       .flag_all_inserts()
   }, error = function(e) {
     print(paste("There were insert parsing issues with", PDF_filename))
