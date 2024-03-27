@@ -43,7 +43,7 @@ pdf_load <- function(pdf_text_folder)
     "a?cc(ession)? nos?\\.$",
     "fig\\.$",
     "doi\\.$",
-    "dr\\.",
+    "drs?\\.",
     "zenodo\\.",
     "neurovault\\.",
     "et al\\.$",
@@ -51,6 +51,7 @@ pdf_load <- function(pdf_text_folder)
     "github\\.$",
     "www\\.$",
     "no\\.",
+    "st\\.",
     "https?:\\/\\/$",
     "^(<section> )?\\w\\.$",
     "^(<section> )?\\d\\.\\d\\.$"
