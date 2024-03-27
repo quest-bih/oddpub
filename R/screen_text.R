@@ -1138,28 +1138,28 @@
 
   # should give out several categories
   # if there are multipe matches
-  if(specific_repo == TRUE) {
+  if (specific_repo == TRUE) {
     category <- category |> c("field-specific repository")
   }
-  if(general_repo == TRUE) {
+  if (general_repo == TRUE) {
     category <- category |> c("general-purpose repository")
   }
-  if(suppl == TRUE) {
+  if (suppl == TRUE) {
     category <- category |> c("supplement")
   }
-  if(reuse == TRUE) {
+  if (reuse == TRUE) {
     category <- category |> c("re-use")
   }
-  if(request == TRUE) {
+  if (request == TRUE) {
     category <- category |> c("upon request")
   }
   if (github == TRUE) {
     category <- category |> c("github")
   }
-  if(unknown_source == TRUE) {
+  if (unknown_source == TRUE) {
     category <- category |> c("unknown url")
   }
-  if(data_journal == TRUE) {
+  if (data_journal == TRUE) {
     category <- category |> c("data journal")
   }
   category <- category |> paste(collapse = ", ")

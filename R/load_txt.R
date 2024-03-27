@@ -51,7 +51,7 @@ pdf_load <- function(pdf_text_folder)
     "github\\.$",
     "www\\.$",
     "no\\.",
-    "st\\.",
+    " st\\.",
     "https?:\\/\\/$",
     "^(<section> )?\\w\\.$",
     "^(<section> )?\\d\\.\\d\\.$"
