@@ -255,9 +255,9 @@ Mode <- function(x) {
       dplyr::mutate(prop_width = sum(width)/page_width,
                     max_x_jump = max(x_jump),
                     has_coded_break = stringr::str_detect(text, "\\\b"),
-                    potential_page_n = stringr::str_detect(text, "\\d{1,5}") &
+                    potential_page_n = stringr::str_detect(text, "\\d{1,5}$") &
                       space == FALSE & (x < 100 | x > 500),
-                    section_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid|[C,c]ontribut|Acknow") |
+                    section_phrase = stringr::str_detect(text, "^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|ORCID|[O,o]rcid|[C,c]ontribut|Acknow|Data") |
                       stringr::str_detect(text, "^TA?") & stringr::str_detect(dplyr::lead(text), "^B$|^A$") |
                       stringr::str_detect(text, "^F$") & stringr::str_detect(dplyr::lead(text), "^I$"),
                     is_section = any(section_phrase, na.rm = TRUE)) |>

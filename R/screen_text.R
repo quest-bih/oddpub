@@ -45,7 +45,7 @@
                      "(was|were|have been)? published previously",
                      "(was|were) included in",
                      "(was|were) contained in",
-                     "(was|were|(?<!((has|have) been)|are (now)?) made) available",
+                     "(was|were|(?<!((has|have) been)|are (now)?) made) available(?! for)",
                      "(was|were) accessible",
                      "(was|were) deposited by",
                      "(has (been )?)? previously (been )?deposited",
@@ -72,7 +72,7 @@
                      "covers public",
                      "(machine learning )?frameworks? used",
                      "available in .* previous",
-                     "(we|was|were) obtained",
+                     "(?<!(approvals?|permissions?|permit|consent) )(we|was|were) obtained(?! (with|using))",
                      "(?<!code) we used .* data",
                      "checked .* on .* freely available") |>
     .format_keyword_vector()
@@ -342,6 +342,8 @@
                     "OpenNeuro",
                     "open science framework",
                     "osf(?! group)",
+                    "purl\\.stanford",
+                    "Stanford Digital Repository",
                     "tu datalib",
                     "UNIMI",
                     "zivahub",
@@ -415,7 +417,7 @@
 # str_detect("my.email@haha.com", weblink)
   weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
 
-  citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]"
+  citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
   grant <- c("grant",
              "funding",
              "support (was provided )?by") |>
@@ -433,8 +435,7 @@
                       weblink,
                       citation,
                       github,
-                      "cited as reference",
-                      "(here|in (the present|this) study)",
+                      # "(here|in (the present|this) study)",
                       sep = "|"),
                     dist = 30)
   keyword_list[["reuse"]] <- reuse
@@ -486,7 +487,7 @@
                          "Data and code availability",
                          "Data and ma-*te-*ri-*als a-*vai-*la-*bi-*li-*ty",
                          "Information on author access to data",
-                         "Data, Materials, and Software Availability",
+                         "Data Materials and Software Availability",
                          "Data Transparency Statement",
                          "Data deposition",
                          "Deposited Data",
@@ -837,7 +838,7 @@
   completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "\\..?$"))
 
-  if (stringr::str_length(str_DAS_sameline) < 5) {
+  if (stringr::str_length(str_DAS_sameline) < 5 & str_DAS_sameline != "." ) {
     # first_sentence <- DAS_start + 1
 
     DAS_end <- DAS_end_candidates[-1][completed_sentences[-1]][1]#
@@ -1019,10 +1020,11 @@
   keyword_results_combined <- open_data_categories  |>
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
-                 accession_nr & available & !not_available & !was_available & (!protocol | data) & !grant
+                 (accession_nr | weblink) & available & !not_available & !was_available &
+                 (!protocol & !supplement | data) & !grant
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & (!protocol | data)) |>
+                 !not_available & !was_available & (!protocol & !supplement | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &
