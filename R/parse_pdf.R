@@ -1431,7 +1431,7 @@ Mode <- function(x) {
         (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
         sameline_title |
         (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
-        newline_heading | science_section | plain_section),
+        newline_heading | science_section | (plain_section & dplyr::lag(plain_section, default = FALSE) == FALSE)),
       text = dplyr::if_else(section_start == FALSE | is.na(section_start), text, paste("\n<section>", text))
       ) |>
     dplyr::group_by(line_n) |>
