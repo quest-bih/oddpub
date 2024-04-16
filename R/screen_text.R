@@ -50,6 +50,7 @@
                      "(was|were) deposited by",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
+                     "has been reported",
                      "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
                      "made their .* available",
@@ -66,9 +67,12 @@
                      "data .*reanaly[z,s]ed",
                      "used data from a public",
                      "pre-existing",
+                     "accessed( on)? \\d",
                      "\\boriginal data accession",
                      "package was used to",
+                     "can help with",
                      "using .* functions? in .* package",
+                     "using commonly accessible",
                      "all data we used are public",
                      "covers public",
                      "(machine learning )?frameworks? used",
@@ -107,7 +111,7 @@
 # str_detect("no custom codes were generated", not_available)
   # str_detect(publ_sentences, accession_nr[1])field_specific_repo
  # stringr::str_detect("http://www.ncbi. nlm.nih.gov/ pubmed", "ncbi(?!\\. ?nlm\\. ?nih\\. ?gov/ ?pubmed)")
-  # field_specific_repo |> sort() |> paste(collapse = ",\n")
+  # str_detect("details and participating sites can be found at www.dzne.de/en/research/studies/clinical-studies/delcode.", field_specific_repo)
   field_specific_repo <- c(
     "10xgenomics",
     "23andme",
@@ -551,6 +555,12 @@
     .format_keyword_vector()
   keyword_list[["protocol"]] <- protocol
 
+  misc_non_data <- c("participating institutions",
+                     "details",
+                     "further information") |>
+    .format_keyword_vector()
+  keyword_list[["misc_non_data"]] <- misc_non_data
+
 
   data_journal_dois <- c(
     # "10.1038/s41597-019-", # Scientific Data (2019)
@@ -697,9 +707,8 @@
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
-                                "reuse",
-                                "grant",
-                                "file_formats", "upon_request", "dataset", "protocol", "weblink")
+                                "reuse", "grant",
+                                "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
   # search for all relevant keyword categories
   publ_keywords <- sentence_search_keywords  |>
@@ -1022,10 +1031,10 @@
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
                  (accession_nr | weblink) & available & !not_available & !was_available &
-                 (!protocol & !supplement | data) & !grant
+                 (!misc_non_data & !protocol & !supplement | data) & !grant
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & (!protocol & !supplement | data)) |>
+                 !not_available & !was_available & (!misc_non_data & !protocol & !supplement | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &

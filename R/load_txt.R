@@ -106,7 +106,7 @@ pdf_load <- function(pdf_text_folder)
     stringr::str_replace_all("\n", ".") |>
     stringr::str_squish() |>
     tokenizers::tokenize_sentences(simplify = TRUE, lowercase = TRUE) |>
-    tokenizers::tokenize_regex(pattern = " (?=<(section|insert)>)", simplify = TRUE)
+    tokenizers::tokenize_regex(pattern = " (?=<(section|insert|iend)>)", simplify = TRUE)
 
   if (is.list(tokenized)) {
     tokenized <- tokenized |>
