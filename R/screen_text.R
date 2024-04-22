@@ -54,15 +54,15 @@
                      "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
                      "made their .* available",
-                     "from( a)? publicly available data( ?sets?)?",
+                     "from( a)? public(al)?ly available data( ?sets?)?",
                      "(were|was) (used|analy[z,s]ed)",
                      "(were|was) downloaded( and analy[z,s]ed)?",
                      "(were|was) derived from",
-                     "this study used .* publicly available",
-                     "(existing|made use of) publicly available",
-                     "done using( the)? publicly available",
-                     "publicly available data(sets)? were analy(z|s)ed",
-                     "used .* publicly accessible",
+                     "this study used .* public(al)?ly available",
+                     "(existing|made use of|based on) public(al)?ly available",
+                     "using( the)? public(al)?ly available",
+                     "public(al)?ly available data(sets)? were analy(z|s)ed",
+                     "used .* public(al)?ly accessible",
                      "data ?set used previously",
                      "data .*reanaly[z,s]ed",
                      "used data from a public",
@@ -87,15 +87,17 @@
                     "not produced",
                     "not generated") |>
     .format_keyword_vector()
-
+# publ_sentences <- "<section> human data: trip13 mrna expression levels in human liver samples shown in figure 1a were determined using publically available data (e-geod-25097; https://www.ebi.ac.uk/arrayexpress)."
   keyword_list[["not_produced"]] <- not_produced
-
+# str_view("unless three words here are available", "unless( \\b\\w+\\b){1,3} are available")
+  # str_view(publ_sentences, was_available)
   not_available <- c("not included",
                      "not deposited",
                      "not released",
                      "not provided",
                      "not contained in",
                      "not available",
+                     "unless( \\b\\w+\\b){1,3} are available",
                      "when available",
                      "not accessible",
                      "not submitted",
@@ -361,17 +363,16 @@
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["github"]] <- github
 
-
   data <- c("data(?! (availability|accessibility))",
             "datasets?",
             # "databases?",
+            "reconstructed (surface )?geometries",
             "annotations",
             "sequences",
             "responses",
             "materials") |>
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["data"]] <- data
-
 
   all_data <- c("all data",
                 "all array data",
@@ -1045,9 +1046,9 @@
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
       com_n_weblinks > 1 ~ data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo, # maybe exclude supplements here as well
+        !not_available & !accession_nr & !com_general_repo & !com_specific_repo, # maybe exclude supplements here as well
       .default = data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo & !com_github_data & !supplement
+        !not_available & !accession_nr & !com_general_repo & !com_specific_repo & !com_github_data & !supplement
     )) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
                 com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request, com_unknown_source)
