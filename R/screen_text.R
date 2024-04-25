@@ -9,7 +9,7 @@
 {
   keyword_list <- list()
 
-  available <- c("(?<!which )included(?! (\\d|only))", # research this
+  available <- c("(?<!(which|the) )included(?! (\\d|only))", # research this
                  "deposited",
                  "archived",
                  "released",
@@ -31,7 +31,7 @@
                  "(can|may) be downloaded",
                  "(can|may) be .*found",
                  "held in",
-                 "reported in(?! the)",
+                 "(?<!were )reported in(?! the)",
                  "uploaded",
                  "are public on",
                  "we (have )?added",
@@ -39,6 +39,21 @@
                  "(?<!\\d(-|\\))?(\\.|;) )doi: ") |> # exclude dois in references
     .format_keyword_vector()
   keyword_list[["available"]] <- available
+
+  reuse_statements <- c("(was|were) open source data( ?sets?)?",
+                        "from( a)? public(al)?ly available data( ?sets?)?",
+                        "(this (study|article)|we) (used|included) .* public(al)?ly available .* data",
+                        "(this article|we) .* (existing|made use of|based on) public(al)?ly available .* data",
+                        "(using|extracted from)( the)? public(al)?ly available",
+                        "public(al)?ly available data(sets)? were analy(z|s)ed",
+                        "used .* public(al)?ly accessible",
+                        "data ?set used previously",
+                        "used data from a public",
+                        "all data we used are public",
+                        "(?<!code )we used public(al)?ly available .* data"
+                        ) |>
+    .format_keyword_vector()
+  keyword_list[["reuse_statements"]] <- reuse_statements
 
   was_available <- c("(was|were) provided",
                      "(was|were )?previously published",
@@ -48,25 +63,16 @@
                      "(was|were|(?<!((has|have) been)|are (now)?|will be) made) available(?! for)",
                      "(was|were) public(al)?ly available",
                      "(was|were) accessible",
-                     "(was|were) deposited by",
+                     "(was|were) deposited (by|in)",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
                      "(?<!it )has been reported",
-                     "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
                      "made their .* available",
-                     "from( a)? public(al)?ly available data( ?sets?)?",
                      "(were|was) (used|analy[z,s]ed)",
                      "(were|was) downloaded( and analy[z,s]ed)?",
                      "(were|was) (derived|retrieved) from",
-                     "this study (used|included) .* public(al)?ly available",
-                     "(existing|made use of|based on) public(al)?ly available",
-                     "(using|extracted from)( the)? public(al)?ly available",
-                     "public(al)?ly available data(sets)? were analy(z|s)ed",
-                     "used .* public(al)?ly accessible",
-                     "data ?set used previously",
                      "data .*reanaly[z,s]ed",
-                     "used data from a public",
                      "pre-existing",
                      "accessed( on)? \\d",
                      "\\boriginal data accession",
@@ -75,7 +81,6 @@
                      "using .* functions? in .* package",
                      "using commonly accessible",
                      "using data from( the)?",
-                     "all data we used are public",
                      "covers public",
                      "(machine learning )?frameworks? used",
                      "available in .* previous",
@@ -210,7 +215,8 @@
     "ImmPort",
     "Influenza Research Database",
     "INDI",
-    "IntAct",
+    "IntAct .* database",
+    "ebi.ac.uk/intact",
     "Integrated Taxonomic Information System",
     "IoChem-BD",
     "ITIS",
@@ -317,6 +323,7 @@
                     "Collections?(:|\\/)[:digit:]{4}", # Neurovault
                     "ICPSR [:digit:]{4}",
                     "SN [:digit:]{4}",
+                    "search.kg.ebrains.eu",
                     "key resources table",
                     "accession numbers") |>
     .format_keyword_vector()
@@ -367,7 +374,7 @@
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["github"]] <- github
 
-  data <- c("data(?! (availability|accessibility))",
+  data <- c("(?<!supplementa(l|ry) )data(?! (availability|accessibility|sharing))",
             "datasets?",
             # "databases?",
             "reconstructed (surface )?geometries",
@@ -412,6 +419,7 @@
                    "SAS scripts?",
                    "SPSS scripts?",
                    "r[-, ]+script",
+                   "(script|code)s? (is|are) available",
                    "r[-, ]+codes?",
                    "(?<!(using|via|through)( the)? )r[-, ]+package",
                    "python script",
@@ -437,7 +445,7 @@
 
   keyword_list[["weblink"]] <- weblink
 
-  reuse <- .near_wd(was_available,
+  reuse <- paste(reuse_statements, .near_wd(was_available,
                     paste(
                       accession_nr,
                       field_specific_repo,
@@ -447,7 +455,8 @@
                       github,
                       # "(here|in (the present|this) study)",
                       sep = "|"),
-                    dist = 30)
+                    dist = 30),
+                 sep = "|")
   keyword_list[["reuse"]] <- reuse
 
   supplement <- c("supporting information",
@@ -562,7 +571,8 @@
 
   misc_non_data <- c("participating institutions",
                      "details",
-                     "further information") |>
+                     "further information",
+                     "preprint") |>
     .format_keyword_vector()
   keyword_list[["misc_non_data"]] <- misc_non_data
 

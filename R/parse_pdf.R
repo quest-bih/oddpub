@@ -120,6 +120,13 @@
     dplyr::filter(stringr::str_detect(text, "References") & space == FALSE) |>
     dplyr::select(y, x)
 
+  introduction_xy <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "Introduction") & space == FALSE) |>
+    select(y, x)
+
+  introduction_y <- introduction_xy$y
+  introduction_x <- introduction_xy$x
+
   reference_y <- reference_yx$y
   reference_x <- reference_yx$x
 
@@ -151,14 +158,12 @@
     # exclude what could be references
     dplyr::filter(!stringr::str_detect(text, "^\\d{1,3}\\.?$"),
                   y < reference_y,
-                  y > 21, # exclude upper margin
+                  y > max(21, introduction_y), # exclude upper margin
                   rel_width > 0.3,
                   font_size > 4) |>
     .add_line_n()
 
   cols_x <- .find_cols_left_x(cols)
-
-
 
   if (nrow(cols_x) > 1 & nrow(cols_x) < 4) return(nrow(cols_x))
   #178 not but 50 and 306 # find out typical 3-col values!
@@ -1423,12 +1428,12 @@ Mode <- function(x) {
       plain_section =
         # should follow a new line should start with a capital, but not end on a capital (with or without fullstop) or a comma
         dplyr::lag(space) == FALSE & stringr::str_detect(text, "^[A-Z]") & !stringr::str_detect(dplyr::lag(text), "(,|[A-Z]\\.?)$") &
-        (stringr::str_detect(text, ":$") | # e.g. Funding:
-           stringr::str_detect(dplyr::lead(text), ":$")  & dot == dplyr::lead(dot) | # e.g. Data sharing: & line_n == dplyr::lead(line_n)
-           stringr::str_detect(dplyr::lead(text, 2), ":$") & dot == dplyr::lead(dot, 2) | # e.g. Conflict of interest: & line_n == dplyr::lead(line_n, 2)
-           stringr::str_detect(dplyr::lead(text, 3), ":$") & dot == dplyr::lead(dot, 3) | # e.g. Data and code availability: & line_n == dplyr::lead(line_n, 3)
-           stringr::str_detect(dplyr::lead(text, 4), ":$") & dot == dplyr::lead(dot, 4) | # e.g. Availability of data and materials: & line_n == dplyr::lead(line_n, 4)
-           stringr::str_detect(dplyr::lead(text, 5), ":$") & dot == dplyr::lead(dot, 5)) | # e.g. Disclosure of potential conflict of interest: & line_n == dplyr::lead(line_n, 5)
+        (stringr::str_detect(text, "(?<!\\(\\w{1,5} ?):$") | # e.g. Funding:
+           stringr::str_detect(dplyr::lead(text), "(?<!\\(\\w{1,5} ?):$")  & dot == dplyr::lead(dot) | # e.g. Data sharing: & line_n == dplyr::lead(line_n)
+           stringr::str_detect(dplyr::lead(text, 2), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 2) | # e.g. Conflict of interest: & line_n == dplyr::lead(line_n, 2)
+           stringr::str_detect(dplyr::lead(text, 3), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 3) | # e.g. Data and code availability: & line_n == dplyr::lead(line_n, 3)
+           stringr::str_detect(dplyr::lead(text, 4), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 4) | # e.g. Availability of data and materials: & line_n == dplyr::lead(line_n, 4)
+           stringr::str_detect(dplyr::lead(text, 5), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 5)) | # e.g. Disclosure of potential conflict of interest: & line_n == dplyr::lead(line_n, 5)
         text == "*" & dplyr::lag(space) == FALSE,
       section_start = insert == 0 &
         ((paragraph_start & (heading_font | prop_blank > 0.35 | dplyr::lag(prop_blank) > 0.35)) |
