@@ -76,6 +76,8 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
   CAS_text_sentences <- PDF_text_sentences |>
     furrr::future_map(.extract_CAS)
 
+  # TODO: compare DAS to CAS and remove CAS if identical
+
   DAS_CAS <- furrr::future_map2(DAS_text_sentences, CAS_text_sentences, vctrs::vec_c)
   # search for open data keywords in the full texts or DAS
   print("Extracting and screening Data and Code Availability Statements:")

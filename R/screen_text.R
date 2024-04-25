@@ -31,7 +31,7 @@
                  "(can|may) be downloaded",
                  "(can|may) be .*found",
                  "held in",
-                 "reported in",
+                 "reported in(?! the)",
                  "uploaded",
                  "are public on",
                  "we (have )?added",
@@ -45,22 +45,23 @@
                      "(was|were|have been )?published previously",
                      "(was|were) included in",
                      "(was|were) contained in",
-                     "(was|were|(?<!((has|have) been)|are (now)?) made) available(?! for)",
+                     "(was|were|(?<!((has|have) been)|are (now)?|will be) made) available(?! for)",
+                     "(was|were) public(al)?ly available",
                      "(was|were) accessible",
                      "(was|were) deposited by",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
-                     "has been reported",
+                     "(?<!it )has been reported",
                      "(was|were) open source data( ?sets?)?",
                      "(previous|prior) study",
                      "made their .* available",
                      "from( a)? public(al)?ly available data( ?sets?)?",
                      "(were|was) (used|analy[z,s]ed)",
                      "(were|was) downloaded( and analy[z,s]ed)?",
-                     "(were|was) derived from",
-                     "this study used .* public(al)?ly available",
+                     "(were|was) (derived|retrieved) from",
+                     "this study (used|included) .* public(al)?ly available",
                      "(existing|made use of|based on) public(al)?ly available",
-                     "using( the)? public(al)?ly available",
+                     "(using|extracted from)( the)? public(al)?ly available",
                      "public(al)?ly available data(sets)? were analy(z|s)ed",
                      "used .* public(al)?ly accessible",
                      "data ?set used previously",
@@ -73,6 +74,7 @@
                      "can help with",
                      "using .* functions? in .* package",
                      "using commonly accessible",
+                     "using data from( the)?",
                      "all data we used are public",
                      "covers public",
                      "(machine learning )?frameworks? used",
@@ -91,6 +93,8 @@
   keyword_list[["not_produced"]] <- not_produced
 # str_view("unless three words here are available", "unless( \\b\\w+\\b){1,3} are available")
   # str_view(publ_sentences, was_available)
+  # str_view("<section> publicly available rna-seq dataset relative to various tissues in physiological conditions was retrieved from the national genomics data center bigd database with accession code id: prjca000751.",
+  #          was_available)
   not_available <- c("not included",
                      "not deposited",
                      "not released",
@@ -1032,10 +1036,10 @@
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
                  (accession_nr | weblink) & available & !not_available & !was_available &
-                 (!misc_non_data & !protocol & !supplement | data) & !grant
+                 (!misc_non_data & !protocol & !supplement & !source_code | data) & !grant
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & (!misc_non_data & !protocol & !supplement | data)) |>
+                 !not_available & !was_available & (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &

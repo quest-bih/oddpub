@@ -498,7 +498,7 @@ Mode <- function(x) {
     cols == 1 ~ 150,
     stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
     stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
-    stringr::str_detect(PDF_filename, "10\\.3389\\+f") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers
+    stringr::str_detect(PDF_filename, "10\\.3389\\+f|10\\.1016\\+j\\.eclinm") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers, for j.eclinm
 
     cols == 2 ~ .find_midpage_x(text_data),
     cols == 3 ~ .find_cols_left_x(text_data)$x[2],
@@ -602,7 +602,7 @@ Mode <- function(x) {
 
   if (cols > 1 | is.na(cols)) {
 
-    if (has_mixed_layout) {
+    if (has_mixed_layout == TRUE) {
       cols <- .est_col_n(text_data |>
                            dplyr::filter(y < layout_divider_y), PDF_filename)
 
@@ -612,9 +612,6 @@ Mode <- function(x) {
       } else {
         col_predevider_x_est <- 800
       }
-
-
-
       if (is.na(col_predevider_x_est) | is.infinite(col_predevider_x_est) ) col_predevider_x_est <- col2_x
     }
 
@@ -1088,10 +1085,12 @@ Mode <- function(x) {
   min_y <- .find_insert_min_y(text_data)
   max_x <- .find_insert_max_x(text_data)
 
-  min_y_next_insert <- .find_inserts(text_data) |>
+  min_y_next_insert <-
+    .find_inserts(text_data) |>
     dplyr::filter(x <= max_x,
                   y > min_y) |>
     dplyr::pull(y)
+
 
   y_gap <- 800
 
@@ -1106,6 +1105,7 @@ Mode <- function(x) {
     }
     text_around_next_insert <- min_y_next_insert
   } else {
+    min_y_next_insert <- min(min_y_next_insert)
     text_around_next_insert <- text_data |>
       dplyr::select(y) |>
       dplyr::filter(y > min_y_next_insert - 5,
@@ -1124,13 +1124,15 @@ Mode <- function(x) {
   if (y_gap < 800 & y_gap > min_y) return(y_gap)
 
   # end_section <- text_data |>
-  #   dplyr::filter(stringr::str_detect(text_data$text, "REFERENCES|Abbreviations"),
+  #   dplyr::filter(stringr::str_detect(text_data$text, "REFERENCES|Abbreviations|References"),
   #                 rel_width < 0.5)
+  # end_section_y <- end_section |>
+  #   dplyr::pull(y) |>
+  #   min()
 
   has_references <- any(stringr::str_detect(text_data$text, "REFERENCES"))
   # has_references <- any(stringr::str_detect(end_section$text, "REFERENCES"))
   # has_abbreviations <- any(stringr::str_detect(end_section$text, "Abbreviations"))
-
 
 
   min_y_next_insert <- min(max(text_data$y) + 2, text_around_next_insert)
@@ -1163,6 +1165,8 @@ Mode <- function(x) {
     dplyr::mutate(y_jump = dplyr::lead(y, default = 0) - y,
                   max_y_before_last = dplyr::if_else(dplyr::lead(y == max(y), default = 0), 1, 0) * y_jump,
                   is_fig_caption = stringr::str_detect(text, "^\\(?\\w\\)?$"),
+                  is_potential_section_start = stringr::str_detect(text, "References|Author|Credit") &
+                    rel_width < 0.2,
                   y_exceeded = dplyr::if_else(
                     y_jump <= 0 &
                       max(max_y_before_last, na.rm = TRUE) > critical_max_y_jump, 1, 0),
@@ -1174,7 +1178,7 @@ Mode <- function(x) {
                     1,
                     y_exceeded),
                   y_exceeded = cumsum(y_exceeded)) |>
-    dplyr::filter(y_exceeded == 0)
+    dplyr::filter(y_exceeded == 0, is_potential_section_start == FALSE)
 
   if (nrow(last_row) == 0 | (is_last_insert == FALSE & min_y_next_insert == max(last_row$y) + 2)) {
     return(min_y_next_insert - 3)
