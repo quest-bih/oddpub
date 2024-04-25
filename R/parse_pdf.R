@@ -122,7 +122,7 @@
 
   introduction_xy <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Introduction") & space == FALSE) |>
-    select(y, x)
+    dplyr::select(y, x)
 
   introduction_y <- introduction_xy$y
   introduction_x <- introduction_xy$x
