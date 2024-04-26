@@ -50,6 +50,7 @@
                         "data ?set used previously",
                         "used data from a public",
                         "all data we used are public",
+                        "data derived from public domain (re)?sources",
                         "(?<!code )we used public(al)?ly available .* data"
                         ) |>
     .format_keyword_vector()
@@ -483,6 +484,7 @@
   keyword_list[["file_formats"]] <- file_formats
 
   upon_request <- c("(up)?on( reasonable)? request",
+                    "on author.* request",
                     "by request",
                     "via a direct request to",
                     "without undue reservation",
