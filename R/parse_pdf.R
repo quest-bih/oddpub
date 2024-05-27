@@ -1279,9 +1279,17 @@ Mode <- function(x) {
   }
   max_height <- 300 # vertical text, e.g. column separator "......"
 
+  min_x <- 18
+  line_nums <- text_data |>
+    dplyr::filter(x < 40,
+                  stringr::str_detect(text, "\\d{1,5}"))
+
+  if (nrow(line_nums) > 10) min_x <- max(min_x, max(line_nums$x))
+
+
   text_data <- text_data |>
     dplyr::filter(x < max_x, # remove margin text, e.g. 'downloaded from...'
-                  x > 18, # remove margin text, e.g. 'downloaded from...'
+                  x > min_x, # remove margin text, e.g. 'downloaded from...'
                   height < max_height)
   if (nrow(text_data) == 0) return(text_data)
 
