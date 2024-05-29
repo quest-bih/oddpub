@@ -27,6 +27,7 @@
     tryCatch({
       suppressWarnings({
         text <- pdftools::pdf_data(PDF_filename, font_info = TRUE) |>
+          # furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename))
           purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
       })
       cat(text, file = output_filename)
@@ -54,7 +55,7 @@
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
-  if (nrow(text_data) == 0) return(1)
+  if (nrow(text_data) < 5) return(1)
 
   # for PLoS articles
   if (stringr::str_detect(PDF_filename, "10\\.1371")) {
@@ -1395,6 +1396,10 @@ Mode <- function(x) {
                           "NimbusRomNo9L-Medi",
                           "Bd(Cn)?$") |>
     paste(collapse = "|")
+
+  if (nrow(text_data) < 5) return(text_data |>
+                                    dplyr::summarise(text = paste(text, collapse = " ")) |>
+                                    dplyr::pull(text))
 
   res <- text_data |>
     dplyr::mutate(

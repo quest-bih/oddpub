@@ -486,6 +486,7 @@
   upon_request <- c("(up)?on( reasonable)? request",
                     "on author.* request",
                     "by request",
+                    "can be requested by bona fide researchers",
                     "via a direct request to",
                     "without undue reservation",
                     "the corresponding author",
