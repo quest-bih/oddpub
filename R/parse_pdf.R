@@ -27,8 +27,8 @@
     tryCatch({
       suppressWarnings({
         text <- pdftools::pdf_data(PDF_filename, font_info = TRUE) |>
-          # furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename))
-          purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
+          furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename))
+          # purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
       })
       cat(text, file = output_filename)
       success <- TRUE
