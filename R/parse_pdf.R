@@ -27,7 +27,8 @@
     tryCatch({
       suppressWarnings({
         text <- pdftools::pdf_data(PDF_filename, font_info = TRUE) |>
-          purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
+          furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename))
+          # purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
       })
       cat(text, file = output_filename)
       success <- TRUE
@@ -54,7 +55,7 @@
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
-  if (nrow(text_data) == 0) return(1)
+  if (nrow(text_data) < 5) return(1)
 
   # for PLoS articles
   if (stringr::str_detect(PDF_filename, "10\\.1371")) {
@@ -1279,9 +1280,17 @@ Mode <- function(x) {
   }
   max_height <- 300 # vertical text, e.g. column separator "......"
 
+  min_x <- 18
+  line_nums <- text_data |>
+    dplyr::filter(x < 40,
+                  stringr::str_detect(text, "\\d{1,5}"))
+
+  if (nrow(line_nums) > 10) min_x <- max(min_x, max(line_nums$x))
+
+
   text_data <- text_data |>
     dplyr::filter(x < max_x, # remove margin text, e.g. 'downloaded from...'
-                  x > 18, # remove margin text, e.g. 'downloaded from...'
+                  x > min_x, # remove margin text, e.g. 'downloaded from...'
                   height < max_height)
   if (nrow(text_data) == 0) return(text_data)
 
@@ -1387,6 +1396,10 @@ Mode <- function(x) {
                           "NimbusRomNo9L-Medi",
                           "Bd(Cn)?$") |>
     paste(collapse = "|")
+
+  if (nrow(text_data) < 5) return(text_data |>
+                                    dplyr::summarise(text = paste(text, collapse = " ")) |>
+                                    dplyr::pull(text))
 
   res <- text_data |>
     dplyr::mutate(

@@ -19,6 +19,7 @@
                  "contains",
                  "listed in",
                  "lodged with",
+                 "page has been created in .* database",
                  "assign(ed)? a doi",
                  "(?<!the )available",
                  "doi of the data(set)? (is|are)",
@@ -49,6 +50,7 @@
                         "used .* public(al)?ly accessible",
                         "data ?set used previously",
                         "used data from a public",
+                        "data referenced in this study",
                         "all data we used are public",
                         "data derived from public domain (re)?sources",
                         "(?<!code )we used public(al)?ly available .* data"
@@ -379,7 +381,7 @@
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["github"]] <- github
 
-  data <- c("(?<!supplementa(l|ry) )data(?! (availability|accessibility|sharing))",
+  data <- c("(?<!supplementa(l|ry) )data(?! (and code )?(availability|accessibility|sharing))",
             "datasets?",
             # "databases?",
             "reconstructed (surface )?geometries",
@@ -439,19 +441,35 @@
 
 # stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
 # str_detect("my.email@haha.com", weblink)
-  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*"
+  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*|\\.(com|org)"
 
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
   grant <- c("grant",
              "funding",
              "support (was provided )?by") |>
     .format_keyword_vector()
-
   keyword_list[["grant"]] <- grant
-
+  # regex_near <- .near_wd_sym("word 1", "word 2", dist = 30)
+  # str_view(" word 1 and then word 2 and something else", regex_near)
+  # str_view("accessed on 34 agust 25 some more workd end signal followed by", regex_near)
+  # str_view("accessed on 34 agust 25", was_available)
   keyword_list[["weblink"]] <- weblink
-
-  reuse <- paste(reuse_statements, .near_wd(was_available,
+#   sentences <- "<section> data availability statement: the simulation data used for training and testing is hosted publicly at https://doi.org/10.5281/zenodo.6303665 another word (accessed on 28 february 2022)."
+# str_detect(sentences,
+#            .near_wd_sym(was_available,
+#                     paste(
+#                       accession_nr,
+#                       field_specific_repo,
+#                       repositories,
+#                       weblink,
+#                       citation,
+#                       github,
+#                       # "(here|in (the present|this) study)",
+#                       sep = "|"),
+#                     dist = 30))
+# str_view(sentences, was_available)
+# str_view(sentences, reuse)
+  reuse <- paste(reuse_statements, .near_wd_sym(was_available,
                     paste(
                       accession_nr,
                       field_specific_repo,
@@ -491,6 +509,7 @@
   upon_request <- c("(up)?on( reasonable)? request",
                     "on author.* request",
                     "by request",
+                    "can be requested by bona fide researchers",
                     "via a direct request to",
                     "without undue reservation",
                     "the corresponding author",
@@ -1020,19 +1039,19 @@
   }
 
   # for journals that print useful information after the references (Elsevier, Science, etc.)
-  line_after_ref <- suppressWarnings(
+  line_after_refs <- suppressWarnings(
     PDF_text_sentences |>
-      stringr::str_detect("<section> (star\\+methods|acknowledgments:|open data)") |>
+      stringr::str_detect("<section> (star\\+methods|acknowledge?ments:?|open data)|<insert> key resources table") |>
       which() |>
       max()
   )
 
-  if (sum(line_after_ref) <= 0) line_after_ref <- 0
+  if (sum(line_after_refs) <= 0) line_after_refs <- 0
 
   # excise references for special case Elsevier journals
-  if (line_after_ref > line_before_refs) {
+  if (line_after_refs > line_before_refs) {
     return(c(PDF_text_sentences[1:line_before_refs],
-             PDF_text_sentences[line_before_refs:length(PDF_text_sentences)]))
+             PDF_text_sentences[line_after_refs:length(PDF_text_sentences)]))
   }
   # excise references for most journals
   PDF_text_sentences[1:line_before_refs]
@@ -1052,15 +1071,17 @@
   keyword_results_combined <- open_data_categories  |>
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
-                 (accession_nr | weblink) & available & !not_available & !was_available &
-                 (!misc_non_data & !protocol & !supplement & !source_code | data) & !grant
+                 (accession_nr | weblink) & available & !not_available & !was_available & !reuse &
+                 ((!misc_non_data & !protocol & !supplement & !source_code & !grant) | data)
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
+                 !not_available & !was_available & !reuse &
+                 (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &
-                 !not_available & !was_available & (!upon_request|stringr::str_detect(publ_sentences, "git|www|http"))) |>
+                 !not_available & !was_available & !reuse &
+                 (!upon_request|stringr::str_detect(publ_sentences, "git|www|http"))) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
     purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
