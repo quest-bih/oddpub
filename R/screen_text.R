@@ -61,8 +61,7 @@
                      "(was|were|have been )?published previously",
                      "(was|were) included in",
                      "(was|were) contained in",
-                     "(was|were|(?<!((has|have) been)|are (now)?|will be) made) available(?! for)",
-                     "(was|were) public(al)?ly available",
+                     "(was|were|(?<!((has|have) been)|are( now)?|will be) made) available(?! for)",                      "(was|were) public(al)?ly available",
                      "(was|were) accessible",
                      "(was|were) deposited (by|in)",
                      "(has (been )?)?previously (been )?deposited",
@@ -91,9 +90,14 @@
     .format_keyword_vector()
   keyword_list[["was_available"]] <- was_available
 
-  not_produced <- c("not developed",
-                    "not produced",
-                    "not generated") |>
+  will_be_available <- c("will be (made )?(available|accessible)",
+                         "will be uploaded") |>
+    .format_keyword_vector()
+
+  keyword_list[["will_be_available"]] <- will_be_available
+
+  not_produced <- c("not (developed|generated|produced)",
+                    "no (data|code) (were|was) (developed|generated|produced)") |>
     .format_keyword_vector()
 # publ_sentences <- "<section> human data: trip13 mrna expression levels in human liver samples shown in figure 1a were determined using publically available data (e-geod-25097; https://www.ebi.ac.uk/arrayexpress)."
   keyword_list[["not_produced"]] <- not_produced
@@ -381,6 +385,7 @@
             "reconstructed (surface )?geometries",
             "annotations",
             "sequences",
+            "summary statistics? .* (genetic|gwas)",
             "responses",
             "materials") |>
     .format_keyword_vector(end_boundary = TRUE)
