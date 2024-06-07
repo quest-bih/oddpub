@@ -19,7 +19,7 @@
                  "contains",
                  "listed in",
                  "lodged with",
-                 "page has been created in .* database",
+                 "page has been created in( ?\\b\\w+\\b){1,3} database",
                  "assign(ed)? a doi",
                  "(?<!the )available",
                  "doi of the data(set)? (is|are)",
@@ -27,10 +27,9 @@
                  "reproduce",
                  "accessible",
                  "(can|may) be (freely )?accessed",
-                 "(can|may) be retrieved",
+                 "(can|may) be (retrieved|downloaded)",
                  "submitted",
-                 "(can|may) be downloaded",
-                 "(can|may) be .*found",
+                 "(can|may) be( ?\\b\\w+\\b){1,3} found",
                  "held in",
                  "(?<!were )reported in(?! the)",
                  "uploaded",
@@ -43,17 +42,17 @@
 
   reuse_statements <- c("(was|were) open source data( ?sets?)?",
                         "from( a)? public(al)?ly available data( ?sets?)?",
-                        "(this (study|article)|we) (used|included) .* public(al)?ly available .* data",
-                        "(this article|we) .* (existing|made use of|based on) public(al)?ly available .* data",
+                        "(this (study|article)|we) (used|included)( ?\\b\\w+\\b){1,5} public(al)?ly available( ?\\b\\w+\\b){1,5} data",
+                        "(this article|we)( ?\\b\\w+\\b){1,5} (existing|made use of|based on) public(al)?ly available( ?\\b\\w+\\b){1,5} data",
                         "(using|extracted from)( the)? public(al)?ly available",
                         "public(al)?ly available data(sets)? were analy(z|s)ed",
-                        "used .* public(al)?ly accessible",
+                        "used( ?\\b\\w+\\b){1,5} public(al)?ly accessible",
                         "data ?set used previously",
                         "used data from a public",
                         "data referenced in this study",
                         "all data we used are public",
                         "data derived from public domain (re)?sources",
-                        "(?<!code )we used public(al)?ly available .* data"
+                        "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){1,5} data"
                         ) |>
     .format_keyword_vector()
   keyword_list[["reuse_statements"]] <- reuse_statements
@@ -70,25 +69,27 @@
                      "(was|were) reproduced",
                      "(?<!it )has been reported",
                      "(previous|prior) study",
-                     "made their .* available",
+                     "we found evidence in",
+                     "we examined( ?\\b\\w+\\b){1,5} (deposited )?in",
+                     "made their( ?\\b\\w+\\b){1,5} available",
                      "(were|was) (used|analy[z,s]ed)",
                      "(were|was) downloaded( and analy[z,s]ed)?",
                      "(were|was) (derived|retrieved) from",
-                     "data .*reanaly[z,s]ed",
+                     "data( ?\\b\\w+\\b){1,5} reanaly[z,s]ed",
                      "pre-existing",
-                     "accessed( on)? \\d",
+                     "accessed( on)? \\d{1,2}( ?\\b\\w+\\b){1,5}\\)?",
                      "\\boriginal data accession",
                      "package was used to",
                      "can help with",
-                     "using .* functions? in .* package",
+                     "using( ?\\b\\w+\\b){1,5} functions? in( ?\\b\\w+\\b){1,5} package",
                      "using commonly accessible",
                      "using data from( the)?",
                      "covers public",
                      "(machine learning )?frameworks? used",
-                     "available in .* previous",
+                     "available in( ?\\b\\w+\\b){1,5} previous",
                      "(?<!(approvals?|permissions?|permit|consent) )(we|was|were) obtained(?! (with|using))",
-                     "(?<!code )we used .* data",
-                     "checked .* on .* freely available") |>
+                     "(?<!code )we used( ?\\b\\w+\\b){1,5} data",
+                     "checked( ?\\b\\w+\\b){1,5} on( ?\\b\\w+\\b){1,5} freely available") |>
     .format_keyword_vector()
   keyword_list[["was_available"]] <- was_available
 
@@ -103,7 +104,7 @@
     .format_keyword_vector()
 # publ_sentences <- "<section> human data: trip13 mrna expression levels in human liver samples shown in figure 1a were determined using publically available data (e-geod-25097; https://www.ebi.ac.uk/arrayexpress)."
   keyword_list[["not_produced"]] <- not_produced
-# str_view("unless three words here are available", "unless( \\b\\w+\\b){1,3} are available")
+# str_view("unless three words here are available", "unless( ?\\b\\w+\\b){1,3} are available")
   # str_view(publ_sentences, was_available)
   # str_view("<section> publicly available rna-seq dataset relative to various tissues in physiological conditions was retrieved from the national genomics data center bigd database with accession code id: prjca000751.",
   #          was_available)
@@ -113,12 +114,12 @@
                      "not provided",
                      "not contained in",
                      "not available",
-                     "unless( \\b\\w+\\b){1,3} are available",
+                     "unless( ?\\b\\w+\\b){1,3} are available",
                      "when available",
                      "not accessible",
                      "not submitted",
-                     "did not .* generate",
-                     "no .* (were|was) generated",
+                     "did not( ?\\b\\w+\\b){1,5} generate",
+                     "no( ?\\b\\w+\\b){1,5} (were|was) generated",
                      "(few|no|not enough) \\w.* (is|are) available",
                      "includes no",
                      "does not report original",
@@ -145,6 +146,7 @@
     "Array[ ,-]*Express",
     "BBMRI.nl",
     "bbmri.nl",
+    "BioBank",
     "biocollections",
     "Biological General Repository for Interaction Datasets",
     "Biological Magnetic Resonance Data Bank",
@@ -214,7 +216,7 @@
     "Global Biodiversity Information Facility",
     "gmgc",
     "GPCRMD",
-    "GWAS(?! summary)",
+    "(?<!via )GWAS(?! summary)",
     "HIV Data Archive Program",
     "Human Connectome Project",
     "hPSCreg",
@@ -222,7 +224,7 @@
     "ImmPort",
     "Influenza Research Database",
     "INDI",
-    "IntAct .* database",
+    "IntAct( ?\\b\\w+\\b){1,5} database",
     "ebi.ac.uk/intact",
     "Integrated Taxonomic Information System",
     "IoChem-BD",
@@ -340,10 +342,10 @@
   # str_detect("<section> data availability all data are available in the supplementary tables (table 1 3)", "data(?! (availability|accessibility)).* (is|are) available *(\\w+\\W+){0,3}(\\(|\\[)?.*\\d{1,4}(\\)|\\])+")
   # str_detect("all data are available in the supplementary tables (s1–s3)", "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)?[^=]*\\d{1,4}(\\)|\\])+")
 
-  repositories <- c("data(?! (availability|accessibility)).* available online *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
+  repositories <- c("data(?! (availability|accessibility))( ?\\b\\w+\\b){1,5} available online *(\\(|\\[)?.*\\d{1,4}(\\)|\\])+",
                     "open data repository (\\(|\\[)\\d{1,4}",
-                    "data(?! (availability|accessibility)).* (is|are) available *(\\(|\\[)+[^=s]*\\d{1,4}(\\)|\\])+",
-                    "data(?! (availability|accessibility)).* (is|are) available .*\\d{4}\\)",
+                    "data(?! (availability|accessibility))( ?\\b\\w+\\b){1,5} (is|are) available *(\\(|\\[)+[^=s]*\\d{1,4}(\\)|\\])+",
+                    "data(?! (availability|accessibility))( ?\\b\\w+\\b){1,5} (is|are) available( ?\\b\\w+\\b){1,5} \\d{4}\\)",
                     "10\\.17617/3.", # Edmond
                     "10\\.17632", # Mendeley Data
                     "10\\.18452", # edoc HU
@@ -387,7 +389,7 @@
             "reconstructed (surface )?geometries",
             "annotations",
             "sequences",
-            "summary statistics? .* (genetic|gwas)",
+            "summary statistics?( ?\\b\\w+\\b){1,5} (genetic|gwas)",
             "responses",
             "materials") |>
     .format_keyword_vector(end_boundary = TRUE)
@@ -422,7 +424,7 @@
                    "preprocessing software",
                    "code ocean",
                    "the (script|codes?) for",
-                   "code for .* (analys|model)",
+                   "code for( ?\\b\\w+\\b){1,5} (analys|model)",
                    "(?<!icd )codes? used for",
                    "SAS scripts?",
                    "SPSS scripts?",
@@ -441,7 +443,8 @@
 
 # stringr::str_detect("analysis code-fh", "analysis (script|codes?\\w)")
 # str_detect("my.email@haha.com", weblink)
-  weblink <- "(((https?|ftp|smtp):\\/\\/)|(www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*|\\.(com|org)"
+  weblink <- "((https?|ftp|smtp):\\/\\/)|((www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*|\\.(com|org)"
+  keyword_list[["weblink"]] <- weblink
 
   citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
   grant <- c("grant",
@@ -449,26 +452,7 @@
              "support (was provided )?by") |>
     .format_keyword_vector()
   keyword_list[["grant"]] <- grant
-  # regex_near <- .near_wd_sym("word 1", "word 2", dist = 30)
-  # str_view(" word 1 and then word 2 and something else", regex_near)
-  # str_view("accessed on 34 agust 25 some more workd end signal followed by", regex_near)
-  # str_view("accessed on 34 agust 25", was_available)
-  keyword_list[["weblink"]] <- weblink
-#   sentences <- "<section> data availability statement: the simulation data used for training and testing is hosted publicly at https://doi.org/10.5281/zenodo.6303665 another word (accessed on 28 february 2022)."
-# str_detect(sentences,
-#            .near_wd_sym(was_available,
-#                     paste(
-#                       accession_nr,
-#                       field_specific_repo,
-#                       repositories,
-#                       weblink,
-#                       citation,
-#                       github,
-#                       # "(here|in (the present|this) study)",
-#                       sep = "|"),
-#                     dist = 30))
-# str_view(sentences, was_available)
-# str_view(sentences, reuse)
+
   reuse <- paste(reuse_statements, .near_wd_sym(was_available,
                     paste(
                       accession_nr,
@@ -507,13 +491,14 @@
   keyword_list[["file_formats"]] <- file_formats
 
   upon_request <- c("(up)?on( reasonable)? request",
-                    "on author.* request",
+                    "on author( ?\\b\\w+\\b){0,5} request",
                     "by request",
                     "can be requested by bona fide researchers",
                     "via a direct request to",
                     "without undue reservation",
                     "the corresponding author",
                     "the lead contact",
+                    "(upon|after) approval",
                     "the techincal contact",
                     "requests.* should be (directed|submitted) (to|through|via)",
                     "data requests?")|>

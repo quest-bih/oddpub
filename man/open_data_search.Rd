@@ -4,13 +4,23 @@
 \alias{open_data_search}
 \title{Seach for open data & open code keywords.}
 \usage{
-open_data_search(PDF_text_sentences, extract_sentences = TRUE)
+open_data_search(
+  PDF_text_sentences,
+  extract_sentences = TRUE,
+  stop_if_hit_in_DAS = TRUE
+)
 }
 \arguments{
 \item{PDF_text_sentences}{Document corpus loaded with the pdf_load function.}
 
-\item{extract_sentences}{Logical parameter. If TRUE, the sentences in which the Open Data
+\item{extract_sentences}{Boolean. If TRUE, the sentences in which the Open Data
 statements were detected are extracted and added to the results table as well.}
+
+\item{stop_if_hit_in_DAS}{Boolean. If TRUE, the default setting, then first
+the Data availability and Code availability statement or statements (DAS and CAS)
+will be screened and then the full text (without references) will only be screened
+if no open data or data re-use or github data were detected in the DAS and CAS.
+If FALSE, then the full text (without references) will be screened immediately.}
 }
 \value{
 Tibble with one row per screened document and the filename and logical values for open data

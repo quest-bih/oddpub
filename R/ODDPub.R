@@ -48,8 +48,14 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
 #'
 #' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
 #'
-#' @param extract_sentences Logical parameter. If TRUE, the sentences in which the Open Data
+#' @param extract_sentences Boolean. If TRUE, the sentences in which the Open Data
 #' statements were detected are extracted and added to the results table as well.
+#'
+#' @param stop_if_hit_in_DAS Boolean. If TRUE, the default setting, then first
+#'  the Data availability and Code availability statement or statements (DAS and CAS)
+#'  will be screened and then the full text (without references) will only be screened
+#'  if no open data or data re-use or github data were detected in the DAS and CAS.
+#'  If FALSE, then the full text (without references) will be screened immediately.
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus additional columns containing the identified open data/code categories
@@ -61,7 +67,7 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
 #' }
 #'
 #' @export
-open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
+open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_if_hit_in_DAS = TRUE)
 {
   PDF_text_sentences <- furrr::future_map(PDF_text_sentences, .remove_references)
 
@@ -76,44 +82,54 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE)
   CAS_text_sentences <- PDF_text_sentences |>
     furrr::future_map(.extract_CAS)
 
-  DAS_CAS <- furrr::future_map2(DAS_text_sentences, CAS_text_sentences, vctrs::vec_c) |>
-    furrr::future_map(unique)
-  # search for open data keywords in the full texts or DAS
-  print("Extracting and screening Data and Code Availability Statements:")
-  keyword_results <- .keyword_search_full(DAS_CAS)
-  open_data_results <- .open_data_detection(DAS_CAS, keyword_results)
+  if (stop_if_hit_in_DAS == TRUE) {
+    DAS_CAS <- furrr::future_map2(DAS_text_sentences, CAS_text_sentences, vctrs::vec_c) |>
+      furrr::future_map(unique)
+    # search for open data keywords in the full texts or DAS
+    print("Screening Data and Code Availability Statements:")
+    keyword_results <- .keyword_search_full(DAS_CAS)
+    open_data_results <- .open_data_detection(DAS_CAS, keyword_results)
 
-  # kw <- keyword_results[[1]]
-  sentences_second_pass <- open_data_results |>
-    dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
-                    !stringr::str_detect(open_data_category, "github")) |> # consider second pass also for software?
-    dplyr::pull(article) # extract the not open data cases for double-check in second pass
-
-  # restrict to cases with DAS only, since full texts were already screened for rest
-  sentences_second_pass <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_DAS)]
-  # kw2 <- keyword_second_pass[[1]]
+    # kw <- keyword_results[[1]]
+    sentences_second_pass <- open_data_results |>
+      dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
+                      !stringr::str_detect(open_data_category, "github")) |> # consider second pass also for software?
+      dplyr::pull(article) # extract the not open data cases for double-check in second pass
+    # restrict to cases with DAS only, since full texts were already screened for rest
+    sentences_full_screen <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_DAS)]
+  } else {
+    sentences_full_screen <- rep(TRUE, length(PDF_text_sentences))
+    open_data_results <- NULL
+  }
   # screen full text of second-pass cases
   # do this only for subset of cases, as this is the most time-consuming step
-  if (length(sentences_second_pass) > 0) {
-    print("Screening full text of articles with uninformative Data Availability Statements:")
-    open_data_cat_old <- open_data_results |>
-      dplyr::select(article, open_data_cat_old = open_data_category)
+  if (length(sentences_full_screen) > 0) {
+    print("Screening full text of articles:")
 
-    keyword_second_pass <- .keyword_search_full(PDF_text_sentences[sentences_second_pass])
-    open_data_second_pass <- .open_data_detection(PDF_text_sentences[sentences_second_pass], keyword_second_pass) |>
-      dplyr::left_join(open_data_cat_old, by = "article") |>
-      dplyr::mutate(open_data_category =
-                      dplyr::case_when(
-                        open_data_cat_old != "" & open_data_category != "" ~ paste0(open_data_cat_old, ", ", open_data_category),
-                        .default = paste0(open_data_cat_old, open_data_category)),
-      open_data_category = purrr::map_chr(open_data_category, .remove_repeats)) |>
-      dplyr::select(-open_data_cat_old)
+    keyword_full_screen <- .keyword_search_full(PDF_text_sentences[sentences_full_screen])
+    open_data_full_screen <- .open_data_detection(PDF_text_sentences[sentences_full_screen], keyword_full_screen)
 
-    keyword_results <- keyword_results |>
-      purrr::list_assign(!!!keyword_second_pass)
+    if (!rlang::is_null(open_data_results)) {
+      open_data_cat_old <- open_data_results |>
+        dplyr::select(article, open_data_cat_old = open_data_category)
+      open_data_full_screen <- open_data_full_screen |>
+        dplyr::left_join(open_data_cat_old, by = "article") |>
+        dplyr::mutate(open_data_category =
+                        dplyr::case_when(
+                          open_data_cat_old != "" & open_data_category != "" ~ paste0(open_data_cat_old, ", ", open_data_category),
+                          .default = paste0(open_data_cat_old, open_data_category)),
+                      open_data_category = purrr::map_chr(open_data_category, .remove_repeats)) |>
+        dplyr::select(-open_data_cat_old)
 
-    open_data_results <- open_data_results |>
-      dplyr::rows_upsert(open_data_second_pass, by = "article")
+      keyword_results <- keyword_results |>
+        purrr::list_assign(!!!keyword_full_screen)
+
+      open_data_results <- open_data_results |>
+        dplyr::rows_upsert(open_data_full_screen, by = "article")
+    } else {
+      open_data_results <- open_data_full_screen
+    }
+
   }
   print("Consolidating data:")
 
