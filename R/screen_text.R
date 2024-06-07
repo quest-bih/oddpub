@@ -51,6 +51,7 @@
                         "used data from a public",
                         "data referenced in this study",
                         "all data we used are public",
+                        "using( a)? datasets? acquired",
                         "data derived from public domain (re)?sources",
                         "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){1,5} data"
                         ) |>
@@ -99,11 +100,12 @@
 
   keyword_list[["will_be_available"]] <- will_be_available
 
-  not_produced <- c("not (developed|generated|produced)",
-                    "no (data|code) (were|was) (developed|generated|produced)") |>
-    .format_keyword_vector()
+  # not_produced <- c("not (developed|generated|produced)",
+  #                   "no (data|code) (were|was) (developed|generated|produced)") |>
+  #   .format_keyword_vector()
+  # keyword_list[["not_produced"]] <- not_produced
 # publ_sentences <- "<section> human data: trip13 mrna expression levels in human liver samples shown in figure 1a were determined using publically available data (e-geod-25097; https://www.ebi.ac.uk/arrayexpress)."
-  keyword_list[["not_produced"]] <- not_produced
+
 # str_view("unless three words here are available", "unless( ?\\b\\w+\\b){1,3} are available")
   # str_view(publ_sentences, was_available)
   # str_view("<section> publicly available rna-seq dataset relative to various tissues in physiological conditions was retrieved from the national genomics data center bigd database with accession code id: prjca000751.",
@@ -118,8 +120,9 @@
                      "when available",
                      "not accessible",
                      "not submitted",
+                     "not (developed|generated|produced)",
                      "did not( ?\\b\\w+\\b){1,5} generate",
-                     "no( ?\\b\\w+\\b){1,5} (were|was) generated",
+                     "no( ?\\b\\w+\\b){1,5} (were|was) (developed|generated|produced)",
                      "(few|no|not enough) \\w.* (is|are) available",
                      "includes no",
                      "does not report original",
@@ -498,6 +501,7 @@
                     "without undue reservation",
                     "the corresponding author",
                     "the lead contact",
+                    "proposal form",
                     "(upon|after) approval",
                     "the techincal contact",
                     "requests.* should be (directed|submitted) (to|through|via)",
@@ -1068,7 +1072,8 @@
                  !not_available & !was_available & !reuse &
                  (!upon_request|stringr::str_detect(publ_sentences, "git|www|http"))) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
-    purrr::map(dplyr::mutate, com_reuse = reuse & !grant) |>
+    purrr::map(dplyr::mutate, com_reuse = reuse &
+                 ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
