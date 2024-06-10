@@ -50,7 +50,7 @@
                         "data ?set used previously",
                         "used data from a public",
                         "data referenced in this study",
-                        "all data we used are public",
+                        "all data (we )?used( ?\\b\\w+\\b){1,5} are( ?\\b\\w+\\b){1,3} public",
                         "using( a)? datasets? acquired",
                         "data derived from public domain (re)?sources",
                         "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){1,5} data"
@@ -394,7 +394,7 @@
             "sequences",
             "summary statistics?( ?\\b\\w+\\b){1,5} (genetic|gwas)",
             "responses",
-            "materials") |>
+            "(?<!supplementa(l|ry) )materials") |>
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["data"]] <- data
 
@@ -1202,7 +1202,7 @@
     category <- category |> c("github")
   }
   if (unknown_source == TRUE) {
-    category <- category |> c("unknown url")
+    category <- category |> c("unknown/misspecified source")
   }
   if (data_journal == TRUE) {
     category <- category |> c("data journal")
