@@ -1212,7 +1212,7 @@
     category <- category |> c("github")
   }
   if (unknown_source == TRUE) {
-    category <- category |> c("unknown url")
+    category <- category |> c("unknown/misspecified source")
   }
   if (data_journal == TRUE) {
     category <- category |> c("data journal")

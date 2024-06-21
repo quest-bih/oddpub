@@ -12,7 +12,7 @@ publication. It is tailored towards biomedical literature.
 
 ## Authors
 
-Nico Riedel, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
+Nico Riedel, Vladislav Nachev, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
 
 ## Publication
 
@@ -59,11 +59,14 @@ open_data_results <- oddpub::open_data_search(PDF_text_sentences)
 Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the identified Open Data/Code categories as well as the detected sentences, which can be deactivated using the additional parameter ```detected_sentences = FALSE```.
 
 ``` r
-open_data_results <- oddpub::open_data_search_parallel(PDF_text_sentences)
+future::plan(multisession)
+open_data_results <- oddpub::open_data_search(PDF_text_sentences)
 ```
-Paralellized version of the algorithm that starts several parallel processes using the foreach and doParallel package to speed up the detection. Number of processes can be set with the parameter ```cluster_num``` (default value: 4).
+Paralellized version of the algorithm that starts several parallel processes with the use of the packages `future` and `furrr`.
 
 To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.73 and specificity of 0.97.
+
+The algorithm has been updated in 2024. A new validation is planned for early 2025.
 
 ## Detailed description of the keywords
 
@@ -73,24 +76,39 @@ Those are the combined keyword categories that are searched in the full text. If
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Field-specific repositories        | FIELD_SPECIFIC_REPO NEAR ACCESSION_NR NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
-| General-purpose repositories | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
+| Field-specific repository        | FIELD_SPECIFIC_REPO NEAR (ACCESSION_NR OR WEBLINK) NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR
+(DATA OR NOT (MISC_NOT_DATA OR NOT PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT)) |
+| General-purpose repository | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR
+(DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE))) |
+
+The previous two categories are the only potentially open data references in line with our criteria.
+Further categories of interest that may refer to data that do not satisfy our criteria, but are detected and reported, are listed below.
+
+| Combined Keyword Category | Keywords |
+|---------------------------|----------|
 | Dataset |	(DATASET_NAME OUTER_SYM DATASET_NUMBER) OR SUPPLEMENTAL_DATASET |
 | Supplemental table or data |	SUPPLEMENTAL_TABLE NEAR_WD(10) (FILE_FORMATS OR ALL_DATA) |
 | Supplementary raw/full data with specific file format | (ALL_DATA NOT NOT_DATA) NEAR_WD(10) FILE_FORMATS |
-| Data availability statement |	DATA_AVAILABILITY NEAR_WD(30) (“doi” OR ACCESSION_NR OR REPOSITORIES) |
 | Dataset on Github |	DATA NEAR GITHUB NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
+| Upon request | UPON_REQUEST |
+| Re-use | REUSE_STATEMENTS OR (WAS_AVAILABLE NEAR_WD(30) (ACCESSION_NR OR FIELD_SPECIFIC_REPO OR REPOSITORIES OR WEBLINK OR
+CITATION OR GITHUB)) NOT GRANT|
+| Unknown/misspecified source | DATA NEAR AVAILABLE NEAR WEBLINK NOT (NOT_AVAILABLE OR ACCESSION_NR OR
+SUPPLEMENT OR Field-specific repository OR General-purpose repository or Dataset on Github) |
 
+Further, experimental categories such as re-use and unknown/misspecified source are being actively developed
+and their final definitions will be updated after validation.
 
 Additionally, the detection of Open Code statements is done with the following keywords:
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Source-code availability  | SOURCE_CODE NEAR AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR UPON_REQUEST) |
+| Source-code availability  | SOURCE_CODE NEAR AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE) NEAR
+(NOT UPON_REQUEST OR GIT_OR_URL) |
 | Supplementary Source-code | SOURCE_CODE NEAR SUPPLEMENT |
 | All Open Code keywords combined | SOURCE_CODE NEAR (SUPPLEMENT OR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR UPON_REQUEST)) |
 
-Individual keyword categories:
+Individual keyword categories (out of date): 
 
 | Definitions    | Description  |  Keywords  |
 |----------------|--------------|------------|
@@ -123,7 +141,7 @@ Individual keyword categories:
 | DATA_JOURNAL_DOIS |	Set of Open Data Journal DOIs for which the publication DOI is checked (from filename, not part of actual keyword search) |	("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib") |
 | SUPPLEMENT     | Set of expression describing the supplement of an article | ("supporting information" OR "supplement" OR "supplementary data") |
 | SOURCE_CODE    | Set of expressions describing source code | ("source code" OR "analysis script" OR "github" OR "SAS script" OR "SPSS script" OR "R script" OR "R code" OR "python script" OR "python code" OR "matlab script" OR "matlab code") |
-
+| WEBLINK | | |
 
 ## License
 
