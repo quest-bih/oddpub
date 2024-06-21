@@ -974,8 +974,6 @@ Mode <- function(x) {
 
   cols_left_est <- .find_cols_left_x(text_data)
 
-
-
   multicol_layout <- cols |> # e.g. when caption in first col, nature
     # or in two cols, science
     dplyr::mutate(mean_cols_left = tidyr::replace_na(mean_cols_left, 0),
@@ -984,7 +982,7 @@ Mode <- function(x) {
                        dplyr::first(mean_cols) > 2 &
                        dplyr::first(prop_widths_left) < 0.7,
                      twocol = dplyr::first(n_cols) == 2 &
-                       (dplyr::first(mean_cols_left) > 1 |
+                       (dplyr::between(dplyr::first(mean_cols_left), 1.1, 3) |
                           dplyr::first(has_fig_caption_right) == TRUE
                        ),
                      twothirdscol = sum(last_col_x, na.rm = TRUE) > 0 &
