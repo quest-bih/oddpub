@@ -10,6 +10,8 @@ pdf_convert(PDF_folder, output_folder, recursive = TRUE)
 \item{PDF_folder}{String of the folder name in which the PDFs are located.}
 
 \item{output_folder}{String of the folder name in which the converted files will be saved.}
+
+\item{recursive}{Boolean. If TRUE (the default), then search all the subfolders of the given folder for PDF files.}
 }
 \value{
 Logical vector describing the conversion success for each PDF file.

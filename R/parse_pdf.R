@@ -47,7 +47,10 @@
 #' @noRd
 .est_col_n <- function(text_data, PDF_filename) {
 
-  ralc <- space <- text <- y <- x <- line_n <- has_jama <- text_left_margin <- NULL
+  ralc <- space <- text <- y <- x <- line_n <-
+    has_jama <- text_left_margin <- insert <-
+    dac <- contrib <- rel_width <- font_size <-
+    n_cols <- ret_per_line <- NULL
 
   if (stringr::str_detect(PDF_filename, "10\\.3390|e(L|l)ife")) return(1)
 
@@ -235,6 +238,12 @@ Mode <- function(x) {
 #' @noRd
 .find_header_y <- function(text_data) {
 
+  x <- y <- x_jump <- y_jump <- text <- width <- line_n <-
+    space <- section_phrase <- is_section <- prop_width <-
+    font_size <- max_x_jump <- potential_page_n <-
+    has_coded_break <- section_on_line_one <- font_name <-
+    NULL
+
   if (.str_has_insert(text_data$text[1])) return(0)
 
   page_width <- max(text_data$x) - min(text_data$x)
@@ -297,6 +306,10 @@ Mode <- function(x) {
 #' @noRd
 .find_footer_y <- function(text_data) {
 
+  x <- y <- x_jump <- jump_size <- text <- width <- height <-
+    line_n <- space <- prop_width <- font_size <- max_x_jump <-
+    potential_page_n <- candidate <- has_insert <- NULL
+
   page_width <- max(text_data$x) - min(text_data$x)
   min_y <- min(max(text_data$y) - 50, 700)
 
@@ -358,6 +371,7 @@ Mode <- function(x) {
 #' add line numbers, but check if rearranging needed first
 #' @noRd
 .add_line_n <- function(text_data) {
+  y <- line_n <- jump_size <- text <- NULL
 
   text_data |>
     dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0),
@@ -373,6 +387,7 @@ Mode <- function(x) {
 #' find left x coordinates of the potential columns on a page
 #' @noRd
 .find_cols_left_x <- function(text_data) {
+  x <- n <- x_jump <- insert <- space <- text <- NULL
 
   text_data <- text_data |>
     dplyr::filter(insert == 0)
@@ -400,6 +415,9 @@ Mode <- function(x) {
 #' find right x coordinates of the potential columns on a page
 #' @noRd
 .find_cols_right_x <- function(text_data, min_x = 250) {
+
+  x <- y <- line_n <- width <- n <- x_jump <- insert <- space <- text <- NULL
+
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
@@ -423,6 +441,8 @@ Mode <- function(x) {
 #' find x coordinate of the gap in between two columns on a 2col layout
 #' @noRd
 .find_midpage_x <- function(text_data, min_x = 250) {
+
+  x <- NULL
 
   # the right edge of the gap (the higher x value)
   gaps_r <- .find_cols_left_x(text_data) |>
@@ -449,6 +469,8 @@ Mode <- function(x) {
 #' find the y coordinate of the horizontal split in mixed layout page (first page) in Elsevier
 #' @noRd
 .get_elsevier_divider_y <- function(text_data) {
+
+  x <- y <- jump_next <- text <- font_size <- NULL
 
   title_page <- text_data |>
     dplyr::filter(stringr::str_detect(text, "ARTICLE") & font_size > 10) |>
@@ -494,6 +516,9 @@ Mode <- function(x) {
 #' @noRd
 .add_column_info <- function(text_data, cols, PDF_filename) {
 # text_data <- flagged_text_data
+
+  x <- y <- space <- text <- n <- column <- insert <-
+    font_size <- x_jump_size <- divider <- NULL
 
   col2_x <- 800 # initial estimate is the maximum, works for single column layouts
   col3_x <- col_predevider_x_est <- col2_x
@@ -683,6 +708,10 @@ Mode <- function(x) {
 #' find instances of tables, figures, or other inserts are on the page
 #' @noRd
 .find_inserts <- function(text_data) {
+
+  x <- y <- width <- text <- space <- font_size <- font_name <- height <-
+    vertical <- y_jump <- x_jump_size <- leads <- verticality <- NULL
+
   insert_candidates <- text_data |>
     # dplyr::arrange(y, x) |>
     dplyr::filter(!stringr::str_detect(text, "\\u25c2")) |>
@@ -746,6 +775,8 @@ Mode <- function(x) {
 #' @noRd
 .find_first_insert <- function(text_data) {
 
+  x <- y <- line_n <- NULL
+
   inserts <- text_data |>
     .find_inserts()
   if (nrow(inserts) == 0) {
@@ -768,6 +799,8 @@ Mode <- function(x) {
 #' find a table or figure starting y coordinate
 #' @noRd
 .find_insert_min_y <- function(text_data) {
+
+  y <- height <- width <- NULL
 
   first_insert <- .find_first_insert(text_data)
 
@@ -815,6 +848,14 @@ Mode <- function(x) {
 #' find a table or figure ending x coordinate
 #' @noRd
 .find_insert_max_x <- function(text_data) {
+
+  x <- y <- f <- s <- width <- text <- line_n <- first_col <- twocol <-
+    is_subpscript <- next_space_width <- widths_left <- widths_right <-
+    space <- n_cols <- n_cols_left <- n_cols_right <- prop_widths_right <-
+    line_start_y <- mean_cols <- two_col_layout <- mean_cols_left <-
+    prop_widths_left <- has_fig_caption_right <-last_col_x <-
+    prop_space <- n_breaks <- NULL
+
   # text_data <- flagged_text_data |> filter(insert == 0)
   start_x <- .find_insert_min_x(text_data)
   if (start_x > 199) return(800)
@@ -1043,6 +1084,8 @@ Mode <- function(x) {
 #' @noRd
 .find_y_gap <- function(text_data, crit_jump_min = 30, crit_jump_max = 100) {
 
+  x <- y <- line_n <- text <- rel_width <- x_jump <- y_jump <- NULL
+
   if (!any(stringr::str_detect(text_data$text, "Table|Appendix"))) {
     gap_candidates <- text_data |>
       dplyr::filter(rel_width > 0.05,
@@ -1080,6 +1123,10 @@ Mode <- function(x) {
 #' @noRd
 .find_insert_max_y <- function(text_data) {
   # text_data <- flagged_text_data |> dplyr::filter(insert == 0)
+
+  x <- y <- width <- text <- line_n <- first_col <- space <- is_subpscript <-
+    text <- rel_width <- is_fig_caption <- is_potential_section_start <-
+    y_jump <- y_exceeded <- max_y_before_last <- font_size <- font_name <- NULL
 
   first_insert <- .find_first_insert(text_data)
 
@@ -1210,6 +1257,7 @@ Mode <- function(x) {
 #' @noRd
 .flag_as_insert <- function(text_data, coord_vec, insert_n) {
   #coord_vec <- c(min_x, max_x, min_y, max_y)
+  insert <- NULL
 
   text_data |>
     dplyr::mutate(insert = dplyr::case_when(
@@ -1222,6 +1270,8 @@ Mode <- function(x) {
 #' flag all inserts: figures, tables, appendix tables containing Authorship Info
 #' @noRd
 .flag_all_inserts <- function(text_data) {
+
+  insert <- NULL
 
   inserts <- .find_inserts(text_data)
 
@@ -1251,6 +1301,9 @@ Mode <- function(x) {
 #' detect margins and remove text from them, as well as from hidden text layers
 #' @noRd
 .clear_margins <- function(text_data, PDF_filename) {
+
+  x <- y <- width <- text <- height <- width <- space <- x_jump_size <-
+    font_name <- font_size <- NULL
 
   # remove hidden text tags and layers in various journals
   if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.(ecl|pul)")) {
@@ -1330,6 +1383,7 @@ Mode <- function(x) {
 #' Add proportional sum of widths for each y value
 #' @noRd
 .add_rel_width <- function(text_data) {
+  width <- y <- NULL
   page_width <- .get_page_width(text_data)
 
   text_data |>
@@ -1342,6 +1396,14 @@ Mode <- function(x) {
 #' to be saved as a txt for further processing
 #' @noRd
 .textbox_to_str <- function(text_data, PDF_filename) {
+
+  x <- y <- column <- line_n <- width <- text <-
+    is_subpscript <- font_size <- font_name <-
+    heading_font <- prop_blank <- jump_size <-
+    space <- dot <- insert <- paragraph_start <-
+    sameline_title <- ends_dot <- newline_heading <-
+    science_section <- plain_section <-
+    section_start <- NULL
 
   if (nrow(text_data) == 0) return("")
 

@@ -65,7 +65,7 @@
                      "(was|were) contained in",
                      "(was|were|(?<!((has|have) been)|are( now)?|will be) made) available(?! for)",                      "(was|were) public(al)?ly available",
                      "(was|were) accessible",
-                     "(was|were) deposited (by|in)",
+                     "(was|were) deposited by",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
                      "(?<!it )has been reported",
@@ -1051,6 +1051,14 @@
 #' @noRd
 .keyword_search_full <- function(PDF_text_sentences)
 {
+
+  data <- grant <- weblink <- reuse <- available <- not_available <-
+    was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
+    repositories <- protocol <- supplement <- source_code <- github <-
+    upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
+    com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
+    com_request <- com_unknown_source <- NULL
+
 # odc <- open_data_categories[[1]]
   # PDF_text_sentences <- publ_sentences
   # search for open data keywords in the full texts
@@ -1092,6 +1100,7 @@
 #' @noRd
 .keyword_search_tokenized <- function(keyword_results_combined)
 {
+  publ_sentences <- NULL
   # summarize results over all sentences of each publication to see if any match was found for each keyword category
   keyword_results_tokenized <- keyword_results_combined |>
     purrr::map(\(x) dplyr::select(x, -publ_sentences)) |>
@@ -1224,8 +1233,14 @@
 #---------------------------------------------------------------------
 
 #' @noRd
-.open_data_detection <- function(PDF_text_sentences, keyword_results)
-{
+.open_data_detection <- function(PDF_text_sentences, keyword_results) {
+
+  com_general_repo <- com_specific_repo <- is_data_journal <- com_code <-
+    com_suppl_code <- dataset <- com_file_formats <- com_reuse  <-
+    com_supplemental_data <- com_request <- com_github_data <-
+    com_unknown_source <- article <- is_general_purpose <- is_supplement <-
+    is_reuse <- is_open_data <- is_open_code <- open_data_category <- NULL
+
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
@@ -1257,8 +1272,12 @@
 
 
 #' @noRd
-.open_data_sentences <- function(PDF_text_sentences, DAS_sentences, sentences_with_DAS, CAS_sentences, keyword_results)
-{
+.open_data_sentences <- function(PDF_text_sentences, DAS_sentences, sentences_with_DAS, CAS_sentences, keyword_results) {
+
+  com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
+    com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
+    com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
+
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
   keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
