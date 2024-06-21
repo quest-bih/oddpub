@@ -6,6 +6,7 @@
 #'
 #' @param PDF_folder String of the folder name in which the PDFs are located.
 #' @param output_folder String of the folder name in which the converted files will be saved.
+#' @param recursive Boolean. If TRUE (the default), then search all the subfolders of the given folder for PDF files.
 #'
 #' @return Logical vector describing the conversion success for each PDF file.
 #'
@@ -22,7 +23,7 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
   }
 
   # PDF_filenames <- list.files(PDF_folder, recursive = recursive)
-  PDF_filenames <- list.files(PDF_folder, recursive = recursive, full.names = TRUE)
+  PDF_filenames <- list.files(PDF_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)
 
   # converts PDF file to txt file and saves it to output_folder
   # requires the pdftools library
@@ -67,8 +68,10 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
 #' }
 #'
 #' @export
-open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_if_hit_in_DAS = TRUE)
-{
+open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_if_hit_in_DAS = TRUE) {
+
+  is_open_data <- is_reuse <- open_data_category <- article <- NULL
+
   PDF_text_sentences <- furrr::future_map(PDF_text_sentences, .remove_references)
 
   # PDF_text_sentences <- DAS_text_sentences
