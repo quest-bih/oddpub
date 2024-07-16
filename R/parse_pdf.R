@@ -5,7 +5,7 @@
     stringr::str_replace(stringr::fixed(".pdf"),
                          stringr::fixed(".txt"))
   output_filename <- utils::tail(stringr::str_split(output_filename, stringr::fixed("/"))[[1]],1)
-  output_filename <- paste0(output_folder, output_filename)
+  output_filename <- file.path(output_folder, output_filename)
 
   return(output_filename)
 }

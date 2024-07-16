@@ -22,7 +22,7 @@ pdf_load <- function(pdf_text_folder)
   txt_filenames <- list.files(pdf_text_folder)
   txt_filenames <- txt_filenames[!stringr::str_detect(txt_filenames,stringr::fixed(".pdf"))]
   txt_filenames_short <- txt_filenames # used as names for the text/results tables later
-  txt_filenames <- paste0(pdf_text_folder, txt_filenames)
+  txt_filenames <- file.path(pdf_text_folder, txt_filenames)
 
   # produce version of the full texts where all sentences are separate vector elements
   PDF_text_sentences <- txt_filenames |>

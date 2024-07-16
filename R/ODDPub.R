@@ -15,12 +15,12 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
 {
 
   #check if dir path has final /, otherwise add
-  if(PDF_folder |> stringr::str_sub(-1) != "/") {
-    PDF_folder <- paste0(PDF_folder, "/")
-  }
-  if(output_folder |> stringr::str_sub(-1) != "/") {
-    output_folder <- paste0(output_folder, "/")
-  }
+  # if(PDF_folder |> stringr::str_sub(-1) != "/") {
+  #   PDF_folder <- paste0(PDF_folder, "/")
+  # }
+  # if(output_folder |> stringr::str_sub(-1) != "/") {
+  #   output_folder <- paste0(output_folder, "/")
+  # }
 
   # PDF_filenames <- list.files(PDF_folder, recursive = recursive)
   PDF_filenames <- list.files(PDF_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)

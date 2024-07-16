@@ -76,10 +76,8 @@ Those are the combined keyword categories that are searched in the full text. If
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Field-specific repository        | FIELD_SPECIFIC_REPO NEAR (ACCESSION_NR OR WEBLINK) NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR
-(DATA OR NOT (MISC_NOT_DATA OR NOT PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT)) |
-| General-purpose repository | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR
-(DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE))) |
+| Field-specific repository        | FIELD_SPECIFIC_REPO NEAR (ACCESSION_NR OR WEBLINK) NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR NOT PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT)) |
+| General-purpose repository | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE))) |
 
 The previous two categories are the only potentially open data references in line with our criteria.
 Further categories of interest that may refer to data that do not satisfy our criteria, but are detected and reported, are listed below.
@@ -91,10 +89,8 @@ Further categories of interest that may refer to data that do not satisfy our cr
 | Supplementary raw/full data with specific file format | (ALL_DATA NOT NOT_DATA) NEAR_WD(10) FILE_FORMATS |
 | Dataset on Github |	DATA NEAR GITHUB NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
 | Upon request | UPON_REQUEST |
-| Re-use | REUSE_STATEMENTS OR (WAS_AVAILABLE NEAR_WD(30) (ACCESSION_NR OR FIELD_SPECIFIC_REPO OR REPOSITORIES OR WEBLINK OR
-CITATION OR GITHUB)) NOT GRANT|
-| Unknown/misspecified source | DATA NEAR AVAILABLE NEAR WEBLINK NOT (NOT_AVAILABLE OR ACCESSION_NR OR
-SUPPLEMENT OR Field-specific repository OR General-purpose repository or Dataset on Github) |
+| Re-use | REUSE_STATEMENTS OR (WAS_AVAILABLE NEAR_WD(30) (ACCESSION_NR OR FIELD_SPECIFIC_REPO OR REPOSITORIES OR WEBLINK OR CITATION OR GITHUB)) NOT GRANT|
+| Unknown/misspecified source | DATA NEAR AVAILABLE NEAR WEBLINK NOT (NOT_AVAILABLE OR ACCESSION_NR OR SUPPLEMENT OR Field-specific repository OR General-purpose repository or Dataset on Github) |
 
 Further, experimental categories such as re-use and unknown/misspecified source are being actively developed
 and their final definitions will be updated after validation.
@@ -103,8 +99,7 @@ Additionally, the detection of Open Code statements is done with the following k
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
-| Source-code availability  | SOURCE_CODE NEAR AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE) NEAR
-(NOT UPON_REQUEST OR GIT_OR_URL) |
+| Source-code availability  | SOURCE_CODE NEAR AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE) NEAR (NOT UPON_REQUEST OR GIT_OR_URL) |
 | Supplementary Source-code | SOURCE_CODE NEAR SUPPLEMENT |
 | All Open Code keywords combined | SOURCE_CODE NEAR (SUPPLEMENT OR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR UPON_REQUEST)) |
 
@@ -113,7 +108,7 @@ Individual keyword categories (out of date):
 | Definitions    | Description  |  Keywords  |
 |----------------|--------------|------------|
 | x NEAR y       | Are the two keywords (or groups of keywords) x and y in the same sentence? | |
-| x NEAR_WD(n) y | Second definition of NEAR. This time counts how many words are between the two keywords. If the number lies below a cutoff value (e.g. 10 words), the two input words are considered "near". This additional definition is needed for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" | |
+| x NEAR_WD(n) y | Second definition of NEAR. This time counts how many words are between the two keywords. If the number lies below a cutoff value (e.g. 10 words), the two input words are considered "near". This additional definition is needegit d for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" | |
 | NOT y          | y is not included in the same sentence | |
 | AVAILABLE      | Abbreviation for a set of words that frequently occur to denote that the data have been made available in some way | ("included" OR "deposited" OR "released" OR "is provided" OR "are provided" OR "contained in" OR "available" OR "reproduce" OR "accessible" OR "can be accessed" OR "submitted" OR "can be downloaded" OR "reported in" OR "uploaded" OR "are public on") |
 | WAS_AVAILABLE  | Set of words that indicate that data is not made available in the paper, but instead that data from a different source was used | ("was provided" OR  "were provided" OR  "was contained in" OR  "were contained in" OR  "was available" OR  "were available" OR  "was accessible" OR  "were accessible" OR  "deposited by" OR  "were reproduced") |
