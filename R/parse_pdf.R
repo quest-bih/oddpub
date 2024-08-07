@@ -1334,7 +1334,7 @@ Mode <- function(x) {
   min_x <- 18
   line_nums <- text_data |>
     dplyr::filter(x < 40,
-                  stringr::str_detect(text, "\\d{1,5}"))
+                  stringr::str_detect(text, "\\d{1,5}$"))
 
   if (nrow(line_nums) > 10) min_x <- max(min_x, max(line_nums$x))
 

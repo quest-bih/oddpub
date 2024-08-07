@@ -61,6 +61,7 @@
   was_available <- c("(was|were) provided",
                      "(was|were )?previously published",
                      "(was|were|have been )?published previously",
+                     "previously described in",
                      "(was|were) included in",
                      "(was|were) contained in",
                      "(was|were|(?<!((has|have) been)|are( now)?|will be) made) available(?! for)",                      "(was|were) public(al)?ly available",
@@ -466,11 +467,11 @@
                       github,
                       # "(here|in (the present|this) study)",
                       sep = "|"),
-                    dist = 30),
+                    dist = 30, add_boundary = FALSE),
                  sep = "|")
   keyword_list[["reuse"]] <- reuse
 
-  supplement <- c("supporting information",
+supplement <- c("supporting information",
                   "supplement",
                   "supplementa(l|ry) data",
                   "supplementa(l|ry) material",
@@ -587,7 +588,8 @@
   misc_non_data <- c("participating institutions",
                      "details",
                      "further information",
-                     "preprint") |>
+                     "preprint",
+                     "The Creative Commons Public Domain Dedication waiver") |>
     .format_keyword_vector()
   keyword_list[["misc_non_data"]] <- misc_non_data
 
@@ -607,7 +609,6 @@
                          ) |>
     .format_keyword_vector()
   keyword_list[["data_journal_dois"]] <- data_journal_dois
-
 
   #special regex pattern that looks for word closeness instead of words being in the same sentence
   #effect: all_data & file_format words are at most 12 words apart from each other
@@ -662,17 +663,22 @@
 
 #' create Regex that searches for cases where words x and y are at max dist words apart
 #' @noRd
-.near_wd_sym <- function(x, y, dist = 10)
+.near_wd_sym <- function(x, y, dist = 10, add_boundary = TRUE)
 {
-  combined <- paste0("\\b(",
+  if (add_boundary == TRUE) {
+    boundary <- "\\b"
+  } else {
+    boundary <- ""
+  }
+  combined <- paste0(boundary, "(",
                      x,
                      ")(?:\\W+\\w+){0,", dist, "}?\\W+(",
                      y,
-                     ")\\b|\\b(",
+                     ")", boundary, "|", boundary, "(",
                      y,
                      ")(?:\\W+\\w+){0,", dist, "}?\\W+(",
                      x,
-                     ")\\b")
+                     ")", boundary)
 
   return(combined)
 }
@@ -1088,7 +1094,8 @@
       com_n_weblinks > 1 ~ data & available & weblink &
         !not_available & !accession_nr & !com_general_repo & !com_specific_repo, # maybe exclude supplements here as well
       .default = data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo & !com_specific_repo & !com_github_data & !supplement
+        !not_available & !accession_nr & !com_general_repo &
+        !com_specific_repo & !com_github_data & !supplement & !misc_non_data
     )) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
                 com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request, com_unknown_source)
