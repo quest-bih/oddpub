@@ -521,7 +521,7 @@ Mode <- function(x) {
     font_size <- x_jump_size <- divider <- NULL
 
   col2_x <- 800 # initial estimate is the maximum, works for single column layouts
-  col3_x <- col_predevider_x_est <- col2_x
+  col3_predivider_x <- col3_x <- col_predevider_x_est <- col2_x
 
   has_insert <- max(text_data$insert) > 0
 
@@ -552,6 +552,7 @@ Mode <- function(x) {
       dplyr::filter(stringr::str_detect(text, "ARTICLE") &
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
+    min_x <- .find_cols_left_x(text_data)$x[2]
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
   } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182|10\\.1128")) {
     layout_divider_y <- text_data |>
@@ -630,7 +631,6 @@ Mode <- function(x) {
   has_mixed_layout <- layout_divider_y < 700 & cols > 1
   # predivider_text <- text_data
 
-
   if (cols > 1 | is.na(cols)) {
 
     if (has_mixed_layout == TRUE) {
@@ -666,7 +666,9 @@ Mode <- function(x) {
     # if above fails, take the max estimate, reducing in effect to a single column
     if (is.na(col2_x_est)) col2_x_est <- col2_x
     # if above fails, take the max estimate, reducing in effect to a single column
-    if (is.na(col3_x_est) | cols < 3) col3_x_est <- col3_x
+    if (is.na(col3_x_est)) col3_x_est <- col3_x
+
+    if (cols < 3) col3_predivider_x <- col3_x
     # if max is at least 100 to the right of estimate, then estimate is good
     if (col2_x - col2_x_est > 100) col2_x <- col2_x_est
     if (col3_x - col3_x_est > 100) col3_x <- col3_x_est
@@ -677,8 +679,8 @@ Mode <- function(x) {
     dplyr::arrange(insert) |>
     dplyr::mutate(column = dplyr::case_when(
       insert == 0 & x >= col_predevider_x_est & y < layout_divider_y & has_mixed_layout ~ 2,
-      insert == 0 & x >= col2_x & x < col3_x & !has_mixed_layout ~ 2,
-      insert == 0 & x >= col3_x & !has_mixed_layout ~ 3,
+      insert == 0 & x >= col2_x & x < col3_predivider_x & !has_mixed_layout ~ 2,
+      insert == 0 & x >= col3_predivider_x & !has_mixed_layout ~ 3,
       insert == 0 & x < col2_x & y >= layout_divider_y & has_mixed_layout ~ 3,
       insert == 0 & x >= col2_x & x < col3_x & y >= layout_divider_y & has_mixed_layout ~ 4,
       insert == 0 & x >= col3_x & y >= layout_divider_y & has_mixed_layout ~ 5,
