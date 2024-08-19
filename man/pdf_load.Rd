@@ -4,10 +4,12 @@
 \alias{pdf_load}
 \title{Load converted PDFs.}
 \usage{
-pdf_load(pdf_text_folder)
+pdf_load(pdf_text_folder, lowercase = TRUE)
 }
 \arguments{
 \item{pdf_text_folder}{String of the folder name from which the converted files will be loaded.}
+
+\item{lowercase}{Boolean, whether the text is set to lowercase upon loading. Defaults to TRUE.}
 }
 \value{
 List with one element per document.
@@ -21,6 +23,6 @@ First use the function pdf_convert to create the converted files, if you have th
 }
 \examples{
 \dontrun{
-pdf_load("examples/")
+pdf_load("examples/", lowercase = FALSE)
 }
 }

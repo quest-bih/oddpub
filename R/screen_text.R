@@ -595,17 +595,22 @@ supplement <- c("supporting information",
 
 
   data_journal_dois <- c(
-    # "10.1038/s41597-019-", # Scientific Data (2019)
-                         "10.3390/data", # Data
-                         "10.1016/j.dib", # Data in Brief
-                         "10.1038/s41597-", # Scientific Data (all years)
-                         "10.3897/BDJ.", # BioDiversity Data Journal
-                         "10.1016/j.cdc.", # Chemical Data Collection
-                         "10.5194/essd-", # Earth System Science Data
-                         "10.1002/gdj3.", # GeoScience Data Journal
-                         "10.1016/j.gdata.", # Genomics Data
-                         "10.5334/joad.", # Journal of Open Archaeology Data
-                         "10.5334/johd." # Journal of Open Humanities Data
+                         "10\\.3390\\/data", # Data
+                         "10\\.1016\\/j\\.dib", # Data in Brief
+                         "10\\.1038\\/s41597-", # Scientific Data (all years)
+                         "10\\.3897\\/BDJ\\.", # BioDiversity Data Journal
+                         "10\\.1016\\/j\\.cdc\\.", # Chemical Data Collection
+                         "10\\.5194\\/essd-", # Earth System Science Data
+                         "10\\.1002\\/gdj3\\.", # GeoScience Data Journal
+                         "10\\.1016\\/j\\.gdata\\.", # Genomics Data
+                         "10\\.5334\\/jo\\.d\\.", # Journal of Open Archaeology Data
+                         "10\\.5334\\/ojb\\.", # Open Journal of Bioresources
+                         # Journal of Open Humanities Data # Journal of Open Psychology Data
+                         "10\\.1107\\/S2414314624", # IUCrData
+                         "10\\.1021\\/acs\\.jced\\.", # Journal of Chemical and Engineering Data
+                         "10\\.1163\\/24523666-bja", # Research Data Journal for the Humanities and Social Sciences
+                         # "10\\.1063\\/\\5.0147933" # Journal of Physical and Chemical Reference Data not OA
+                         "10\\.18174\\/odjar\\." # Open Data Journal for Agricultural Research
                          ) |>
     .format_keyword_vector()
   keyword_list[["data_journal_dois"]] <- data_journal_dois

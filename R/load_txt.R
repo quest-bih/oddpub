@@ -6,16 +6,17 @@
 #' First use the function pdf_convert to create the converted files, if you have them in PDF format.
 #'
 #' @param pdf_text_folder String of the folder name from which the converted files will be loaded.
+#' @param lowercase Boolean, whether the text is set to lowercase upon loading. Defaults to TRUE.
 #'
 #' @return List with one element per document.
 #' Each document is split into its sentences and saved as a vector of strings.
 #'
 #' @examples
 #' \dontrun{
-#' pdf_load("examples/")
+#' pdf_load("examples/", lowercase = FALSE)
 #' }
 #' @export
-pdf_load <- function(pdf_text_folder)
+pdf_load <- function(pdf_text_folder, lowercase = TRUE)
 {
 
   # read in full text from .txt files
@@ -26,7 +27,7 @@ pdf_load <- function(pdf_text_folder)
 
   # produce version of the full texts where all sentences are separate vector elements
   PDF_text_sentences <- txt_filenames |>
-    furrr::future_map(.tokenize_sections, .progress = TRUE)
+    furrr::future_map(\(x) .tokenize_sections(x, lowercase = lowercase), .progress = TRUE)
 
   names(PDF_text_sentences) <- txt_filenames_short
 
@@ -99,13 +100,13 @@ pdf_load <- function(pdf_text_folder)
 #' @noRd
 # textfile <- paste0(pdf_text_folder, txt_filenames)
 # textfile <- txt_filenames
-.tokenize_sections <- function(textfile)
+.tokenize_sections <- function(textfile, lowercase = TRUE)
 {
   tokenized <- readr::read_lines(textfile) |>
     paste(collapse = " ") |>
     stringr::str_replace_all("\n", ".") |>
     stringr::str_squish() |>
-    tokenizers::tokenize_sentences(simplify = TRUE, lowercase = TRUE) |>
+    tokenizers::tokenize_sentences(simplify = TRUE, lowercase = lowercase) |>
     tokenizers::tokenize_regex(pattern = " (?=<(section|insert|iend)>)", simplify = TRUE)
 
   if (is.list(tokenized)) {
