@@ -14,7 +14,7 @@
 #' @noRd
 
 
-.pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE) {
+.pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE, addSectionTags = TRUE) {
   success <- FALSE
   output_filename <- .create_output_filename(PDF_filename, output_folder)
 
@@ -27,7 +27,7 @@
     tryCatch({
       suppressWarnings({
         text <- pdftools::pdf_data(PDF_filename, font_info = TRUE) |>
-          furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename))
+          furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename, addSectionTags = addSectionTags))
           # purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
       })
       cat(text, file = output_filename)
@@ -1397,7 +1397,7 @@ Mode <- function(x) {
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
 #' to be saved as a txt for further processing
 #' @noRd
-.textbox_to_str <- function(text_data, PDF_filename) {
+.textbox_to_str <- function(text_data, PDF_filename, addSectionTags = TRUE) {
 
   x <- y <- column <- line_n <- width <- text <-
     is_subpscript <- font_size <- font_name <-
@@ -1442,6 +1442,22 @@ Mode <- function(x) {
     )) |>
     dplyr::ungroup()
 
+ if (addSectionTags == TRUE) text_data <- text_data |>
+    .add_section_tags()
+
+  text_data |>
+    dplyr::group_by(line_n) |>
+    dplyr::summarise(text = paste(text, collapse = " ")) |>
+    dplyr::summarise(text = paste(text, collapse = "\n ")) |>
+    dplyr::pull(text)
+}
+
+
+
+#' add section tags
+#' @noRd
+.add_section_tags <- function(text_data) {
+
   section_jump <- text_data$jump_size[text_data$jump_size > 3] |>
     Mode() * 1.3
 
@@ -1463,7 +1479,7 @@ Mode <- function(x) {
                                     dplyr::summarise(text = paste(text, collapse = " ")) |>
                                     dplyr::pull(text))
 
-  res <- text_data |>
+  text_data |>
     dplyr::mutate(
       dot = cumsum(dplyr::case_when(
         is.na(dplyr::lag(text)) ~ 0,
@@ -1471,11 +1487,11 @@ Mode <- function(x) {
         .default = 0
       )),
       heading_font = dplyr::if_else(
-         is_subpscript == FALSE &
+        is_subpscript == FALSE &
           (abs(font_size - dplyr::lag(font_size)) > 1.4 |
-          !stringr::str_detect(text, "[[:lower:]]|\\)?\\.$") | # only caps and not end of sentence
-          # font_size - regular_font_size > 1 |
-          stringr::str_detect(font_name, heading_font_regex)), TRUE, FALSE),
+             !stringr::str_detect(text, "[[:lower:]]|\\)?\\.$") | # only caps and not end of sentence
+             # font_size - regular_font_size > 1 |
+             stringr::str_detect(font_name, heading_font_regex)), TRUE, FALSE),
       newline_heading = line_n == 1 & is.na(heading_font) | # very first line
         line_n > dplyr::lag(line_n) &
         (stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") | # end of line can be full stop or some email or url
@@ -1512,16 +1528,12 @@ Mode <- function(x) {
         text == "*" & dplyr::lag(space) == FALSE,
       section_start = insert == 0 &
         ((paragraph_start & (heading_font | prop_blank > 0.35 | dplyr::lag(prop_blank) > 0.35)) |
-        (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
-        sameline_title |
-        (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
-        newline_heading | science_section | (plain_section & dplyr::lag(plain_section, default = FALSE) == FALSE)),
+           (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
+           sameline_title |
+           (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
+           newline_heading | science_section | (plain_section & dplyr::lag(plain_section, default = FALSE) == FALSE)),
       text = dplyr::if_else(section_start == FALSE | is.na(section_start), text, paste("\n<section>", text))
-      ) |>
-    dplyr::group_by(line_n) |>
-    dplyr::summarise(text = paste(text, collapse = " ")) |>
-    dplyr::summarise(text = paste(text, collapse = "\n ")) |>
-    dplyr::pull(text)
+    )
 
-  res
 }
+

@@ -7,12 +7,15 @@
 #' @param PDF_folder String of the folder name in which the PDFs are located.
 #' @param output_folder String of the folder name in which the converted files will be saved.
 #' @param recursive Boolean. If TRUE (the default), then search all the subfolders of the given folder for PDF files.
+#' @param overwriteExistingFiles Boolean. If FALSE (the default) does not overwrite already existing files.
+#' @param addSectionTags Boolean. If TRUE (the default), adds '<section>' tags at the beginning of potential text sections.
+#' This needs to be set to TRUE for later recognition of Data and Code Availability Statements.
 #'
 #' @return Logical vector describing the conversion success for each PDF file.
 #'
 #' @export
-pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
-{
+pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE,
+                        overwriteExistingFiles = FALSE, addSectionTags = TRUE) {
 
   #check if dir path has final /, otherwise add
   # if(PDF_folder |> stringr::str_sub(-1) != "/") {
@@ -30,7 +33,8 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE)
   # some PDFs make take a very long time to process!
   conversion_success <-
     suppressWarnings(furrr::future_map_lgl(PDF_filenames,
-                          \(x) .pdf_to_text(x, output_folder), .progress = TRUE))
+                          \(x) .pdf_to_text(x, output_folder, overwriteExistingFiles = overwriteExistingFiles,
+                                            addSectionTags = addSectionTags), .progress = TRUE))
 
   return(conversion_success)
 }
