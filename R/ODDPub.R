@@ -65,6 +65,10 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 #'  the full text is also always screened. This is to allow for the detection of
 #'  data re-use, open data, or open code in the main text with an uninformative
 #'  DAS or CAS.
+#'  With both of the above options the output generates two new columns,
+#'  `is_open_data_das` and `is_open_code_cas`, which give the detections for only
+#'  the DAS and CAS, respectively, as opposed to the detections based on the full
+#'  screen (`is_open_data`, `is_open_code`).
 #'  If set to "legacy", then the full text (without references) will be screened
 #'  immediately. Caution is to be used with this setting, as the special detection
 #'  algorithm for DAS is not applied here and DAS in papers with complex layouts,
