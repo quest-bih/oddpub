@@ -156,56 +156,56 @@ context("insert flagging")
 
 test_that("figures", {
   wiley_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(45, 259, 244, 294))
 
   wiley_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
      expect_equal(c(306, 534, 244, 294))
 
   wiley_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(45, 261, 247, 267))
 
   wiley_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(45, 270, 492, 521))
 
   wiley_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(3) |>
     expect_equal(c(45, 282, 642, 652))
 
   wiley_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(45, 261, 627, 637))
 
   wiley_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(45, 527, 323, 335))
 
   springer_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1007") |>
+    .clear_margins(pdf_filename = "10.1007") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
@@ -217,146 +217,146 @@ test_that("figures", {
   #   .extract_insert_dim(1)
 
   cell_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1016+j.celrep") |>
+    .clear_margins(pdf_filename = "10.1016+j.celrep") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(384, 537, 101, 319))
 
   nature_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.1038") |>
+    .clear_margins(pdf_filename = "10.1038") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(3) |>
     expect_equal(c(301, 542, 290, 363))
 
   jama_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .clear_margins(pdf_filename = "10.1001+jama") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(72, 524, 70, 606))
 
   tand_paper[[9]] |>
-    .clear_margins(PDF_filename = "10.1080") |>
+    .clear_margins(pdf_filename = "10.1080") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(65, 534, 231, 261))
 
   oxford_paper[[2]] |>
-    .clear_margins(PDF_filename = "10.1093") |>
+    .clear_margins(pdf_filename = "10.1093") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(54, 516, 714, 725))
 
   rs_paper[[9]] |>
-    .clear_margins(PDF_filename = "10.1098+rs") |>
+    .clear_margins(pdf_filename = "10.1098+rs") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(42, 541, 477, 525))
 
   frontiers_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.3389+f") |>
+    .clear_margins(pdf_filename = "10.3389+f") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(67, 504, 452, 487))
 
   elife_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.7554+elife") |>
+    .clear_margins(pdf_filename = "10.7554+elife") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(37, 555, 228, 329))
 
   asco_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1200") |>
+    .clear_margins(pdf_filename = "10.1200") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(37, 535, 478, 699))
 
   mdpi_paper[[17]] |>
-    .clear_margins(PDF_filename = "10.3390+toxins") |>
+    .clear_margins(pdf_filename = "10.3390+toxins") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(97, 489, 622, 712))
 
   ios_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.3233") |>
+    .clear_margins(pdf_filename = "10.3233") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(310, 504, 246, 246))
 
   fsf_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.3324") |>
+    .clear_margins(pdf_filename = "10.3324") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(315, 542, 669, 733))
 
   science_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1126") |>
+    .clear_margins(pdf_filename = "10.1126") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(36, 547, 227, 290))
 
   science_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1126") |>
+    .clear_margins(pdf_filename = "10.1126") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(36, 537, 507, 538))
 
   science_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1126") |>
+    .clear_margins(pdf_filename = "10.1126") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(36, 545, 292, 375))
 
   wkh2_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1097") |>
+    .clear_margins(pdf_filename = "10.1097") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(296, 523, 302, 743))
 
   # sp <- science_paper[[6]] |>
-  #   .clear_margins(PDF_filename = "10.1126") |>
+  #   .clear_margins(pdf_filename = "10.1126") |>
   #   .flag_all_inserts() |>
   #   .extract_insert_dim(2) |>
   #   expect_equal(c(36, 340, 405, 708))
 
   pnas_paper[[2]] |>
-    .clear_margins(PDF_filename = "10.1073") |>
+    .clear_margins(pdf_filename = "10.1073") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(35, 270, 621, 731))
 
   pnas_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1073") |>
+    .clear_margins(pdf_filename = "10.1073") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(35, 541, 600, 685))
 
   embo_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1073") |>
+    .clear_margins(pdf_filename = "10.1073") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(225, 512, 343, 364))
 
   karger_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1159") |>
+    .clear_margins(pdf_filename = "10.1159") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -367,161 +367,161 @@ test_that("figures", {
 test_that("regular tables", {
 
   wiley_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(3) |>
     expect_equal(c(306, 537, 46, 188))
 
   wkh_paper[[2]] |> # gapproof!
-    .clear_margins(PDF_filename = "10.1212") |>
+    .clear_margins(pdf_filename = "10.1212") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(47, 536, 46, 674))
 
   springer_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1007") |>
+    .clear_margins(pdf_filename = "10.1007") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(51, 516, 624, 700))
 
   jama_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .clear_margins(pdf_filename = "10.1001+jama") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(72, 528, 233, 429))
 
   cell_paper[[14]] |>
-    .clear_margins(PDF_filename = "10.1016+j.celrep") |>
+    .clear_margins(pdf_filename = "10.1016+j.celrep") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(53, 406, 118, 167))
 
   elsevier_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1016+j.") |>
+    .clear_margins(pdf_filename = "10.1016+j.") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(306, 545, 52, 728))
 
   nature_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.1038") |>
+    .clear_margins(pdf_filename = "10.1038") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(38, 266, 62, 274))
 
   nature_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.1038") |>
+    .clear_margins(pdf_filename = "10.1038") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(38, 267, 311, 523))
 
   tand_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1080") |>
+    .clear_margins(pdf_filename = "10.1080") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(65, 531, 366, 742))
 
   oxford_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1093") |>
+    .clear_margins(pdf_filename = "10.1093") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(54, 535, 45, 662))
 
   rs_paper[[4]] |> # gapproof
-    .clear_margins(PDF_filename = "10.1098+rs") |>
+    .clear_margins(pdf_filename = "10.1098+rs") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(42, 522, 42, 629))
 
   plos_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(36, 545, 490, 703))
 
   plos_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(200, 555, 77, 394))
 
   frontiers_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.3389+f") |>
+    .clear_margins(pdf_filename = "10.3389+f") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(56, 519, 357, 502))
 
   frontiers_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.3389+f") |>
+    .clear_margins(pdf_filename = "10.3389+f") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(56, 533, 591, 744))
 
   r2_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.21203+rs.3.rs") |>
+    .clear_margins(pdf_filename = "10.21203+rs.3.rs") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(37, 545, 37, 623))
 
   mdpi_paper[[14]] |>
-    .add_rel_width() |>.clear_margins(PDF_filename = "10.3390+toxins") |>
+    .add_rel_width() |>.clear_margins(pdf_filename = "10.3390+toxins") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(87, 489, 359, 615))
 
   ios_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.3233") |>
+    .clear_margins(pdf_filename = "10.3233") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(74, 495, 116, 404))
 
   wkh2_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1097") |>
+    .clear_margins(pdf_filename = "10.1097") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(50, 280, 433, 743))
 
   embo_paper[[2]] |>
-    .clear_margins(PDF_filename = "10.15252") |>
+    .clear_margins(pdf_filename = "10.15252") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(46, 539, 509, 728))
 
   bmc_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.15252") |>
+    .clear_margins(pdf_filename = "10.15252") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(56, 287, 88, 379))
 
   bmc_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.15252") |>
+    .clear_margins(pdf_filename = "10.15252") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(304, 528, 258, 726))
 
   karger_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.1159") |>
+    .clear_margins(pdf_filename = "10.1159") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -532,7 +532,7 @@ test_that("regular tables", {
 test_that("horizontal full page tables", {
 
   text_data <- mdpi_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.3390+toxins") |>
+    .clear_margins(pdf_filename = "10.3390+toxins") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
@@ -547,28 +547,28 @@ test_that("horizontal full page tables", {
 test_that("vertical tables", {
 
  tand_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.1080") |>
+    .clear_margins(pdf_filename = "10.1080") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(315, 491, 51, 761))
 
  asco_paper[[3]] |>
-   .clear_margins(PDF_filename = "10.1200") |>
+   .clear_margins(pdf_filename = "10.1200") |>
    .add_rel_width() |>
    .flag_all_inserts() |>
    .extract_insert_dim(1) |>
    expect_equal(c(186, 388, 65, 699))
 
  asco_paper[[4]] |>
-   .clear_margins(PDF_filename = "10.1200") |>
+   .clear_margins(pdf_filename = "10.1200") |>
    .add_rel_width() |>
    .flag_all_inserts() |>
    .extract_insert_dim(1) |>
    expect_equal(c(52, 526, 59, 702))
 
  amegr_paper[[10]] |>
-   .clear_margins(PDF_filename = "10.21037") |>
+   .clear_margins(pdf_filename = "10.21037") |>
    .add_rel_width() |>
    .flag_all_inserts() |>
    .extract_insert_dim(1) |>
@@ -578,14 +578,14 @@ test_that("vertical tables", {
 
 test_that("appendix table with contributions", {
   wkh_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1212") |>
+    .clear_margins(pdf_filename = "10.1212") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(1) |>
     expect_equal(c(47, 273, 46, 629))
 
   wkh_paper[[4]] |>
-    .clear_margins(PDF_filename = "10.1212") |>
+    .clear_margins(pdf_filename = "10.1212") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
@@ -597,42 +597,42 @@ context("page layout estimation")
 
 test_that("two-column layouts", {
   cell_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1016+j.celrep") |>
+    .clear_margins(pdf_filename = "10.1016+j.celrep") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1016+j.celrep") |>
+    .est_col_n(pdf_filename = "10.1016+j.celrep") |>
     floor() |>
     expect_equal(2)
 
   pnas_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1037") |>
+    .clear_margins(pdf_filename = "10.1037") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1037") |>
+    .est_col_n(pdf_filename = "10.1037") |>
     floor() |>
     expect_equal(2)
 
   plos_paper[[1]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1371") |>
+    .est_col_n(pdf_filename = "10.1371") |>
     floor() |>
     expect_equal(2)
 
   plos_paper[[2]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1371") |>
+    .est_col_n(pdf_filename = "10.1371") |>
     floor() |>
     expect_equal(2)
 
   plos_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1371") |>
+    .est_col_n(pdf_filename = "10.1371") |>
     floor() |>
     expect_equal(1)
 
@@ -641,27 +641,27 @@ test_that("two-column layouts", {
 test_that("three column layouts", {
 
   embo_paper[[2]] |>
-    .clear_margins(PDF_filename = "10.15252") |>
+    .clear_margins(pdf_filename = "10.15252") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
     .add_rel_width() |>
-    .est_col_n(PDF_filename = "10.15252") |>
+    .est_col_n(pdf_filename = "10.15252") |>
     floor() |>
     expect_equal(3)
 
   embo_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.15252") |>
+    .clear_margins(pdf_filename = "10.15252") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.15252") |>
+    .est_col_n(pdf_filename = "10.15252") |>
     floor() |>
     expect_equal(3)
 
   science_paper[[7]] |>
-    .clear_margins(PDF_filename = "10.1126") |>
+    .clear_margins(pdf_filename = "10.1126") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(PDF_filename = "10.1126") |>
+    .est_col_n(pdf_filename = "10.1126") |>
     floor() |>
     expect_equal(3)
 
@@ -670,66 +670,66 @@ test_that("three column layouts", {
 test_that("mixed layouts", {
 
   jama_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .clear_margins(pdf_filename = "10.1001+jama") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 3, PDF_filename = "10.1001+jama") |>
+    .add_column_info(cols = 3, pdf_filename = "10.1001+jama") |>
     .extract_col_dim(2) |>
     expect_equal(c(311, 531, 64, 316))
 
   jama_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1001+jama") |>
+    .clear_margins(pdf_filename = "10.1001+jama") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 3, PDF_filename = "10.1001+jama") |>
+    .add_column_info(cols = 3, pdf_filename = "10.1001+jama") |>
     .extract_col_dim(3) |>
     expect_equal(c(72, 206, 345, 716))
 
   pnas_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1037") |>
+    .clear_margins(pdf_filename = "10.1037") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1037") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1037") |>
     .extract_col_dim(2) |>
     expect_equal(c(300, 544, 38, 293))
 
   asco_paper[[9]] |>
-    .clear_margins(PDF_filename = "10.1200") |>
+    .clear_margins(pdf_filename = "10.1200") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1200") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1200") |>
     .extract_col_dim(2) |>
     expect_equal(c(299, 542, 56, 343))
 
   frontiers_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.3389+f") |>
+    .clear_margins(pdf_filename = "10.3389+f") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.3389+f") |>
+    .add_column_info(cols = 2, pdf_filename = "10.3389+f") |>
     .extract_col_dim(2) |>
     expect_equal(c(309, 531, 267, 728))
 
   rs_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1098+rsif") |>
+    .clear_margins(pdf_filename = "10.1098+rsif") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1098+rsif") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1098+rsif") |>
     .extract_col_dim(2) |>
     expect_equal(c(311, 544, 42, 402))
 
   fsf_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.3324") |>
+    .clear_margins(pdf_filename = "10.3324") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.3324") |>
+    .add_column_info(cols = 2, pdf_filename = "10.3324") |>
     .extract_col_dim(2) |>
     expect_equal(c(314, 542, 71, 609))
 
   karger_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1159") |>
+    .clear_margins(pdf_filename = "10.1159") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1159") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1159") |>
     .extract_col_dim(2) |>
     expect_equal(c(304, 536, 62, 104))
 })
@@ -737,114 +737,114 @@ test_that("mixed layouts", {
 test_that("column widths", {
 
   wiley_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1002") |>
+    .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1002") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1002") |>
     .extract_gap_coords() |>
     expect_equal(c(282, 306))
 
   nature_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1038") |>
+    .clear_margins(pdf_filename = "10.1038") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1038") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1038") |>
     .extract_gap_coords() |>
     expect_equal(c(280, 301))
 
   springer_paper[[12]] |>
-    .clear_margins(PDF_filename = "10.1007") |>
+    .clear_margins(pdf_filename = "10.1007") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1007") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1007") |>
     .extract_gap_coords() |>
     expect_equal(c(284, 306))
 
   elsevier_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1016+j.") |>
+    .clear_margins(pdf_filename = "10.1016+j.") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1016+j.") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1016+j.") |>
     .extract_gap_coords() |>
     expect_equal(c(284, 306))
 
   pnas_paper[[10]] |>
-    .clear_margins(PDF_filename = "10.1073") |>
+    .clear_margins(pdf_filename = "10.1073") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1073") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1073") |>
     .extract_gap_coords() |>
     expect_equal(c(276, 300))
 
   tand_paper[[11]] |>
-    .clear_margins(PDF_filename = "10.1080") |>
+    .clear_margins(pdf_filename = "10.1080") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1080") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1080") |>
     .extract_gap_coords() |>
     expect_equal(c(287, 332))
 
   oxford_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.1093") |>
+    .clear_margins(pdf_filename = "10.1093") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1093") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1093") |>
     .extract_gap_coords() |>
     expect_equal(c(308, 318))
 
   bmc_paper[[5]] |>
-    .clear_margins(PDF_filename = "10.1186") |>
+    .clear_margins(pdf_filename = "10.1186") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1186") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1186") |>
     .extract_gap_coords() |>
     expect_equal(c(283, 304))
 
   # asco_paper[[9]] |>
-  #   .clear_margins(PDF_filename = "10.1200") |>
+  #   .clear_margins(pdf_filename = "10.1200") |>
   #   .add_rel_width() |>
   #   .flag_all_inserts() |>
-  #   .add_column_info(cols = 2, PDF_filename = "10.1200") |>
+  #   .add_column_info(cols = 2, pdf_filename = "10.1200") |>
   #   .extract_gap_coords() |>
   #   expect_equal(c(283, 304))
 
   wkh_paper[[3]] |>
-    .clear_margins(PDF_filename = "10.1212") |>
+    .clear_margins(pdf_filename = "10.1212") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1212") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1212") |>
     .extract_gap_coords() |>
     expect_equal(c(285, 307))
 
   degr_paper[[6]] |>
-    .clear_margins(PDF_filename = "10.1515") |>
+    .clear_margins(pdf_filename = "10.1515") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1515") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1515") |>
     .extract_gap_coords() |>
     expect_equal(c(279, 297))
 
   fsf_paper[[8]] |>
-    .clear_margins(PDF_filename = "10.3324") |>
+    .clear_margins(pdf_filename = "10.3324") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.3324") |>
+    .add_column_info(cols = 2, pdf_filename = "10.3324") |>
     .extract_gap_coords() |>
     expect_equal(c(298, 314))
 
   amegr_paper[[16]] |>
-    .clear_margins(PDF_filename = "10.21037") |>
+    .clear_margins(pdf_filename = "10.21037") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.21037") |>
+    .add_column_info(cols = 2, pdf_filename = "10.21037") |>
     .extract_gap_coords() |>
     expect_equal(c(278, 308))
 
   plos_paper[[1]] |>
-    .clear_margins(PDF_filename = "10.1371") |>
+    .clear_margins(pdf_filename = "10.1371") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .add_column_info(cols = 2, PDF_filename = "10.1371") |>
+    .add_column_info(cols = 2, pdf_filename = "10.1371") |>
     .extract_gap_coords() |>
     expect_equal(c(179, 200))
 

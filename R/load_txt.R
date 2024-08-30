@@ -26,18 +26,18 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   txt_filenames <- file.path(pdf_text_folder, txt_filenames)
 
   # produce version of the full texts where all sentences are separate vector elements
-  PDF_text_sentences <- txt_filenames |>
+  pdf_text_sentences <- txt_filenames |>
     furrr::future_map(\(x) .tokenize_sections(x, lowercase = lowercase), .progress = TRUE)
 
-  names(PDF_text_sentences) <- txt_filenames_short
+  names(pdf_text_sentences) <- txt_filenames_short
 
-  return(PDF_text_sentences)
+  return(pdf_text_sentences)
 }
 
 #' search for sentences that were falsely split on abbreviations like accession nr.
 #' and pastes them together again
 #' @noRd
-.correct_tokenization <- function(PDF_text)
+.correct_tokenization <- function(pdf_text)
 {
   regex_to_correct <- c(
     "a?cc(ession)? nrs?\\.$",
@@ -59,8 +59,8 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   ) |>
     paste(collapse = "|")
 
-  PDF_text_corrected <- PDF_text
-  sentence_paste_idx <- PDF_text  |>
+  pdf_text_corrected <- pdf_text
+  sentence_paste_idx <- pdf_text  |>
     stringr::str_sub(-14, -1) |>
     stringr::str_detect(regex_to_correct) |>
     which()
@@ -70,30 +70,30 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   {
     for(i in 1:length(sentence_paste_idx))
     {
-      PDF_text_corrected <- .paste_idx(PDF_text_corrected, sentence_paste_idx[i]-(i-1))
+      pdf_text_corrected <- .paste_idx(pdf_text_corrected, sentence_paste_idx[i]-(i-1))
     }
   }
 
-  return(PDF_text_corrected)
+  return(pdf_text_corrected)
 }
 
 #' paste together sentences where tokenization needs to be corrected by index
 #' @noRd
 
-.paste_idx <- function(PDF_text, idx)
+.paste_idx <- function(pdf_text, idx)
 {
   #create dummy sentences such that the indexing always works correctly,
-  #even with only one element in PDF_text
-  PDF_text_pasted <- c("x", PDF_text, "x")
+  #even with only one element in pdf_text
+  pdf_text_pasted <- c("x", pdf_text, "x")
   idx <- idx + 1 #shift idx due to dummy sentence
 
-  PDF_text_pasted <- c(PDF_text_pasted[1:(idx-1)],
-                       paste(PDF_text_pasted[idx], PDF_text_pasted[idx+1]),
-                       PDF_text_pasted[(idx+2):length(PDF_text_pasted)])
+  pdf_text_pasted <- c(pdf_text_pasted[1:(idx-1)],
+                       paste(pdf_text_pasted[idx], pdf_text_pasted[idx+1]),
+                       pdf_text_pasted[(idx+2):length(pdf_text_pasted)])
   #remove dummy elemets
-  PDF_text_pasted <- PDF_text_pasted[c(-1, -length(PDF_text_pasted))]
+  pdf_text_pasted <- pdf_text_pasted[c(-1, -length(pdf_text_pasted))]
 
-  return(PDF_text_pasted)
+  return(pdf_text_pasted)
 }
 # tok <- tibble(text = tok)
 #' format

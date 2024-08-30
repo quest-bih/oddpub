@@ -3,9 +3,9 @@ context("individual keywords")
 keywords <- .create_keyword_list()
 
 
-.keyword_search_tokenized_2 <- function(PDF_text_sentences)
+.keyword_search_tokenized_2 <- function(pdf_text_sentences)
 {
-  return(PDF_text_sentences |>
+  return(pdf_text_sentences |>
     .keyword_search_full() |>
     .keyword_search_tokenized())
 }
@@ -269,15 +269,15 @@ test_that("supp_table_data",
 
 test_that("data_availability_statement",
           {
-            expect_true(.has_DAS("<section> data availability word word word word word doi", keywords))
-            expect_true(.has_DAS("<section> data sharing word word word word word GSE77534", keywords))
-            expect_true(.has_DAS("<section> availability of data and materials word word word word word figshare", keywords))
-            expect_true(.has_DAS("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
-            expect_true(.has_DAS("<section> data availability word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
-            expect_true(.has_DAS("<section> Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower(), keywords))
-            expect_true(.has_DAS("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
-            expect_false(.has_DAS("doi word word word word word data availability", keywords))
-            expect_false(.has_DAS("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
+            expect_true(.has_das("<section> data availability word word word word word doi", keywords))
+            expect_true(.has_das("<section> data sharing word word word word word GSE77534", keywords))
+            expect_true(.has_das("<section> availability of data and materials word word word word word figshare", keywords))
+            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
+            expect_true(.has_das("<section> data availability word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
+            expect_true(.has_das("<section> Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower(), keywords))
+            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
+            expect_false(.has_das("doi word word word word word data availability", keywords))
+            expect_false(.has_das("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
           })
 
 

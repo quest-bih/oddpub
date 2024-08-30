@@ -1,7 +1,7 @@
 #' @noRd
-.create_output_filename <- function(PDF_filename, output_folder)
+.create_output_filename <- function(pdf_filename, output_folder)
 {
-  output_filename <- PDF_filename |>
+  output_filename <- pdf_filename |>
     stringr::str_replace(stringr::fixed(".pdf"),
                          stringr::fixed(".txt"))
   output_filename <- utils::tail(stringr::str_split(output_filename, stringr::fixed("/"))[[1]],1)
@@ -14,21 +14,22 @@
 #' @noRd
 
 
-.pdf_to_text <- function(PDF_filename, output_folder, overwriteExistingFiles = FALSE, addSectionTags = TRUE) {
+.pdf_to_text <- function(pdf_filename, output_folder, overwrite_existing_files = FALSE,
+                         add_section_tags = TRUE) {
   success <- FALSE
-  output_filename <- .create_output_filename(PDF_filename, output_folder)
+  output_filename <- .create_output_filename(pdf_filename, output_folder)
 
-  if(!file.exists(PDF_filename)) {
+  if(!file.exists(pdf_filename)) {
     print("PDF file does not exist!")
-  } else if(file.exists(output_filename) && overwriteExistingFiles == FALSE) {
+  } else if(file.exists(output_filename) && overwrite_existing_files == FALSE) {
     print("Output file already exists!")
     success <- TRUE
   } else  {
     tryCatch({
       suppressWarnings({
-        text <- pdftools::pdf_data(PDF_filename, font_info = TRUE) |>
-          furrr::future_map_chr(\(x) .textbox_to_str(x, PDF_filename, addSectionTags = addSectionTags))
-          # purrr::map_chr(\(x) .textbox_to_str(x, PDF_filename))
+        text <- pdftools::pdf_data(pdf_filename, font_info = TRUE) |>
+          furrr::future_map_chr(\(x) .textbox_to_str(x, pdf_filename, add_section_tags = add_section_tags))
+          # purrr::map_chr(\(x) .textbox_to_str(x, pdf_filename))
       })
       cat(text, file = output_filename)
       success <- TRUE
@@ -37,7 +38,7 @@
     })
   }
 
-  names(success) <- PDF_filename
+  names(success) <- pdf_filename
   return(success)
 }
 
@@ -45,14 +46,14 @@
 #' calculate the estimated number of columns, based on the mean return symbol per line
 #'
 #' @noRd
-.est_col_n <- function(text_data, PDF_filename) {
+.est_col_n <- function(text_data, pdf_filename) {
 
   ralc <- space <- text <- y <- x <- line_n <-
     has_jama <- text_left_margin <- insert <-
     dac <- contrib <- rel_width <- font_size <-
     n_cols <- ret_per_line <- NULL
 
-  if (stringr::str_detect(PDF_filename, "10\\.3390|e(L|l)ife")) return(1)
+  if (stringr::str_detect(pdf_filename, "10\\.3390|e(L|l)ife")) return(1)
 
 
   text_data <- text_data |>
@@ -61,7 +62,7 @@
   if (nrow(text_data) < 5) return(1)
 
   # for PLoS articles
-  if (stringr::str_detect(PDF_filename, "10\\.1371")) {
+  if (stringr::str_detect(pdf_filename, "10\\.1371")) {
     text_left_margin <- text_data |>
       dplyr::filter(x < 200) |>
       nrow()
@@ -101,7 +102,7 @@
                                            1, 0)) |>
     dplyr::summarise(contrib = sum(contrib, na.rm = TRUE)) |>
     dplyr::pull(contrib) |>
-    as.logical() & stringr::str_detect(PDF_filename, "14651858")
+    as.logical() & stringr::str_detect(pdf_filename, "14651858")
   # if ralc is detected, force single-column layout
   generated_statement_present <- text_data |>
     dplyr::mutate(dac = dplyr::if_else(dplyr::lag(space) == FALSE & text == "The" &
@@ -514,7 +515,7 @@ Mode <- function(x) {
 
 #' add a column called column that splits the layout in the appropriate number of columns
 #' @noRd
-.add_column_info <- function(text_data, cols, PDF_filename) {
+.add_column_info <- function(text_data, cols, pdf_filename) {
 # text_data <- flagged_text_data
 
   x <- y <- space <- text <- n <- column <- insert <-
@@ -527,9 +528,9 @@ Mode <- function(x) {
 
   min_x <- dplyr::case_when(
     cols == 1 ~ 150,
-    stringr::str_detect(PDF_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
-    stringr::str_detect(PDF_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
-    stringr::str_detect(PDF_filename, "10\\.3389\\+f|10\\.1016\\+j\\.eclinm") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers, for j.eclinm
+    stringr::str_detect(pdf_filename, "10\\.1371") & cols == 2 ~ 199, # for plos journals # check if necessary
+    stringr::str_detect(pdf_filename, "10\\.3324") & cols == 2 ~ 370, # for haematology
+    stringr::str_detect(pdf_filename, "10\\.3389\\+f|10\\.1016\\+j\\.eclinm") & cols == 2 ~ .find_midpage_x(text_data, 170), # for frontiers, for j.eclinm
 
     cols == 2 ~ .find_midpage_x(text_data),
     cols == 3 ~ .find_cols_left_x(text_data)$x[2],
@@ -542,26 +543,26 @@ Mode <- function(x) {
 
   layout_divider_y <- 800
 
-  if (stringr::str_detect(PDF_filename, "j\\.(jclinepi|ejc)")) {
+  if (stringr::str_detect(pdf_filename, "j\\.(jclinepi|ejc)")) {
     layout_divider_y <- .get_elsevier_divider_y(text_data)
     min_x <- .find_midpage_x(text_data |>
                                dplyr::filter(y > layout_divider_y))
 
-  } else if (stringr::str_detect(PDF_filename, "10\\.1001\\+jama")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1001\\+jama")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "ARTICLE") &
                       stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
       dplyr::pull(y)
     min_x <- .find_cols_left_x(text_data)$x[2]
     if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182|10\\.1128")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182|10\\.1128")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
       dplyr::mutate(y = y - 10) |>
       dplyr::pull(y)
     if (purrr::is_empty(layout_divider_y) | length(layout_divider_y) > 1) layout_divider_y <- 800
     if (layout_divider_y == min(text_data$y)) layout_divider_y <- 800
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+(s41|ncomms)")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1038\\+(s41|ncomms)")) {
     cc_tag_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "creativecommons.org")) |>
       # dplyr::mutate(y = y + 20) |>
@@ -589,7 +590,7 @@ Mode <- function(x) {
       layout_divider_y <- 800
     }
 
-  } else if (stringr::str_detect(PDF_filename, "jneurosci")) {
+  } else if (stringr::str_detect(pdf_filename, "jneurosci")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Significance|Received|Introduction"))
 
@@ -600,7 +601,7 @@ Mode <- function(x) {
     }
     min_x <- .find_midpage_x(text_data |>
                                dplyr::filter(y > layout_divider_y))
-  } else if (stringr::str_detect(PDF_filename, "10\\.2196")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.2196")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Acknowledgments") & dplyr::lag(space) == FALSE) |>
       dplyr::mutate(y = y - 10) |>
@@ -610,7 +611,7 @@ Mode <- function(x) {
     } else {
       min_x <- 800
     }
-  } else if (stringr::str_detect(PDF_filename, "10\\.1037")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1037")) {
 
     affils <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Author") &
@@ -635,7 +636,7 @@ Mode <- function(x) {
 
     if (has_mixed_layout == TRUE) {
       cols <- .est_col_n(text_data |>
-                           dplyr::filter(y < layout_divider_y), PDF_filename)
+                           dplyr::filter(y < layout_divider_y), pdf_filename)
 
       if (cols > 1) {
         col_predevider_x_est <- .find_midpage_x(text_data |>
@@ -1302,25 +1303,25 @@ Mode <- function(x) {
 
 #' detect margins and remove text from them, as well as from hidden text layers
 #' @noRd
-.clear_margins <- function(text_data, PDF_filename) {
+.clear_margins <- function(text_data, pdf_filename) {
 
   x <- y <- width <- text <- height <- width <- space <- x_jump_size <-
     font_name <- font_size <- NULL
 
   # remove hidden text tags and layers in various journals
-  if (stringr::str_detect(PDF_filename, "10\\.1016\\+j\\.(ecl|pul)")) {
+  if (stringr::str_detect(pdf_filename, "10\\.1016\\+j\\.(ecl|pul)")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "DOHGPO+AdvP48722B",
                     font_size > 6.5) |>
       dplyr::mutate(text = stringr::str_remove(text, "Tag$"))
 
-  } else if (stringr::str_detect(PDF_filename, "10\\.1038\\+s41")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1038\\+s41")) {
     text_data <- text_data |>
       dplyr::filter(font_name != "BBKNAK+AdvTT6780a46b")
-  } else if (stringr::str_detect(PDF_filename, "10\\.1371")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1371")) {
     text_data <- text_data |>
       dplyr::filter(!stringr::str_detect(font_name, "LMNJSZ"))
-  } else if (stringr::str_detect(PDF_filename, "10\\.3390")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.3390")) {
     text_data <- text_data |>
       dplyr::filter(!stringr::str_detect(font_name, "Palatino|Font"))
   }
@@ -1397,20 +1398,15 @@ Mode <- function(x) {
 #' convert the dataframe extracted by pdftools::pdf_data into a one-column string
 #' to be saved as a txt for further processing
 #' @noRd
-.textbox_to_str <- function(text_data, PDF_filename, addSectionTags = TRUE) {
+.textbox_to_str <- function(text_data, pdf_filename, add_section_tags = TRUE) {
 
   x <- y <- column <- line_n <- width <- text <-
-    is_subpscript <- font_size <- font_name <-
-    heading_font <- prop_blank <- jump_size <-
-    space <- dot <- insert <- paragraph_start <-
-    sameline_title <- ends_dot <- newline_heading <-
-    science_section <- plain_section <-
-    section_start <- NULL
+    prop_blank <- jump_size <- NULL
 
   if (nrow(text_data) == 0) return("")
 
   text_data <- text_data |>
-    .clear_margins(PDF_filename) |>
+    .clear_margins(pdf_filename) |>
     dplyr::mutate(insert = 0) |>
     .add_rel_width()
 
@@ -1418,15 +1414,15 @@ Mode <- function(x) {
     text_data <- text_data |>
       .flag_all_inserts()
   }, error = function(e) {
-    print(paste("There were insert parsing issues with", PDF_filename))
+    print(paste("There were insert parsing issues with", pdf_filename))
   })
 
-  cols <- .est_col_n(text_data, PDF_filename) |> floor()
+  cols <- .est_col_n(text_data, pdf_filename) |> floor()
 
   if (nrow(text_data) < 2) return("")
 
   text_data <- text_data |>
-    .add_column_info(cols, PDF_filename)
+    .add_column_info(cols, pdf_filename)
 
   page_width <- .get_page_width(text_data)
 
@@ -1442,7 +1438,7 @@ Mode <- function(x) {
     )) |>
     dplyr::ungroup()
 
- if (addSectionTags == TRUE) text_data <- text_data |>
+ if (add_section_tags == TRUE) text_data <- text_data |>
     .add_section_tags()
 
   text_data |>
@@ -1457,6 +1453,14 @@ Mode <- function(x) {
 #' add section tags
 #' @noRd
 .add_section_tags <- function(text_data) {
+
+  x <- y <- column <- line_n <- text <-
+    is_subpscript <- font_size <- font_name <-
+    heading_font <- prop_blank <- jump_size <-
+    space <- dot <- insert <- paragraph_start <-
+    sameline_title <- ends_dot <- newline_heading <-
+    science_section <- plain_section <-
+    section_start <- NULL
 
   section_jump <- text_data$jump_size[text_data$jump_size > 3] |>
     Mode() * 1.3

@@ -4,37 +4,37 @@
 #' For the PDFconversion requires the pdftools library.
 #' for parallelisation requires the future and furrr libraries.
 #'
-#' @param PDF_folder String of the folder name in which the PDFs are located.
+#' @param pdf_folder String of the folder name in which the PDFs are located.
 #' @param output_folder String of the folder name in which the converted files will be saved.
 #' @param recursive Boolean. If TRUE (the default), then search all the subfolders of the given folder for PDF files.
-#' @param overwriteExistingFiles Boolean. If FALSE (the default) does not overwrite already existing files.
-#' @param addSectionTags Boolean. If TRUE (the default), adds '<section>' tags at the beginning of potential text sections.
+#' @param overwrite_existing_files Boolean. If FALSE (the default) does not overwrite already existing files.
+#' @param add_section_tags Boolean. If TRUE (the default), adds '<section>' tags at the beginning of potential text sections.
 #' This needs to be set to TRUE for later recognition of Data and Code Availability Statements.
 #'
 #' @return Logical vector describing the conversion success for each PDF file.
 #'
 #' @export
-pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE,
-                        overwriteExistingFiles = FALSE, addSectionTags = TRUE) {
+pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
+                        overwrite_existing_files = FALSE, add_section_tags = TRUE) {
 
   #check if dir path has final /, otherwise add
-  # if(PDF_folder |> stringr::str_sub(-1) != "/") {
-  #   PDF_folder <- paste0(PDF_folder, "/")
+  # if(pdf_folder |> stringr::str_sub(-1) != "/") {
+  #   pdf_folder <- paste0(pdf_folder, "/")
   # }
   # if(output_folder |> stringr::str_sub(-1) != "/") {
   #   output_folder <- paste0(output_folder, "/")
   # }
 
-  # PDF_filenames <- list.files(PDF_folder, recursive = recursive)
-  PDF_filenames <- list.files(PDF_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)
+  # pdf_filenames <- list.files(pdf_folder, recursive = recursive)
+  pdf_filenames <- list.files(pdf_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)
 
   # converts PDF file to txt file and saves it to output_folder
   # requires the pdftools library
   # some PDFs make take a very long time to process!
   conversion_success <-
-    suppressWarnings(furrr::future_map_lgl(PDF_filenames,
-                          \(x) .pdf_to_text(x, output_folder, overwriteExistingFiles = overwriteExistingFiles,
-                                            addSectionTags = addSectionTags), .progress = TRUE))
+    suppressWarnings(furrr::future_map_lgl(pdf_filenames,
+                          \(x) .pdf_to_text(x, output_folder, overwrite_existing_files = overwrite_existing_files,
+                                            add_section_tags = add_section_tags), .progress = TRUE))
 
   return(conversion_success)
 }
@@ -51,16 +51,25 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE,
 #' Additionally, Open Code dissemination is detected using keywords categories for source code or
 #' code repositories.
 #'
-#' @param PDF_text_sentences Document corpus loaded with the pdf_load function.
+#' @param pdf_text_sentences Document corpus loaded with the pdf_load function.
 #'
 #' @param extract_sentences Boolean. If TRUE, the sentences in which the Open Data
 #' statements were detected are extracted and added to the results table as well.
 #'
-#' @param stop_if_hit_in_DAS Boolean. If TRUE, the default setting, then first
-#'  the Data availability and Code availability statement or statements (DAS and CAS)
-#'  will be screened and then the full text (without references) will only be screened
-#'  if no open data or data re-use or github data were detected in the DAS and CAS.
-#'  If FALSE, then the full text (without references) will be screened immediately.
+#' @param screen_das How to screen Data availability and Code availability
+#'  statement or statements (DAS and CAS). The default, "priority"
+#'  screens DAS and CAS first if available and then the full text (without references)
+#'  will only be screened if no open data or data re-use or github data were detected
+#'  in the DAS and CAS.
+#'  If set to "extra", the DAS and CAS are screened first, if available, and then
+#'  the full text is also always screened. This is to allow for the detection of
+#'  data re-use, open data, or open code in the main text with an uninformative
+#'  DAS or CAS.
+#'  If set to "legacy", then the full text (without references) will be screened
+#'  immediately. Caution is to be used with this setting, as the special detection
+#'  algorithm for DAS is not applied here and DAS in papers with complex layouts,
+#'  e.g. PLoS, will most likely cause references to data sets to be missed.
+#'
 #'
 #' @return Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus additional columns containing the identified open data/code categories
@@ -69,52 +78,78 @@ pdf_convert <- function(PDF_folder, output_folder, recursive = TRUE,
 #' @examples
 #' \dontrun{
 #' open_data_search(pdf_load("examples/"))
+#' open_data_search(pdf_load("examples/"), screen_das = "extra")
 #' }
 #'
 #' @export
-open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_if_hit_in_DAS = TRUE) {
+open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, screen_das = "priority") {
+# pdf_text_sentences <- pdf_text_corpus
+  screen_das <- match.arg(screen_das, c("priority", "extra", "legacy"))
+  is_open_data <- is_reuse <- open_data_category <- article <-
+    is_open_code <- is_open_data_das <- is_open_code_cas <- NULL
 
-  is_open_data <- is_reuse <- open_data_category <- article <- NULL
+  pdf_text_sentences <- furrr::future_map(pdf_text_sentences, .remove_references)
 
-  PDF_text_sentences <- furrr::future_map(PDF_text_sentences, .remove_references)
+  # pdf_text_sentences <- das_text_sentences
+  das_text_sentences <- pdf_text_sentences |>
+    furrr::future_map(.extract_das)
 
-  # PDF_text_sentences <- DAS_text_sentences
-  DAS_text_sentences <- PDF_text_sentences |>
-    furrr::future_map(.extract_DAS)
-
-  sentences_with_DAS <- DAS_text_sentences |>
-    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(PDF_text_sentences[[idx]])) |> # It is assumed a DAS will not have more than 30 sentences
+  sentences_with_das <- das_text_sentences |>
+    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(pdf_text_sentences[[idx]])) |> # It is assumed a DAS will not have more than 30 sentences
     which()
 
-  CAS_text_sentences <- PDF_text_sentences |>
-    furrr::future_map(.extract_CAS)
+  cas_text_sentences <- pdf_text_sentences |>
+    furrr::future_map(.extract_cas)
 
-  if (stop_if_hit_in_DAS == TRUE) {
-    DAS_CAS <- furrr::future_map2(DAS_text_sentences, CAS_text_sentences, vctrs::vec_c) |>
+  sentences_with_cas <- cas_text_sentences |>
+    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(pdf_text_sentences[[idx]])) |> # It is assumed a CAS will not have more than 30 sentences
+    which()
+
+  sentences_with_das_cas <- intersect(names(sentences_with_das),
+                                      names(sentences_with_cas))
+  i_sentences_with_das_cas <- union(sentences_with_das, sentences_with_cas)
+# screen_das = "extra"
+  if (screen_das == "legacy") {
+    # screen the full text without special treatment of das_cas
+    sentences_full_screen <- rep(TRUE, length(pdf_text_sentences))
+    open_data_results <- NULL
+
+  } else {
+    # when das_cas is to be screened separately
+    das_cas <- furrr::future_map2(das_text_sentences, cas_text_sentences, vctrs::vec_c) |>
       furrr::future_map(unique)
     # search for open data keywords in the full texts or DAS
     print("Screening Data and Code Availability Statements:")
-    keyword_results <- .keyword_search_full(DAS_CAS)
-    open_data_results <- .open_data_detection(DAS_CAS, keyword_results)
-
+    keyword_results <- .keyword_search_full(das_cas)
+    open_data_results <- .open_data_detection(das_cas, keyword_results) |>
+      dplyr::mutate(is_open_data_das = ifelse(article %in% names(sentences_with_das),
+                                              is_open_data, FALSE),
+                    is_open_code_cas = ifelse(article %in% sentences_with_das_cas,
+                                              is_open_code, FALSE))
     # kw <- keyword_results[[1]]
-    sentences_second_pass <- open_data_results |>
-      dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
-                      !stringr::str_detect(open_data_category, "github")) |> # consider second pass also for software?
-      dplyr::pull(article) # extract the not open data cases for double-check in second pass
-    # restrict to cases with DAS only, since full texts were already screened for rest
-    sentences_full_screen <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_DAS)]
-  } else {
-    sentences_full_screen <- rep(TRUE, length(PDF_text_sentences))
-    open_data_results <- NULL
+
+    if (screen_das == "priority") { # with "priority" only screen cases where no open data
+      # re-use or github was detected in the das_cas
+      sentences_second_pass <- open_data_results |>
+        dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
+                        !stringr::str_detect(open_data_category, "github")) |>
+        dplyr::pull(article) # extract the not open data cases for double-check in second pass
+      # restrict to cases with DAS only, since full texts was already screened for rest
+      sentences_full_screen <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_das)]
+    } else { # with "extra", all cases where only das_cas was screened, have to be screened again,
+      # this time in full
+      sentences_full_screen <- i_sentences_with_das_cas
+
+    }
   }
+
   # screen full text of second-pass cases
-  # do this only for subset of cases, as this is the most time-consuming step
+
   if (length(sentences_full_screen) > 0) {
     print("Screening full text of articles:")
 
-    keyword_full_screen <- .keyword_search_full(PDF_text_sentences[sentences_full_screen])
-    open_data_full_screen <- .open_data_detection(PDF_text_sentences[sentences_full_screen], keyword_full_screen)
+    keyword_full_screen <- .keyword_search_full(pdf_text_sentences[sentences_full_screen])
+    open_data_full_screen <- .open_data_detection(pdf_text_sentences[sentences_full_screen], keyword_full_screen)
 
     if (!rlang::is_null(open_data_results)) {
       open_data_cat_old <- open_data_results |>
@@ -132,7 +167,9 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_
         purrr::list_assign(!!!keyword_full_screen)
 
       open_data_results <- open_data_results |>
-        dplyr::rows_upsert(open_data_full_screen, by = "article")
+        dplyr::rows_upsert(open_data_full_screen, by = "article") |>
+        dplyr::mutate(is_open_data = is_open_data | is_open_data_das,
+                      is_open_code = is_open_code | is_open_code_cas)
     } else {
       open_data_results <- open_data_full_screen
     }
@@ -141,22 +178,12 @@ open_data_search <- function(PDF_text_sentences, extract_sentences = TRUE, stop_
   print("Consolidating data:")
 
   #extract detected sentences as well
-  if(extract_sentences == TRUE)
-  {
-    detected_sentences <- .open_data_sentences(PDF_text_sentences, DAS_text_sentences, sentences_with_DAS,
-                                               CAS_text_sentences, keyword_results)
+  if(extract_sentences == TRUE) {
+    detected_sentences <- .open_data_sentences(pdf_text_sentences, das_text_sentences, sentences_with_das,
+                                               cas_text_sentences, keyword_results)
     open_data_results <- cbind(open_data_results, detected_sentences[, -1]) |>
       dplyr::as_tibble()
-    # |>
-    #   dplyr::mutate(has_only_unknown = .has_url(das) & !is_open_data & !is_reuse, # check for unknown website
-    #     open_data_category = dplyr::case_when(
-    #       has_only_unknown & stringr::str_length(open_data_category) > 0 ~ paste0(open_data_category, ", unknown url/accnr"),
-    #       has_only_unknown & stringr::str_length(open_data_category) == 0 ~ "unknown url/accnr",
-    #       .default = open_data_category)) |>
-    #   dplyr::select(-has_only_unknown)
   }
 
   return(open_data_results)
 }
-
-

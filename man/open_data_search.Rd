@@ -5,22 +5,30 @@
 \title{Seach for open data & open code keywords.}
 \usage{
 open_data_search(
-  PDF_text_sentences,
+  pdf_text_sentences,
   extract_sentences = TRUE,
-  stop_if_hit_in_DAS = TRUE
+  screen_das = "priority"
 )
 }
 \arguments{
-\item{PDF_text_sentences}{Document corpus loaded with the pdf_load function.}
+\item{pdf_text_sentences}{Document corpus loaded with the pdf_load function.}
 
 \item{extract_sentences}{Boolean. If TRUE, the sentences in which the Open Data
 statements were detected are extracted and added to the results table as well.}
 
-\item{stop_if_hit_in_DAS}{Boolean. If TRUE, the default setting, then first
-the Data availability and Code availability statement or statements (DAS and CAS)
-will be screened and then the full text (without references) will only be screened
-if no open data or data re-use or github data were detected in the DAS and CAS.
-If FALSE, then the full text (without references) will be screened immediately.}
+\item{screen_das}{How to screen Data availability and Code availability
+statement or statements (DAS and CAS). The default, "priority"
+screens DAS and CAS first if available and then the full text (without references)
+will only be screened if no open data or data re-use or github data were detected
+in the DAS and CAS.
+If set to "extra", the DAS and CAS are screened first, if available, and then
+the full text is also always screened. This is to allow for the detection of
+data re-use, open data, or open code in the main text with an uninformative
+DAS or CAS.
+If set to "legacy", then the full text (without references) will be screened
+immediately. Caution is to be used with this setting, as the special detection
+algorithm for DAS is not applied here and DAS in papers with complex layouts,
+e.g. PLoS, will most likely cause references to data sets to be missed.}
 }
 \value{
 Tibble with one row per screened document and the filename and logical values for open data
@@ -40,6 +48,7 @@ code repositories.
 \examples{
 \dontrun{
 open_data_search(pdf_load("examples/"))
+open_data_search(pdf_load("examples/"), screen_das = "extra")
 }
 
 }

@@ -626,13 +626,13 @@ supplement <- c("supporting information",
                                  dist = 12)
   keyword_list[["supp_table_data"]] <- supp_table_data
 
-  # data_in_DAS <- .near_wd(data_availability,
+  # data_in_das <- .near_wd(data_availability,
   #                                         paste(
   #                                           accession_nr, repositories,
   #                                           weblink,
   #                                           sep = "|"),
   #                                         dist = 30)
-  # keyword_list[["data_in_DAS"]] <- data_in_DAS
+  # keyword_list[["data_in_das"]] <- data_in_das
 
   return(keyword_list)
 }
@@ -733,7 +733,7 @@ supplement <- c("supporting information",
 }
 
 # publ_sentences <- "data availability source data are provided with this paper."
-# publ_sentences <- PDF_text_sentences[[1]]
+# publ_sentences <- pdf_text_sentences[[1]]
 # publ_sentences <- DAS
 
 #' apply all keyword category searches onto each sentence of the publications
@@ -778,7 +778,7 @@ supplement <- c("supporting information",
 
   return(detection_col)
 }
-# sections_v <- PDF_text_sentences[DAS_start:DAS_end]
+# sections_v <- pdf_text_sentences[das_start:das_end]
 # sections_v <- DAS
 #' search plos DAS when spread over two pages
 #' @noRd
@@ -813,10 +813,10 @@ supplement <- c("supporting information",
   # }
 
 }
-# sentence <- PDF_text_sentences[927]
+# sentence <- pdf_text_sentences[927]
 #' test if text contains data availability statement
 #' @noRd
-.has_DAS <- function(sentence, keyword_list) {
+.has_das <- function(sentence, keyword_list) {
 
   data_availability <- keyword_list[["data_availability"]]
 
@@ -825,112 +825,112 @@ supplement <- c("supporting information",
 }
 
 # sentence <- "<section> data availability"
-# .has_DAS(sentence)
+# .has_das(sentence)
 
 #' extract data availability statement
 #' @noRd
-.extract_DAS <- function(PDF_text_sentences) {
+.extract_das <- function(pdf_text_sentences) {
 
   keyword_list <- .create_keyword_list()
 
   data_availability <- keyword_list[["data_availability"]]
 
 
-  DAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
+  das_detections <- furrr::future_map_lgl(pdf_text_sentences,
                       \(sentence) stringr::str_detect(sentence, data_availability))
 
-  if (sum(DAS_detections) > 0) {
-    DAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
-                                            \(sentence) .has_DAS(sentence, keyword_list))
+  if (sum(das_detections) > 0) {
+    das_detections <- furrr::future_map_lgl(pdf_text_sentences,
+                                            \(sentence) .has_das(sentence, keyword_list))
   }
 
-  DAS_start <- which(DAS_detections)
+  das_start <- which(das_detections)
 
-  if (length(DAS_start) == 2) {
+  if (length(das_start) == 2) {
     # select detection with statement
-    statement_detections <- PDF_text_sentences[DAS_start] |>
+    statement_detections <- pdf_text_sentences[das_start] |>
       stringr::str_detect("statement")
     # select detection without "data
-    quotation_detections <- !stringr::str_detect(PDF_text_sentences[DAS_start], '\\"data')
+    quotation_detections <- !stringr::str_detect(pdf_text_sentences[das_start], '\\"data')
     if (sum(quotation_detections) == 1) {
-      DAS_start <- DAS_start[quotation_detections] # select detection without "data
+      das_start <- das_start[quotation_detections] # select detection without "data
     } else if (sum(statement_detections) == 1) {
-      DAS_start <- DAS_start[statement_detections] # select detection with statement
+      das_start <- das_start[statement_detections] # select detection with statement
     } else {
-      DAS_start <- min(DAS_start)
+      das_start <- min(das_start)
     }
 
     # if more than two detections of DAS were made, then return full document
-  } else if (length(DAS_start) != 1) {
-    return(PDF_text_sentences)
+  } else if (length(das_start) != 1) {
+    return(pdf_text_sentences)
   }
 
 
-  str_DAS <- PDF_text_sentences[DAS_start] |>
+  str_das <- pdf_text_sentences[das_start] |>
     stringr::str_trim()
-  str_DAS_sameline <- str_DAS |>
+  str_das_sameline <- str_das |>
     stringr::str_remove(data_availability) |>
     stringr::str_remove("<section> ")
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
-  DAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + 1):length(PDF_text_sentences)],
+  das_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(das_start + 1):length(pdf_text_sentences)],
                                          \(sentence) stringr::str_detect(sentence, "(section|insert|iend)> (?!d )|^\\d\\.")) |>
     which() - 1
 
-  # if (length(PDF_text_sentences) - DAS_start <= 2) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
+  # if (length(pdf_text_sentences) - das_start <= 2) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
   if (
-    length(DAS_end_candidates) == 0 |
-    (length(DAS_end_candidates) == 1 & DAS_end_candidates[1] == 0) |
-    purrr::is_empty(DAS_end_candidates)
-      ) return(PDF_text_sentences[DAS_start:length(PDF_text_sentences)])
+    length(das_end_candidates) == 0 |
+    (length(das_end_candidates) == 1 & das_end_candidates[1] == 0) |
+    purrr::is_empty(das_end_candidates)
+      ) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
-  completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[DAS_start + DAS_end_candidates],
+  completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[das_start + das_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "\\..?$"))
 
-  if (stringr::str_length(str_DAS_sameline) < 5 & str_DAS_sameline != "." ) {
-    # first_sentence <- DAS_start + 1
+  if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != "." ) {
+    # first_sentence <- das_start + 1
 
-    DAS_end <- DAS_end_candidates[-1][completed_sentences[-1]][1]#
+    das_end <- das_end_candidates[-1][completed_sentences[-1]][1]#
 
 
 
   } else {
-    DAS_end <- DAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+    das_end <- das_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
 
-    if (DAS_start / length(DAS_detections) < 0.1 & DAS_end != 0) { # for plos journals with DAS on first page
+    if (das_start / length(das_detections) < 0.1 & das_end != 0) { # for plos journals with DAS on first page
 
-      DAS_second_part <- furrr::future_map_lgl(PDF_text_sentences[(DAS_start + DAS_end + 1):length(PDF_text_sentences)],
+      das_second_part <- furrr::future_map_lgl(pdf_text_sentences[(das_start + das_end + 1):length(pdf_text_sentences)],
                                                \(sentence) stringr::str_detect(sentence, "<section> funding:"))
 
-      if (sum(DAS_second_part) == 0) {
-        DAS_end <- DAS_end
+      if (sum(das_second_part) == 0) {
+        das_end <- das_end
         } else {
-          DAS_end <- DAS_end + which(DAS_second_part) - 1
+          das_end <- das_end + which(das_second_part) - 1
         }
     }
   }
 
-  if (is.na(DAS_end)) {
+  if (is.na(das_end)) {
 
     if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
-      DAS_end <- length(PDF_text_sentences) - DAS_start
+      das_end <- length(pdf_text_sentences) - das_start
     } else {
-      DAS_end <- min(DAS_end_candidates[DAS_end_candidates > 0], length(PDF_text_sentences) - DAS_start)
+      das_end <- min(das_end_candidates[das_end_candidates > 0], length(pdf_text_sentences) - das_start)
     }
 
   }
 
-  if (DAS_start + DAS_end > length(PDF_text_sentences)) {
-    DAS_end <- DAS_start
+  if (das_start + das_end > length(pdf_text_sentences)) {
+    das_end <- das_start
   }
 
-  DAS_end <- DAS_start + DAS_end
+  das_end <- das_start + das_end
 
-  DAS <- PDF_text_sentences[DAS_start:DAS_end]
+  DAS <- pdf_text_sentences[das_start:das_end]
 
-  if (DAS_start < 50 & any(stringr::str_detect(PDF_text_sentences[1:10], "plos"))) {
+  if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"))) {
     DAS <- .splice_plos_twopager(DAS)
   }
    DAS |>
@@ -952,65 +952,65 @@ supplement <- c("supporting information",
 
 #' extract code availability statement
 #' @noRd
-.extract_CAS <- function(PDF_text_sentences) {
+.extract_cas <- function(pdf_text_sentences) {
 
   keyword_list <- .create_keyword_list()
 
   code_availability <- keyword_list[["code_availability"]]
 
-  CAS_detections <- furrr::future_map_lgl(PDF_text_sentences,
+  cas_detections <- furrr::future_map_lgl(pdf_text_sentences,
                                           \(sentence) stringr::str_detect(sentence, code_availability))
 
-  CAS_start <- which(CAS_detections)
+  cas_start <- which(cas_detections)
 
-  if (length(CAS_start) == 2) {
-    CAS_start <- max(CAS_start)
-  } else if (length(CAS_start) != 1 ) {
+  if (length(cas_start) == 2) {
+    cas_start <- max(cas_start)
+  } else if (length(cas_start) != 1 ) {
     return("")
   }
 
-  str_CAS <- PDF_text_sentences[CAS_start] |>
+  str_cas <- pdf_text_sentences[cas_start] |>
     stringr::str_trim()
-  str_CAS_sameline <- str_CAS |>
+  str_cas_sameline <- str_cas |>
     stringr::str_remove(code_availability) |>
     stringr::str_remove("<section> ")
 
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
-  CAS_end_candidates <- furrr::future_map_lgl(PDF_text_sentences[(CAS_start + 1):length(PDF_text_sentences)],
+  cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
                                               \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
     which() - 1
   # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
-  completed_sentences <- furrr::future_map_lgl(PDF_text_sentences[CAS_start + CAS_end_candidates],
+  completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "\\.$"))
 
-  if (stringr::str_length(str_CAS_sameline) < 5) {
-    # first_sentence <- DAS_start + 1
+  if (stringr::str_length(str_cas_sameline) < 5) {
+    # first_sentence <- das_start + 1
 
-    CAS_end <- CAS_end_candidates[-1][completed_sentences[-1]][1]#
+    cas_end <- cas_end_candidates[-1][completed_sentences[-1]][1]#
 
   } else {
-    CAS_end <- CAS_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+    cas_end <- cas_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
   }
 
-  if (is.na(CAS_end)) {
-    CAS_end <- min(CAS_end_candidates)
+  if (is.na(cas_end)) {
+    cas_end <- min(cas_end_candidates)
 
     if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
-      CAS_end <- length(PDF_text_sentences) - CAS_start
+      cas_end <- length(pdf_text_sentences) - cas_start
     } else {
-      CAS_end <- min(CAS_end_candidates[CAS_end_candidates > 0], length(PDF_text_sentences) - CAS_start)
+      cas_end <- min(cas_end_candidates[cas_end_candidates > 0], length(pdf_text_sentences) - cas_start)
     }
   }
 
-  if (CAS_start + CAS_end > length(PDF_text_sentences)) {
-    CAS_end <- length(PDF_text_sentences) - CAS_start
+  if (cas_start + cas_end > length(pdf_text_sentences)) {
+    cas_end <- length(pdf_text_sentences) - cas_start
   }
 
-  CAS_end <- CAS_start + CAS_end
+  cas_end <- cas_start + cas_end
 
-  PDF_text_sentences[CAS_start:CAS_end] |>
+  pdf_text_sentences[cas_start:cas_end] |>
     # .splice_plos_twopager() |>
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
@@ -1025,9 +1025,9 @@ supplement <- c("supporting information",
 
 #'
 #' @noRd
-.remove_references <- function(PDF_text_sentences)
+.remove_references <- function(pdf_text_sentences)
 {
-  line_before_refs <- PDF_text_sentences |>
+  line_before_refs <- pdf_text_sentences |>
     stringr::str_detect("<section> r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
 
@@ -1035,12 +1035,12 @@ supplement <- c("supporting information",
 
   if (sum(line_before_refs) == 0) {
     # if no references detected
-    return(PDF_text_sentences)
+    return(pdf_text_sentences)
   }
 
   # for journals that print useful information after the references (Elsevier, Science, etc.)
   line_after_refs <- suppressWarnings(
-    PDF_text_sentences |>
+    pdf_text_sentences |>
       stringr::str_detect("<section> (star\\+methods|acknowledge?ments:?|open data)|<insert> key resources table") |>
       which() |>
       max()
@@ -1050,17 +1050,17 @@ supplement <- c("supporting information",
 
   # excise references for special case Elsevier journals
   if (line_after_refs > line_before_refs) {
-    return(c(PDF_text_sentences[1:line_before_refs],
-             PDF_text_sentences[line_after_refs:length(PDF_text_sentences)]))
+    return(c(pdf_text_sentences[1:line_before_refs],
+             pdf_text_sentences[line_after_refs:length(pdf_text_sentences)]))
   }
   # excise references for most journals
-  PDF_text_sentences[1:line_before_refs]
+  pdf_text_sentences[1:line_before_refs]
 
 }
 # kw <- keyword_results_combined[[1]]
 #'
 #' @noRd
-.keyword_search_full <- function(PDF_text_sentences)
+.keyword_search_full <- function(pdf_text_sentences)
 {
 
   data <- grant <- weblink <- reuse <- available <- not_available <-
@@ -1071,9 +1071,9 @@ supplement <- c("supporting information",
     com_request <- com_unknown_source <- NULL
 
 # odc <- open_data_categories[[1]]
-  # PDF_text_sentences <- publ_sentences
+  # pdf_text_sentences <- publ_sentences
   # search for open data keywords in the full texts
-  open_data_categories <- furrr::future_map(PDF_text_sentences, .map_keywords, .progress = TRUE)
+  open_data_categories <- furrr::future_map(pdf_text_sentences, .map_keywords, .progress = TRUE)
 
   # combine columns for the different open data keywords
   keyword_results_combined <- open_data_categories  |>
@@ -1126,12 +1126,12 @@ supplement <- c("supporting information",
 
 #' search for nearby words on the full text, part of the keyword search
 #' @noRd
-.keyword_search_near_wd <- function(PDF_text_sentences, extract_text = FALSE)
+.keyword_search_near_wd <- function(pdf_text_sentences, extract_text = FALSE)
 {
   keyword_list <- .create_keyword_list()
 
   # needs text input in two formats: split into sentences, and one long string for
-  PDF_text_full <- PDF_text_sentences |>
+  pdf_text_full <- pdf_text_sentences |>
     furrr::future_map_if(.p = \(sentence) length(sentence) > 1,
                          .f = \(sentence) paste(sentence, collapse = " "))
 
@@ -1145,9 +1145,9 @@ supplement <- c("supporting information",
     map_function <- furrr::future_map_lgl
   }
   keyword_results_near_wd <- dplyr::tibble(
-    com_file_formats = map_function(PDF_text_full, str_function,
+    com_file_formats = map_function(pdf_text_full, str_function,
                                     pattern = keyword_list[["all_data_file_formats"]]),
-    com_supplemental_data = map_function(PDF_text_full, str_function,
+    com_supplemental_data = map_function(pdf_text_full, str_function,
                                          pattern = keyword_list[["supp_table_data"]])
     )
 
@@ -1171,11 +1171,11 @@ supplement <- c("supporting information",
 #' additional Open Data check: check if PDF DOI stems from a list of Data Journals
 #' requires that the PDF filename is the DOI
 #' @noRd
-.check_journal_doi <- function(PDF_text_sentences)
+.check_journal_doi <- function(pdf_text_sentences)
 {
   keyword_list <- .create_keyword_list()
 
-  dois <- names(PDF_text_sentences) |>
+  dois <- names(pdf_text_sentences) |>
     stringr::str_replace_all(stringr::fixed("+"), stringr::fixed("/")) |>
     stringr::str_remove(stringr::fixed(".txt"))
 
@@ -1245,7 +1245,7 @@ supplement <- c("supporting information",
 #---------------------------------------------------------------------
 
 #' @noRd
-.open_data_detection <- function(PDF_text_sentences, keyword_results) {
+.open_data_detection <- function(pdf_text_sentences, keyword_results) {
 
   com_general_repo <- com_specific_repo <- is_data_journal <- com_code <-
     com_suppl_code <- dataset <- com_file_formats <- com_reuse  <-
@@ -1255,8 +1255,8 @@ supplement <- c("supporting information",
 
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
-  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences)
-  data_journal_doi <- .check_journal_doi(PDF_text_sentences)
+  keyword_results_near_wd <- .keyword_search_near_wd(pdf_text_sentences)
+  data_journal_doi <- .check_journal_doi(pdf_text_sentences)
 
   keyword_results_combined <- cbind(keyword_results_tokenized,
                                     keyword_results_near_wd,
@@ -1276,7 +1276,7 @@ supplement <- c("supporting information",
                                                                    com_github_data,
                                                                    com_unknown_source,
                                                                    is_data_journal), .OD_category)) |>
-    tibble::add_column(article = names(PDF_text_sentences)) |>
+    tibble::add_column(article = names(pdf_text_sentences)) |>
     dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code)
 
   return(open_data_publication)
@@ -1284,7 +1284,7 @@ supplement <- c("supporting information",
 
 
 #' @noRd
-.open_data_sentences <- function(PDF_text_sentences, DAS_sentences, sentences_with_DAS, CAS_sentences, keyword_results) {
+.open_data_sentences <- function(pdf_text_sentences, das_sentences, sentences_with_das, cas_sentences, keyword_results) {
 
   com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
     com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
@@ -1292,26 +1292,26 @@ supplement <- c("supporting information",
 
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
-  keyword_results_near_wd <- .keyword_search_near_wd(PDF_text_sentences, extract_text = TRUE)
+  keyword_results_near_wd <- .keyword_search_near_wd(pdf_text_sentences, extract_text = TRUE)
 
-  DAS_sentences <- DAS_sentences |>
+  das_sentences <- das_sentences |>
     furrr::future_imap_chr(.f = \(x, idx) dplyr::case_when(
-      # !any(.has_DAS(x, keyword_list)) ~ "",
+      # !any(.has_das(x, keyword_list)) ~ "",
       # length(sentences) > 30 ~ "multiple DAS mentions",
-      !idx %in% names(sentences_with_DAS) ~ "",
+      !idx %in% names(sentences_with_das) ~ "",
       .default =  x |>
         paste(collapse = " ") |>
         unlist()))
 
-  CAS_sentences <- CAS_sentences |>
+  cas_sentences <- cas_sentences |>
     furrr::future_map_chr(\(x) paste(x, collapse = " ") |>  unlist())
-  # DAS_sentences <- CAS_sentences <- ""
-# tib <- tibble::tibble(text = DAS_sentences)
+  # das_sentences <- cas_sentences <- ""
+# tib <- tibble::tibble(text = das_sentences)
   #identifies the text fragments in which the Open Data keywords were detected
   open_data_sentences <- furrr::future_map(keyword_results, .text_fragments)
   open_data_sentences <- do.call(rbind, open_data_sentences)
   open_data_sentences <- cbind(names(keyword_results), open_data_sentences,
-                               keyword_results_near_wd, DAS_sentences, CAS_sentences) |>
+                               keyword_results_near_wd, das_sentences, cas_sentences) |>
     dplyr::as_tibble() |>
     dplyr::mutate(dplyr::across(dplyr::everything(), as.character))
 
