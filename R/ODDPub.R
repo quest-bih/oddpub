@@ -123,7 +123,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
     das_cas <- furrr::future_map2(das_text_sentences, cas_text_sentences, vctrs::vec_c) |>
       furrr::future_map(unique)
     # search for open data keywords in the full texts or DAS
-    print("Screening Data and Code Availability Statements:")
+    message("Screening Data and Code Availability Statements:\n")
     keyword_results <- .keyword_search_full(das_cas)
     open_data_results <- .open_data_detection(das_cas, keyword_results) |>
       dplyr::mutate(is_open_data_das = ifelse(article %in% names(sentences_with_das),
@@ -150,7 +150,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   # screen full text of second-pass cases
 
   if (length(sentences_full_screen) > 0) {
-    print("Screening full text of articles:")
+    message("Screening full text of articles:\n")
 
     keyword_full_screen <- .keyword_search_full(pdf_text_sentences[sentences_full_screen])
     open_data_full_screen <- .open_data_detection(pdf_text_sentences[sentences_full_screen], keyword_full_screen)
@@ -179,7 +179,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
     }
 
   }
-  print("Consolidating data:")
+  message("Consolidating data:\n")
 
   #extract detected sentences as well
   if(extract_sentences == TRUE) {
