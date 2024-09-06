@@ -53,6 +53,11 @@ code repositories.
 \dontrun{
 open_data_search(pdf_load("examples/"))
 open_data_search(pdf_load("examples/"), screen_das = "extra")
+
+future::plan(multisession) # add this for parallelization
+
+text_corpus <- pdf_load("examples/")
+results <- open_data_search(text_corpus)
 }
 
 }
