@@ -930,7 +930,7 @@ supplement <- c("supporting information",
 
   DAS <- pdf_text_sentences[das_start:das_end]
 
-  if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"))) {
+  if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
     DAS <- .splice_plos_twopager(DAS)
   }
    DAS |>
