@@ -1418,8 +1418,12 @@ Mode <- function(x) {
   })
 
   cols <- .est_col_n(text_data, pdf_filename) |> floor()
+  n_alnum_rows <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "[:alnum:]")) |>
+    nrow()
 
-  if (nrow(text_data) < 2) return("")
+
+  if (n_alnum_rows < 2) return("")
 
   text_data <- text_data |>
     .add_column_info(cols, pdf_filename)
@@ -1440,12 +1444,19 @@ Mode <- function(x) {
 
  if (add_section_tags == TRUE) text_data <- text_data |>
     .add_section_tags()
+  if (is.character(text_data)) {
+    return(text_data)
+  } else {
+    return(
+      text_data |>
+        dplyr::group_by(line_n) |>
+        dplyr::summarise(text = paste(text, collapse = " ")) |>
+        dplyr::summarise(text = paste(text, collapse = "\n ")) |>
+        dplyr::pull(text)
+    )
+  }
 
-  text_data |>
-    dplyr::group_by(line_n) |>
-    dplyr::summarise(text = paste(text, collapse = " ")) |>
-    dplyr::summarise(text = paste(text, collapse = "\n ")) |>
-    dplyr::pull(text)
+
 }
 
 
