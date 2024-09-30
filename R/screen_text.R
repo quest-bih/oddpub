@@ -89,7 +89,7 @@
                      "covers public",
                      "(machine learning )?frameworks? used",
                      "available in( ?\\b\\w+\\b){1,5} previous",
-                     "(?<!(approvals?|permissions?|permit|consent) )(we|was|were) obtained(?! (with|using))",
+                     "(?<!(approvals?|permissions?|permit|consent|waiver) )(we|was|were) obtained(?!( ?\\b\\w+\\b){0,2} (with|using|approvals?|permissions?|permit|consent|waiver))",
                      "(?<!code )we used( ?\\b\\w+\\b){1,5} data",
                      "checked( ?\\b\\w+\\b){1,5} on( ?\\b\\w+\\b){1,5} freely available") |>
     .format_keyword_vector()
@@ -327,7 +327,7 @@
                     "10.5063",
                     "10.12751", #GIN
                     "fcon_ ?1000\\.projects\\.nitrc\\.org", # URL for INDI
-                    "()[[:digit:]]{6}",
+                    "(?<!of )[[:digit:]]{6}\\b",
                     "[A-Z]{2,3}_[:digit:]{5,}",
                     "[A-Z]{2,3}-[:digit:]{4,}",
                     "[A-Z]{2}[:digit:]{5}-[A-Z]{1}",
@@ -450,7 +450,7 @@
   weblink <- "((https?|ftp|smtp):\\/\\/)|((www\\.?))[a-z0-9]+\\.[a-z ]+(\\/[a-zA-Z0-9#]+\\/?)*|\\.(com|org)"
   keyword_list[["weblink"]] <- weblink
 
-  citation <- "\\(.*\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
+  citation <- "\\(.*(?<!of )\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
   grant <- c("grant",
              "funding",
              "support (was provided )?by") |>

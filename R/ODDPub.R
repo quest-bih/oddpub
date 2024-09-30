@@ -155,7 +155,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   # screen full text of second-pass cases
 
   if (length(sentences_full_screen) > 0) {
-    message("Screening full text of articles:\n")
+    message("\nScreening full text of articles:\n")
 
     keyword_full_screen <- .keyword_search_full(pdf_text_sentences[sentences_full_screen])
     open_data_full_screen <- .open_data_detection(pdf_text_sentences[sentences_full_screen], keyword_full_screen)
@@ -184,7 +184,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
     }
 
   }
-  message("Consolidating data:\n")
+  message("\nConsolidating data:\n")
 
   #extract detected sentences as well
   if(extract_sentences == TRUE) {
