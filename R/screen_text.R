@@ -1025,8 +1025,8 @@ supplement <- c("supporting information",
 
 #'
 #' @noRd
-.remove_references <- function(pdf_text_sentences)
-{
+.remove_references <- function(pdf_text_sentences) {
+
   line_before_refs <- pdf_text_sentences |>
     stringr::str_detect("<section> r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
@@ -1041,10 +1041,17 @@ supplement <- c("supporting information",
   # for journals that print useful information after the references (Elsevier, Science, etc.)
   line_after_refs <- suppressWarnings(
     pdf_text_sentences |>
-      stringr::str_detect("<section> (star\\+methods|acknowledge?ments:?|open data)|<insert> key resources table") |>
+      stringr::str_detect("<section> (star\\+methods|open data)|<insert> key resources table") |>
       which() |>
       max()
   )
+  if (sum(line_after_refs) <= 0) {
+    line_after_refs <- pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
+      stringr::str_detect("<section> (methods|acknowledge?ments:?)") |>
+      which() |>
+      min()
+    line_after_refs <- line_after_refs + line_before_refs - 1
+  }
 
   if (sum(line_after_refs) <= 0) line_after_refs <- 0
 
