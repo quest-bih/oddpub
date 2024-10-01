@@ -65,7 +65,7 @@
                      "(was|were) included in",
                      "(was|were) contained in",
                      "(was|were|(?<!((has|have) been)|are( now)?|will be) made) available(?! for)",                      "(was|were) public(al)?ly available",
-                     "(was|were) accessible",
+                     "(was|were) accessible(?! to readers)",
                      "(was|were) deposited by",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
@@ -1046,14 +1046,16 @@ supplement <- c("supporting information",
       max()
   )
   if (sum(line_after_refs) <= 0) {
-    line_after_refs <- pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
+    line_after_refs <- suppressWarnings(
+      pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
       stringr::str_detect("<section> (methods|acknowledge?ments:?)") |>
       which() |>
       min()
+    )
     line_after_refs <- line_after_refs + line_before_refs - 1
   }
 
-  if (sum(line_after_refs) <= 0) line_after_refs <- 0
+  if (sum(line_after_refs) <= 0 | is.infinite(line_after_refs)) line_after_refs <- 0
 
   # excise references for special case Elsevier journals
   if (line_after_refs > line_before_refs) {

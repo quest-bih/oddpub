@@ -1495,6 +1495,7 @@ Mode <- function(x) {
                                     dplyr::pull(text))
 
   text_data |>
+    dplyr::arrange(line_n) |>
     dplyr::mutate(
       dot = cumsum(dplyr::case_when(
         is.na(dplyr::lag(text)) ~ 0,
@@ -1507,12 +1508,14 @@ Mode <- function(x) {
              !stringr::str_detect(text, "[[:lower:]]|\\)?\\.$") | # only caps and not end of sentence
              # font_size - regular_font_size > 1 |
              stringr::str_detect(font_name, heading_font_regex)), TRUE, FALSE),
-      newline_heading = line_n == 1 & is.na(heading_font) | # very first line
+      newline_heading = dplyr::case_when(
+        line_n == 1 & is.na(heading_font) ~ TRUE, # very first line
         line_n > dplyr::lag(line_n) &
-        (stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") | # end of line can be full stop or some email or url
-           (dplyr::lag(prop_blank > 0.8)) | # previous line is very short
-           (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]"))) & # some lines end with citation superscripts
-        (font_name != dplyr::lag(font_name)),
+           stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") ~ TRUE, # end of line can be full stop or some email or url
+           dplyr::lag(prop_blank > 0.8) ~ TRUE, # previous line is very short
+           (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]")) & # some lines end with citation superscripts
+        font_name != dplyr::lag(font_name) ~ TRUE,
+        .default = FALSE),
       paragraph_start = abs(jump_size) > section_jump,
       sameline_title = line_n > dplyr::lag(line_n) & heading_font &
         (dplyr::lead(font_name) != font_name |
