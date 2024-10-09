@@ -1494,6 +1494,9 @@ Mode <- function(x) {
                                     dplyr::summarise(text = paste(text, collapse = " ")) |>
                                     dplyr::pull(text))
 
+  # text_data2 <- text_data |>
+  #   filter(line_n > 27)
+
   text_data |>
     dplyr::arrange(line_n) |>
     dplyr::mutate(
@@ -1510,11 +1513,12 @@ Mode <- function(x) {
              stringr::str_detect(font_name, heading_font_regex)), TRUE, FALSE),
       newline_heading = dplyr::case_when(
         line_n == 1 & is.na(heading_font) ~ TRUE, # very first line
-        line_n > dplyr::lag(line_n) &
+        line_n > dplyr::lag(line_n) & !stringr::str_detect(text, "\\.$") &
            stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") ~ TRUE, # end of line can be full stop or some email or url
-           dplyr::lag(prop_blank > 0.8) ~ TRUE, # previous line is very short
+        dplyr::lag(prop_blank > 0.8) & dplyr::lag(is_subpscript) == FALSE ~ TRUE, # previous line is very short
            (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]")) & # some lines end with citation superscripts
-        font_name != dplyr::lag(font_name) ~ TRUE,
+        font_name != dplyr::lag(font_name) & !stringr::str_detect(dplyr::lag(font_name), "Math") &
+          dplyr::lag(is_subpscript) == FALSE ~ TRUE,
         .default = FALSE),
       paragraph_start = abs(jump_size) > section_jump,
       sameline_title = line_n > dplyr::lag(line_n) & heading_font &

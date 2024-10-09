@@ -29,7 +29,7 @@
                  "(can|may) be (freely )?accessed",
                  "(can|may) be (retrieved|downloaded)",
                  "submitted",
-                 "(can|may) be( ?\\b\\w+\\b){1,3} found",
+                 "(can|may) be( ?\\b\\w+\\b){0,3} found",
                  "held in",
                  "(?<!were )reported in(?! the)",
                  "uploaded",
@@ -42,24 +42,26 @@
 
   reuse_statements <- c("(was|were) open source data( ?sets?)?",
                         "from( a)? public(al)?ly available data( ?sets?)?",
-                        "(this (study|article)|we) (used|included)( ?\\b\\w+\\b){1,5} public(al)?ly available( ?\\b\\w+\\b){1,5} data",
-                        "(this article|we)( ?\\b\\w+\\b){1,5} (existing|made use of|based on) public(al)?ly available( ?\\b\\w+\\b){1,5} data",
+                        "(this (study|article)|we) (used|included)( ?\\b\\w+\\b){0,5} public(al)?ly available( ?\\b\\w+\\b){0,5} data",
+                        "(this article|we)( ?\\b\\w+\\b){1,5} (existing|made use of|based on) public(al)?ly available( ?\\b\\w+\\b){0,5} data",
                         "(using|extracted from)( the)? public(al)?ly available",
                         "public(al)?ly available data(sets)? were analy(z|s)ed",
                         "used( ?\\b\\w+\\b){1,5} public(al)?ly accessible",
                         "data ?set used previously",
                         "used data from a public",
+                        "\\boriginal data accession",
+                        "previously published dataset was used",
                         "data referenced in this study",
-                        "all data (we )?used( ?\\b\\w+\\b){1,5} are( ?\\b\\w+\\b){1,3} public",
+                        "all data (we )?used( ?\\b\\w+\\b){0,5} are( ?\\b\\w+\\b){0,3} public",
                         "using( a)? datasets? acquired",
                         "data derived from public domain (re)?sources",
-                        "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){1,5} data"
+                        "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){0,5} data"
                         ) |>
     .format_keyword_vector()
   keyword_list[["reuse_statements"]] <- reuse_statements
 
   was_available <- c("(was|were) provided",
-                     "(was|were )?previously published",
+                     "(was|were )?(?<!as )previously published",
                      "(was|were|have been )?published previously",
                      "previously described in",
                      "(was|were) included in",
@@ -69,18 +71,18 @@
                      "(was|were) deposited by",
                      "(has (been )?)?previously (been )?deposited",
                      "(was|were) reproduced",
-                     "(?<!it )has been reported",
-                     "(previous|prior) study",
+                     # "(?<!it )has been reported",
+                     # "(in|from|using)( ?\\b\\w+\\b){0,2} (previous|prior) study",
                      "we found evidence in",
                      "we examined( ?\\b\\w+\\b){1,5} (deposited )?in",
                      "made their( ?\\b\\w+\\b){1,5} available",
-                     "(were|was) (used|analy[z,s]ed)",
+                     "(were|was) (used|analy[z,s]ed)(?! as previously)",
                      "(were|was) downloaded( and analy[z,s]ed)?",
+                     "downloaded from",
                      "(were|was) (derived|retrieved) from",
                      "data( ?\\b\\w+\\b){1,5} reanaly[z,s]ed",
                      "pre-existing",
                      "accessed( on)? \\d{1,2}( ?\\b\\w+\\b){1,5}\\)?",
-                     "\\boriginal data accession",
                      "package was used to",
                      "can help with",
                      "using( ?\\b\\w+\\b){1,5} functions? in( ?\\b\\w+\\b){1,5} package",
@@ -370,7 +372,6 @@
                     "heidata",
                     "mediatum",
                     "mendeley data",
-                    "OpenNeuro",
                     "open science framework",
                     "osf(?! group)",
                     "purl\\.stanford",
@@ -387,7 +388,7 @@
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["github"]] <- github
 
-  data <- c("(?<!supplementa(l|ry) )data(?! (and code )?(availability|accessibility|sharing))",
+  data <- c("(?<!supplementa(l|ry) )data(?! (and code )?(availability|accessibility|sharing|processing))",
             "datasets?",
             # "databases?",
             "reconstructed (surface )?geometries",
@@ -399,7 +400,7 @@
     .format_keyword_vector(end_boundary = TRUE)
   keyword_list[["data"]] <- data
 
-  all_data <- c("all data",
+  all_data <- c("all data(?! (were|was))",
                 "all array data",
                 "raw data",
                 "source data",
@@ -430,6 +431,7 @@
                    "the (script|codes?) for",
                    "code for( ?\\b\\w+\\b){1,5} (analys|model)",
                    "(?<!icd )codes? used for",
+                   "custom(-written)? (code|script)",
                    "SAS scripts?",
                    "SPSS scripts?",
                    "r[-, ]+script",
@@ -437,9 +439,12 @@
                    "r[-, ]+codes?",
                    "(?<!(using|via|through)( the)? )r[-, ]+package",
                    "python script",
+                   "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?",
                    "python codes?",
-                   # "software",
+                   "r software",
+                   "plugin",
                    "matlab script",
+                   "matlab implementation",
                    "matlab codes?",
                    "macros?\\s(?!(group|level))") |>
     .format_keyword_vector()
@@ -452,14 +457,15 @@
 
   citation <- "\\(.*(?<!of )\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
   grant <- c("grant",
-             "funding",
-             "support (was provided )?by") |>
+             "fund(ing|ed by)",
+             "support (was provided )?by",
+             "foundation") |>
     .format_keyword_vector()
   keyword_list[["grant"]] <- grant
 
   reuse <- paste(reuse_statements, .near_wd_sym(was_available,
                     paste(
-                      accession_nr,
+                      # accession_nr,
                       field_specific_repo,
                       repositories,
                       weblink,
@@ -503,8 +509,9 @@ supplement <- c("supporting information",
                     "the corresponding author",
                     "the lead contact",
                     "proposal form",
+                    "can be requested",
                     "(upon|after) approval",
-                    "the techincal contact",
+                    "the technical contact",
                     "requests.* should be (directed|submitted) (to|through|via)",
                     "data requests?")|>
     .format_keyword_vector()
@@ -581,13 +588,38 @@ supplement <- c("supporting information",
   keyword_list[["dataset"]] <- dataset
 
   protocol <- c("protocols?",
-                "procedures can be found") |>
+                "procedures can be found",
+                "assay as published") |>
     .format_keyword_vector()
   keyword_list[["protocol"]] <- protocol
 
   misc_non_data <- c("participating institutions",
                      "details",
                      "further information",
+                     "priors",
+                     "quality assurance",
+                     "correlation",
+                     "covariate",
+                     "sample size",
+                     "samples were analy(s|z)ed",
+                     "catalog n(r|o)",
+                     "(chemical|antibodie|librarie|count|strain|variant|plasmid)s were obtained",
+                     "ethics commi(ssion|ttee)",
+                     "used to normali(z|s)e",
+                     "similar results to",
+                     "reference (genes|sequence)",
+                     "(were|was) used to",
+                     "process described earlier",
+                     "information regarding",
+                     "features of",
+                     "rrid",
+                     "in situ",
+                     "viral particles",
+                     "elisa kits",
+                     # "samples were derived from",
+                     "assays?",
+                     "antibodies against",
+                     "p (<|≤)",
                      "preprint",
                      "The Creative Commons Public Domain Dedication waiver") |>
     .format_keyword_vector()
@@ -1106,9 +1138,9 @@ supplement <- c("supporting information",
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
       com_n_weblinks > 1 ~ data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo & !com_specific_repo, # maybe exclude supplements here as well
+        !not_available & !accession_nr & !com_general_repo & !reuse & !com_specific_repo, # maybe exclude supplements here as well
       .default = data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo &
+        !not_available & !accession_nr & !com_general_repo & !reuse &
         !com_specific_repo & !com_github_data & !supplement & !misc_non_data
     )) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
@@ -1146,7 +1178,7 @@ supplement <- c("supporting information",
 
   # search for the last combination in the non-tokenized text and add it to the results table for the publications
   # either give out TRUE/FALSE or return detected string
-  if(extract_text) {
+  if (extract_text) {
     str_function <- stringr::str_extract
     map_function <- furrr::future_map_chr
   } else {
