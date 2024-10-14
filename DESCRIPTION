@@ -1,7 +1,7 @@
 Package: oddpub
 Type: Package
 Title: Detection of Open Data & Open Code statements in biomedical publications
-Version: 7.0.9999
+Version: 7.1.0
 Authors@R: 
     c(person("Nico", "Riedel",
     role = "aut"),

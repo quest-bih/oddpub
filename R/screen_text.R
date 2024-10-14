@@ -187,7 +187,7 @@
 # sentences <- publ_sentences
 # sentences <- paste("data availability", publ_sentences) |> tolower()
 # keyword <- "repositories"
-# keyword <- "data_availability_statement"
+# keyword <- "source_code"
 #' search for all keyword categories in the sentences
 #' @noRd
 .search_keyword_cat <- function(keyword, sentences, keyword_list)

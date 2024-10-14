@@ -385,7 +385,7 @@ source_code:
   - "preprocessing software"
   - "code ocean"
   - "the (script|codes?) for"
-  - "custom(-written)? (code|script)"
+  - "custom(\\-written)? (code|script)"
   - "code for( ?\\b\\w+\\b){1,5} (analys|model)"
   - "(?<!icd )codes? used for"
   - "SAS scripts?"
@@ -399,7 +399,7 @@ source_code:
   - "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?"
   - "r software"
   - "plugin"
-  - "matlab (script|codes|implementation"
+  - "matlab (script|codes|implementation)"
   - "macros?\\s(?!(group|level))"
 
 weblink:
