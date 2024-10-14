@@ -8,7 +8,8 @@
 .create_keyword_list <- function()
 {
   # read regular expression dictionaries from yaml file
-  keyword_list <- yaml::read_yaml(file.path("R", "keywords_patterns.yaml"))
+  yaml_path <- system.file("extdata", "keywords_patterns.yaml", package = "oddpub")
+  keyword_list <- yaml::read_yaml(file.path(yaml_path))
   # add conditional formating for some dictionaries
   keyword_list <- keyword_list |>
     purrr::map2(names(keyword_list), \(x, y) switch(y,

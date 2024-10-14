@@ -152,9 +152,9 @@ test_that("data",
 
 test_that("all_data",
           {
-            expect_true(.detect_keywords("all data were available ", "all_data"))
-            expect_true(.detect_keywords("all data and code were available ", "all_data"))
-            expect_true(.detect_keywords("the full data set was available", "all_data"))
+            expect_true(.detect_keywords("all data are in supplementary data S1", "all_data"))
+            expect_true(.detect_keywords("the full data set is available as online data", "all_data"))
+            expect_false(.detect_keywords("all data were available ", "all_data"))
             expect_false(.detect_keywords("the data were available ", "all_data"))
           })
 
@@ -279,8 +279,6 @@ test_that("data_availability_statement",
             expect_false(.has_das("doi word word word word word data availability", keywords))
             expect_false(.has_das("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
           })
-
-
 
 
 context("combined keywords")
