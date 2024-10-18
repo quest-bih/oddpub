@@ -307,7 +307,7 @@
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[das_start + das_end_candidates],
-                                               \(sentence) stringr::str_detect(sentence, "\\..?$"))
+                                               \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
   if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != "." ) {
     # first_sentence <- das_start + 1
@@ -337,7 +337,7 @@
     if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
       das_end <- length(pdf_text_sentences) - das_start
     } else {
-      das_end <- min(das_end_candidates[das_end_candidates > 0], length(pdf_text_sentences) - das_start)
+      das_end <- min(das_end_candidates[das_end_candidates > 0], length(pdf_text_sentences) - das_start, na.rm = TRUE)
     }
 
   }
@@ -403,7 +403,7 @@
     which() - 1
   # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
-                                               \(sentence) stringr::str_detect(sentence, "\\.$"))
+                                               \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
   if (stringr::str_length(str_cas_sameline) < 5) {
     # first_sentence <- das_start + 1
