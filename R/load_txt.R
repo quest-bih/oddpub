@@ -105,6 +105,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   tokenized <- readr::read_lines(textfile) |>
     paste(collapse = " ") |>
     stringr::str_replace_all("\n", ".") |>
+    stringr::str_remove_all("[\U200A-\U200F]") |>
     stringr::str_squish() |>
     tokenizers::tokenize_sentences(simplify = TRUE, lowercase = lowercase) |>
     tokenizers::tokenize_regex(pattern = " (?=<(section|insert|iend)>)", simplify = TRUE)
