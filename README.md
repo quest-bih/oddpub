@@ -139,4 +139,4 @@ Individual keyword categories (out of date, will be updated in 2025):
 
 ## License
 
-ODDPub is available under the MIT license. See the [LICENSE](https://github.com/quest-bih/oddpub/blob/master/LICENSE) file for more info.
+ODDPub is available under the APL-v3 license. See the [LICENSE](https://github.com/quest-bih/oddpub/blob/master/LICENSE) file for more info.
