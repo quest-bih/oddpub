@@ -1,12 +1,12 @@
 language: r
 cache: packages
-warnings_are_errors: false
+warnings_are_errors: true
 
 r:
   - release
 
 # do not check examples for the CI
-r_check_args: --no-examples 
+r_check_args: --no-examples
 
 # for codecov
 r_packages:

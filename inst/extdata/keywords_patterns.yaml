@@ -24,6 +24,7 @@ available:
   - "(?<!were )reported in(?! the)"
   - "uploaded"
   - "are public on"
+  - "are( available) open source"
   - "we (have )?added"
   - "(?<=data) at"
   - "(?<!\\d(-|\\))?(\\.|;) )doi: " # exclude dois in references
@@ -73,7 +74,6 @@ was_available:
   - "(were|was) (derived|retrieved) from"
   - "pre-existing"
   - "accessed( on)? \\d{1,2}( ?\\b\\w+\\b){1,5}\\)?"
-  - "package was used to"
   - "can help with" #reuse phrase for software
   - "covers public"
   - "available in( ?\\b\\w+\\b){1,5} previous"
@@ -87,6 +87,10 @@ was_available:
   - "(?<!code )we used( ?\\b\\w+\\b){1,5} data"
   # make obtain and use specific to only data, as too many false positives otherwise?
   - "(?<!(approvals?|permissions?|permit|consent|waiver) )(we|was|were) obtained(?!( ?\\b\\w+\\b){0,2} (with|using|approvals?|permissions?|permit|consent|waiver))"
+
+software_use:
+  - "(package|tool)s( ?\\b\\w+\\b){1,5} used in this study"
+  - "package was used to"
 
 will_be_available:
   - "will be (made )?(available|accessible)"
@@ -379,13 +383,14 @@ source_code:
   - "code files?"
   - "analysis (script|codes?\\w)"
   - "data (and )?codes?(?! availabili)"
+  - "working code for"
   - "github"
   - "gitlab"
   - "bitbucket"
-  - "preprocessing software"
+  - "(preprocessing|free) software"
   - "code ocean"
   - "the (script|codes?) for"
-  - "custom(\\-written)? (code|script)"
+  - "custom(\\-written)?( ?\\b\\w+\\b){1,5} (code|script)"
   - "code for( ?\\b\\w+\\b){1,5} (analys|model)"
   - "(?<!icd )codes? used for"
   - "SAS scripts?"
@@ -396,7 +401,7 @@ source_code:
   - "(?<!(using|via|through)( the)? )r[-, ]+package"
   - "python script"
   - "python codes?"
-  - "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?"
+  #- "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?"
   - "r software"
   - "plugin"
   - "matlab (script|codes|implementation)"

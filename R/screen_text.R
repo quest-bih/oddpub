@@ -168,7 +168,7 @@
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
-                                "reuse", "grant",
+                                "reuse", "software_use",  "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
   # search for all relevant keyword categories
@@ -517,11 +517,12 @@
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code & available &
-                 !not_available & !was_available & !reuse &
-                 (!upon_request|stringr::str_detect(publ_sentences, "git|www|http"))) |>
+                 !not_available & !was_available & !reuse & !software_use &
+                 ((!upon_request & !supplement)|stringr::str_detect(publ_sentences, "git|www|http"))) |>
     purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
+    purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
@@ -532,7 +533,7 @@
         !com_specific_repo & !com_github_data & !supplement & !misc_non_data
     )) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
-                com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_request, com_unknown_source)
+                com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_code_reuse, com_request, com_unknown_source)
 
   return(keyword_results_combined)
 }
@@ -677,10 +678,10 @@
 .open_data_detection <- function(pdf_text_sentences, keyword_results) {
 
   com_general_repo <- com_specific_repo <- is_data_journal <- com_code <-
-    com_suppl_code <- dataset <- com_file_formats <- com_reuse  <-
-    com_supplemental_data <- com_request <- com_github_data <-
+    com_suppl_code <- com_code_reuse <- dataset <- com_file_formats <- com_reuse  <-
+    com_code_reuse <- com_supplemental_data <- com_request <- com_github_data <-
     com_unknown_source <- article <- is_general_purpose <- is_supplement <-
-    is_reuse <- is_open_data <- is_open_code <- open_data_category <- NULL
+    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <- NULL
 
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
@@ -696,7 +697,8 @@
   open_data_publication <- keyword_results_combined |>
     dplyr::mutate(is_open_data = com_specific_repo | com_general_repo |
                     is_data_journal,
-                  is_open_code = com_code | com_suppl_code,
+                  is_open_code = com_code,
+                  # | com_suppl_code,
                   is_supplement = dataset | com_file_formats | com_supplemental_data,
                   is_general_purpose = com_general_repo,
                   is_reuse = com_reuse,
@@ -704,9 +706,11 @@
                                                                    is_supplement, is_reuse, com_request,
                                                                    com_github_data,
                                                                    com_unknown_source,
-                                                                   is_data_journal), .OD_category)) |>
+                                                                   is_data_journal), .OD_category),
+                  is_code_supplement = com_suppl_code,
+                  is_code_reuse = com_code_reuse) |>
     tibble::add_column(article = names(pdf_text_sentences)) |>
-    dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code)
+    dplyr::select(article, is_open_data, open_data_category, is_reuse, is_open_code, is_code_supplement, is_code_reuse)
 
   return(open_data_publication)
 }
@@ -747,6 +751,7 @@
   colnames(open_data_sentences) <- c("article", "com_specific_repo", "com_general_repo",
                                      "com_github_data", "dataset", "com_code", "com_suppl_code",
                                      "com_reuse",
+                                     "com_code_reuse",
                                      "com_request",
                                      "com_unknown_source",
                                      "com_file_formats", "com_supplemental_data", "das", "cas")
@@ -758,7 +763,7 @@
       open_data_statements =
         paste(com_specific_repo, com_general_repo,
               com_github_data, dataset, com_file_formats,
-              com_supplemental_data, com_reuse, com_unknown_source, sep = " ") |>
+              com_supplemental_data, com_reuse, com_code_reuse, com_unknown_source, sep = " ") |>
         trimws()
                   ) |>
     # copy over das to cas if das is actually also a cas
@@ -769,8 +774,6 @@
         trimws()
       ) |>
     dplyr::select(article, das, open_data_statements, cas, open_code_statements)
-
-
 
   return(open_data_sentences)
 }
