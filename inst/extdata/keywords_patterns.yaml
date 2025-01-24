@@ -5,9 +5,8 @@ available:
   - "released"
   - "(is|are) provided"
   - "(is|are) hosted"
-  - "contained in"
   - "contains"
-  - "listed in"
+  - "(listed|linked|contained|held) (in|on)"
   - "lodged with"
   - "page has been created in( ?\\b\\w+\\b){1,3} database"
   - "assign(ed)? a doi"
@@ -20,7 +19,6 @@ available:
   - "(can|may) be (retrieved|downloaded)"
   - "submitted"
   - "(can|may) be( ?\\b\\w+\\b){0,3} found"
-  - "held in"
   - "(?<!were )reported in(?! the)"
   - "uploaded"
   - "are public on"
@@ -91,6 +89,7 @@ was_available:
 software_use:
   - "(package|tool)s( ?\\b\\w+\\b){1,5} used in this study"
   - "package was used to"
+  - "using( ?\\b\\w+\\b){1,5} package"
 
 will_be_available:
   - "will be (made )?(available|accessible)"
@@ -381,22 +380,33 @@ not_data:
 source_code:
   - "source codes?"
   - "code files?"
+  - "software code"
   - "analysis (script|codes?\\w)"
   - "data (and )?codes?(?! availabili)"
+  - "codes? (and )?data(?! availabili)"
+  - "data ?(sets?)? and scripts"
   - "working code for"
-  - "github"
   - "gitlab"
   - "bitbucket"
   - "(preprocessing|free) software"
   - "code ocean"
   - "the (script|codes?) for"
-  - "custom(\\-written)?( ?\\b\\w+\\b){1,5} (code|script)"
+  - "all( ?\\b\\w+\\b){0,5} (scripts|codes)"
+  - "code( ?\\b\\w+\\b){0,5} algorithm"
+  - "algorithm( ?\\b\\w+\\b){0,5} code"
+  - "jupyter"
+  - "quarto"
+  - "markdown"
+  - "algorithm"
+  - "custom(\\-written)?( ?\\b\\w+\\b){0,5} (code|script|software)"
   - "code for( ?\\b\\w+\\b){1,5} (analys|model)"
-  - "(?<!icd )codes? used for"
+  - "(?<!icd )(code|script)s?( and data(sets?)?)? (generat|us|utili(s|z))ed for"
   - "SAS scripts?"
   - "SPSS scripts?"
   - "r[-, ]+script"
   - "(script|code)s? (is|are) available"
+  - "(script|code)s? used can be found"
+  - "open[-, ]+source (software|tool)"
   - "r[-, ]+codes?"
   - "(?<!(using|via|through)( the)? )r[-, ]+package"
   - "python script"
@@ -418,10 +428,8 @@ grant:
 
 supplement:
   - "supporting information"
-  - "supplement"
-  - "supplementa(l|ry) data"
-  - "supplementa(l|ry) material"
-  - "supplementa(l|ry) information"
+  - "supplement(?!ed)"
+  - "supplementa(l|ry) (data|material|information)"
   - "in the additional file"
 
 file_formats:
@@ -502,20 +510,12 @@ supplemental_table_number:
   - "[A-Z]{2}[[:digit:]]"
 
 supplemental_dataset:
-  - "supplementary data [[:digit:]]{1,2}"
-  - "supplementary dataset [[:digit:]]{1,2}"
-  - "supplementary data set [[:digit:]]{1,2}"
-  - "supplemental data [[:digit:]]{1,2}"
-  - "supplemental dataset [[:digit:]]{1,2}"
-  - "supplemental data set [[:digit:]]{1,2}"
+  - "supplementa(ry|l) data ?(set)? [[:digit:]]{1,2}"
   - "supplemental data can be found online"
+  - "provided as esi"
 
 dataset_name:
-  - "data"
-  - "dataset"
-  - "datasets"
-  - "data set"
-  - "data sets"
+  - "data ?(sets?)?"
 
 dataset_number:
   - "S[[:digit:]]{1,2}"

@@ -494,10 +494,11 @@
 
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
-    repositories <- protocol <- supplement <- source_code <- github <-
+    repositories <- protocol <- supplement <-
+    source_code <- software_use <- github <-
     upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
     com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
-    com_request <- com_unknown_source <- NULL
+    com_request <- com_unknown_source <- com_code_reuse <- NULL
 
 # odc <- open_data_categories[[1]]
   # pdf_text_sentences <- publ_sentences
@@ -516,10 +517,10 @@
                  (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
-    purrr::map(dplyr::mutate, com_code = source_code & available &
+    purrr::map(dplyr::mutate, com_code = source_code &
                  !not_available & !was_available & !reuse & !software_use &
-                 ((!upon_request & !supplement)|stringr::str_detect(publ_sentences, "git|www|http"))) |>
-    purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
+                 ((!upon_request & !supplement & !dataset & available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
+    purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
     purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code) |>
@@ -681,7 +682,8 @@
     com_suppl_code <- com_code_reuse <- dataset <- com_file_formats <- com_reuse  <-
     com_code_reuse <- com_supplemental_data <- com_request <- com_github_data <-
     com_unknown_source <- article <- is_general_purpose <- is_supplement <-
-    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <- NULL
+    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <-
+    is_code_supplement <- NULL
 
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
@@ -721,7 +723,7 @@
 
   com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
     com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
-    com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
+    com_code_reuse <- com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
 
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
