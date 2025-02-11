@@ -523,7 +523,8 @@
     purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
-    purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code) |>
+    purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code &
+                 (!not_available & (available | stringr::str_detect(publ_sentences, "www|http")|github))) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
@@ -772,7 +773,7 @@
     dplyr::mutate(
       cas = ifelse(stringr::str_detect(stringr::str_sub(das, 1, 30), "(?<!accession) code|software|materials"), das, cas),
       open_code_statements =
-        paste(com_code, com_suppl_code, sep = " ") |>
+        paste(com_code, com_suppl_code, com_code_reuse, sep = " ") |>
         trimws()
       ) |>
     dplyr::select(article, das, open_data_statements, cas, open_code_statements)
