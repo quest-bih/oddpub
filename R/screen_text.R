@@ -17,6 +17,7 @@
       "data" = .format_keyword_vector(x, end_boundary = TRUE),
       "file_formats" = .format_keyword_vector(x, end_boundary = TRUE),
       "github" = .format_keyword_vector(x, end_boundary = TRUE),
+      "ownership_claim" = .format_keyword_vector(x, end_boundary = TRUE),
       "supplemental_table" = x,
       "supplemental_table_number" = x,
       "weblink" = x,
@@ -168,7 +169,7 @@
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
-                                "reuse", "software_use",  "grant",
+                                "reuse", "software_use",  "ownership_claim", "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
   # search for all relevant keyword categories
@@ -280,9 +281,12 @@
       das_start <- min(das_start)
     }
 
-    # if more than two detections of DAS were made, then return full document
-  } else if (length(das_start) != 1) {
-    return(pdf_text_sentences)
+    # if more than two detections of DAS were made, then return the last one
+  } else if (length(das_start) > 2) {
+    das_start <- max(das_start)
+  } else if (length(das_start) == 0) {
+    # return empty string if no das was detected
+    return("")
   }
 
 
@@ -383,7 +387,7 @@
 
   cas_start <- which(cas_detections)
 
-  if (length(cas_start) == 2) {
+  if (length(cas_start) > 2) {
     cas_start <- max(cas_start)
   } else if (length(cas_start) != 1 ) {
     return("")
@@ -399,9 +403,9 @@
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
   cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
-                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
+                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.|\\u2750")) |>
     which() - 1
-  # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
+  # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
@@ -495,7 +499,7 @@
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
     repositories <- protocol <- supplement <-
-    source_code <- software_use <- github <-
+    source_code <- software_use <- github <- ownership_claim <-
     upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
     com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
     com_request <- com_unknown_source <- com_code_reuse <- NULL
@@ -509,16 +513,17 @@
   keyword_results_combined <- open_data_categories  |>
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
-                 (accession_nr | weblink) & available & !not_available & !was_available & !reuse &
+                 (accession_nr | weblink) & available &
+                 !not_available & !was_available & (!reuse | ownership_claim) &
                  ((!misc_non_data & !protocol & !supplement & !source_code & !grant) | data)
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & !reuse &
+                 !not_available & !was_available & (!reuse | ownership_claim) &
                  (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code &
-                 !not_available & !was_available & !reuse & !software_use &
+                 !not_available & ((!was_available & !reuse & !software_use) | ownership_claim) &
                  ((!upon_request & !supplement & !dataset & available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
     purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &

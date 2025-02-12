@@ -1355,6 +1355,8 @@ Mode <- function(x) {
   if (text_data |> dplyr::filter(x > max_x, height > 20) |> nrow() == 0) max_x <- max(text_data$x) + 1 # for articles without margins, e.g. haematology
 
   text_data |>
+    dplyr::mutate(text = dplyr::case_when(dplyr::lead(text == ".") ~ paste0(text, dplyr::lead(text)),
+                                          .default = text)) |>
     # remove page numbers, textboxes with citation numbers, line numbers, etc.
     # as well as the header and footer
     dplyr::filter(

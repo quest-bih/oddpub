@@ -1,5 +1,6 @@
 available:
-  - "(?<!(which|the) )included(?! (\\d|only))" # experimental
+  #- "(?<!(which|the) )included(?! (\\d|only))" # experimental
+  - "(?<!(which|the) )included (in|at|on)" # experimental
   - "deposited"
   - "archived"
   - "released"
@@ -97,6 +98,15 @@ software_use:
 will_be_available:
   - "will be (made )?(available|accessible)"
   - "will be uploaded"
+
+ownership_claim:
+  - "our"
+  - "in(-| )?house"
+  - "((any|no)?<!)custom"
+  - "(developed|collected|generated)for this (study|article|work)"
+  - "used in this study are released"
+  - "the analysis scripts"
+  - "bespoke"
 
 not_available:
   - "not included"
@@ -390,13 +400,13 @@ source_code:
   - "codes? (and )?data(?! availabili)"
   - "data ?(sets?)? and scripts"
   - "working code for"
-  - "code used to perform the reported analys(i|e)s"
+  - "codes? used (to perform( the)? reported analys(i|e)s|in)"
   - "gitlab"
   - "bitbucket"
-  - "(preprocessing|free) (software|pipeline)"
+  - "(preprocessing|free|library) (software|pipeline)"
   - "code ocean"
-  - "the (script|codes?) for"
-  - "(all|our)( ?\\b\\w+\\b){0,5} (scripts|codes?)"
+  - "the( ?\\b\\w+\\b){0,5} (script|codes?|toolkit)( used)? for"
+  - "(all|our)( ?\\b\\w+\\b){0,5} (scripts|codes?\\b)"
   - "code( ?\\b\\w+\\b){0,5} algorithm"
   - "algorithm( ?\\b\\w+\\b){0,5} code"
   - "jupyter"
@@ -414,6 +424,7 @@ source_code:
   - "r[-, ]+codes?"
   - "(?<!(using|via|through)( the)? )r[-, ]+package"
   - "python script"
+  - "toolbox in (python|r|matlab)\\b"
   - "python codes?"
   #- "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?"
   - "r software"

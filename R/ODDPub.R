@@ -95,28 +95,38 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
 # pdf_text_sentences <- pdf_text_corpus
   screen_das <- match.arg(screen_das, c("priority", "extra", "legacy"))
   is_open_data <- is_reuse <- open_data_category <- article <-
-    is_open_code <- is_open_data_das <- is_open_code_cas <- NULL
+    is_open_code <- is_open_data_das <- is_open_code_cas <-
+    is_code_reuse <- is_code_supplement <-
+    is_code_reuse_old <- is_code_supplement_old <- NULL
 
   pdf_text_sentences <- furrr::future_map(pdf_text_sentences, .remove_references)
 
   # pdf_text_sentences <- das_text_sentences
+
+  ########## extract das and cas if available, if not, the full text is extracted instead
+
   das_text_sentences <- pdf_text_sentences |>
     furrr::future_map(.extract_das)
 
+  # get the index of articles with das
   sentences_with_das <- das_text_sentences |>
-    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(pdf_text_sentences[[idx]])) |> # It is assumed a DAS will not have more than 30 sentences
+    purrr::map_lgl(\(x) length(x) < 31 & x[1] != "") |> # It is assumed a DAS will not have more than 30 sentences
     which()
 
   cas_text_sentences <- pdf_text_sentences |>
     furrr::future_map(.extract_cas)
 
+  # get the index of articles with cas
   sentences_with_cas <- cas_text_sentences |>
-    purrr::imap_lgl(\(x, idx) length(x) < 31 & length(x) != length(pdf_text_sentences[[idx]])) |> # It is assumed a CAS will not have more than 30 sentences
+    purrr::map_lgl(\(x) length(x) < 31 & x[1] != "") |> # It is assumed a CAS will not have more than 30 sentences
     which()
 
-  sentences_with_das_cas <- intersect(names(sentences_with_das),
-                                      names(sentences_with_cas))
-  i_sentences_with_das_cas <- union(sentences_with_das, sentences_with_cas)
+  # get names for articles with das and also a cas to enable priority and extra screening
+  # sentences_with_das_cas <- intersect(names(sentences_with_das),
+  #                                     names(sentences_with_cas))
+
+  # i_sentences_with_das_cas <- union(sentences_with_das, sentences_with_cas)
+
 # screen_das = "extra"
   if (screen_das == "legacy") {
     # screen the full text without special treatment of das_cas
@@ -133,21 +143,20 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
     open_data_results <- .open_data_detection(das_cas, keyword_results) |>
       dplyr::mutate(is_open_data_das = ifelse(article %in% names(sentences_with_das),
                                               is_open_data, FALSE),
-                    is_open_code_cas = ifelse(article %in% sentences_with_das_cas,
+                    is_open_code_cas = ifelse(article %in% names(sentences_with_cas),
                                               is_open_code, FALSE))
     # kw <- keyword_results[[1]]
 
     if (screen_das == "priority") { # with "priority" only screen cases where no open data
       # re-use or github was detected in the das_cas
-      sentences_second_pass <- open_data_results |>
+      sentences_full_screen <- open_data_results |>
         dplyr::filter(is_open_data == FALSE & is_reuse == FALSE &
                         !stringr::str_detect(open_data_category, "github")) |>
         dplyr::pull(article) # extract the not open data cases for double-check in second pass
-      # restrict to cases with DAS only, since full texts was already screened for rest
-      sentences_full_screen <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_das)]
-    } else { # with "extra", all cases where only das_cas was screened, have to be screened again,
-      # this time in full
-      sentences_full_screen <- i_sentences_with_das_cas
+
+      # sentences_full_screen <- sentences_second_pass[sentences_second_pass %in% names(sentences_with_das)]
+    } else { # with "extra", screen all articles again, this time in full
+      sentences_full_screen <- rep(TRUE, length(pdf_text_sentences))
 
     }
   }
@@ -162,15 +171,18 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
 
     if (!rlang::is_null(open_data_results)) {
       open_data_cat_old <- open_data_results |>
-        dplyr::select(article, open_data_cat_old = open_data_category)
+        dplyr::select(article, open_data_cat_old = open_data_category,
+                      is_code_reuse_old = is_code_reuse, is_code_supplement_old = is_code_supplement)
       open_data_full_screen <- open_data_full_screen |>
         dplyr::left_join(open_data_cat_old, by = "article") |>
         dplyr::mutate(open_data_category =
                         dplyr::case_when(
                           open_data_cat_old != "" & open_data_category != "" ~ paste0(open_data_cat_old, ", ", open_data_category),
                           .default = paste0(open_data_cat_old, open_data_category)),
-                      open_data_category = purrr::map_chr(open_data_category, .remove_repeats)) |>
-        dplyr::select(-open_data_cat_old)
+                      open_data_category = purrr::map_chr(open_data_category, .remove_repeats),
+                      is_code_reuse = is_code_reuse_old | is_code_reuse,
+                      is_code_supplement = is_code_supplement_old | is_code_supplement) |>
+        dplyr::select(-dplyr::contains("_old"))
 
       keyword_results <- keyword_results |>
         purrr::list_assign(!!!keyword_full_screen)
