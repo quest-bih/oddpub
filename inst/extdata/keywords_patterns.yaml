@@ -88,7 +88,7 @@ was_available:
 software_use:
   - "((package|tool)|algorithms)( ?\\b\\w+\\b){1,5} used in this study"
   - "package was used to"
-  - "(we used|using)( ?\\b\\w+\\b){1,7} (package|algorithm|macro|library|toolkit|(r )?software|plugin)"
+  - "(we used|using)( ?\\b\\w+\\b){1,7} (package|algorithm|macro|library|toolkit|(r )?software)"
   - "source identifier software and algorithms.* 20\\d{2}"
   - "toolkit used for"
   - "library( [^\\s]*(\\)|\\b)){0,5} was employed"
@@ -417,7 +417,7 @@ source_code:
   - "python codes?"
   #- "v(ersion)? ?\\d{1,2}\\.\\d{1,2}(\\.\\d)?"
   - "r software"
-  - "plugin"
+  #- "plugin"
   - "matlab (script|codes|implementation)"
   - "macros?\\s(?!(group|level))"
   #- "(software algorithm|source identifier software and algorithms).* (20\\d{2}\\b|this paper)"
