@@ -1,7 +1,7 @@
 Package: oddpub
 Type: Package
 Title: Detection of Open Data & Open Code statements in biomedical publications
-Version: 7.1.1
+Version: 7.2
 Authors@R: 
     c(person("Nico", "Riedel",
     role = "aut"),
@@ -9,7 +9,7 @@ Authors@R:
     role = c("aut", "cre"),
     email = "vladislav.nachev@charite.de",
     comment = c(ORCID = "0000-0003-0521-6153")))
-Date: 2024-10-14
+Date: 2025-04-04
 Description: Detection of Open Data & Open Code statements in biomedical publications.
   Uses publication PDFs as input and returns both Open Data/Code: 'TRUE/FALSE', the detected statement,
   as well as additional metadata.
@@ -30,7 +30,8 @@ Imports:
     rlang,
     tidyr,
     lubridate,
-    yaml
+    yaml,
+    reticulate
 Suggests: 
   testthat
 RoxygenNote: 7.3.2

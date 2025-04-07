@@ -11,7 +11,7 @@ publication. It is tailored towards biomedical literature.
 
 ## Authors
 
-Nico Riedel, Vladislav Nachev, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
+Vladislav Nachev (vladislav.nachev@charite.de), Yazid Zalai, Nico Riedel, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
 
 ## Publication
 

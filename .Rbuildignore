@@ -6,3 +6,8 @@
 ^\.httr-oauth$
 ^LICENSE\.md$
 .travis.yml
+^models$
+^pdfs$
+^inst/qpdft
+^qpdft$
+^__pycache__$

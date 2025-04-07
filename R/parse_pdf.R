@@ -1,3 +1,4 @@
+#' apply standardized naming rule for output files from input name and output folder
 #' @noRd
 .create_output_filename <- function(pdf_filename, output_folder)
 {
@@ -10,7 +11,7 @@
   return(output_filename)
 }
 
-#' convert PDF file to txt file and saves it to output_folder (can now deal with multiple column output)
+#' convert PDF file to txt file and save to output_folder (pdftools in R)
 #' @noRd
 
 
@@ -34,7 +35,7 @@
       cat(text, file = output_filename)
       success <- TRUE
     }, error = function(e) {
-      print("Could not convert pdf to text.")
+      print("Could not convert PDF to text.")
     })
   }
 

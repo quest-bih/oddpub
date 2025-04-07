@@ -15,26 +15,37 @@
 #'
 #' @export
 pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
-                        overwrite_existing_files = FALSE, add_section_tags = TRUE) {
+                        overwrite_existing_files = FALSE, add_section_tags = TRUE,
+                        engine = c("legacy", "qpdft")) {
 
-  #check if dir path has final /, otherwise add
-  # if(pdf_folder |> stringr::str_sub(-1) != "/") {
-  #   pdf_folder <- paste0(pdf_folder, "/")
-  # }
-  # if(output_folder |> stringr::str_sub(-1) != "/") {
-  #   output_folder <- paste0(output_folder, "/")
-  # }
+
 
   # pdf_filenames <- list.files(pdf_folder, recursive = recursive)
   pdf_filenames <- list.files(pdf_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)
 
-  # converts PDF file to txt file and saves it to output_folder
-  # requires the pdftools library
-  # some PDFs make take a very long time to process!
-  conversion_success <-
-    suppressWarnings(furrr::future_map_lgl(pdf_filenames,
-                          \(x) .pdf_to_text(x, output_folder, overwrite_existing_files = overwrite_existing_files,
-                                            add_section_tags = add_section_tags), .progress = TRUE))
+  if (engine == "legacy"){
+    # converts PDF file to txt file and saves it to output_folder
+    # requires the pdftools library
+    # some PDFs make take a very long time to process!
+    conversion_success <-
+      suppressWarnings(furrr::future_map_lgl(pdf_filenames,
+                                             \(x) .pdf_to_text(x, output_folder, overwrite_existing_files = overwrite_existing_files,
+                                                               add_section_tags = add_section_tags), .progress = TRUE))
+  } else if (engine == "qpdft"){
+    .initialize_qpdft() ## fix path issue!
+    conversion_success <-
+      suppressWarnings(furrr::future_map_lgl(pdf_filenames,
+                                             \(x) .pdf_to_rmd(x, output_folder, overwrite_existing_files = overwrite_existing_files),
+                                             .progress = TRUE))
+
+
+
+    # processor <- PDFProcessor(pdf_path, pdf_path, pdf_path)
+    #
+    # processor$extract_markdown(pdf_path)
+
+  }
+
 
   return(conversion_success)
 }

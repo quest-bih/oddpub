@@ -4,3 +4,7 @@
 .Ruserdata
 .httr-oauth
 dev/
+models/
+pdfs/
+inst/qpdft
+__pycache__
