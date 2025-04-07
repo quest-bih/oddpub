@@ -16,14 +16,14 @@
 #' @export
 pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
                         overwrite_existing_files = FALSE, add_section_tags = TRUE,
-                        engine = c("legacy", "qpdft")) {
+                        engine = c("pdftools", "qpdft")) {
 
 
 
   # pdf_filenames <- list.files(pdf_folder, recursive = recursive)
   pdf_filenames <- list.files(pdf_folder, pattern = "\\.(pdf|PDF)", recursive = recursive, full.names = TRUE)
 
-  if (engine == "legacy"){
+  if (engine == "pdftools"){
     # converts PDF file to txt file and saves it to output_folder
     # requires the pdftools library
     # some PDFs make take a very long time to process!
