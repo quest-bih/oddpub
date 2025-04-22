@@ -201,39 +201,32 @@
 }
 # sections_v <- pdf_text_sentences[das_start:das_end]
 # sections_v <- DAS
-#' search plos DAS when spread over two pages
-#' @noRd
-.splice_plos_twopager <- function(sections_v) {
+#' Splice sentences from e.g. DAS that were separated due to interpolated
+#'  sections in PLoS-formatted articles.
+#' @param sections_v Character vector of sentences that may contain
+#' interpolated sentences from abstract or other sections.
+#' @returns Character vector with sentences with interpolated sentences
+#' removed.
+#'
+#' @export
+splice_plos_twopager <- function(sections_v) {
 
+  # needs properly placed section tags in order to work!
   # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
-    sections <- stringr::str_detect(sections_v, "^<section> ")
+  sections <- stringr::str_detect(sections_v, "^(<section>|#+) ")
 
-    if (sum(sections) == 1) return(sections_v)
+  if (sum(sections) == 1) return(sections_v)
 
-    splice_start_piece <- which(sections)[2] - 1
-    splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
-    splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
+  splice_start_piece <- which(sections)[2] - 1
+  splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
+  splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
 
-    c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)])
-    # plos_line <- which.max(stringr::str_detect(sections_v, "<section> plos"))
-
-    # if (plos_line == length(sections_v)) {
-      # return(sections_v[-length(sections_v)])
-      # if plos line at the end of DAS there is no page break
-    # } else if (plos_line == which(sections)[2] & stringr::str_detect(sections_v[plos_line - 1], "\\.$")) {
-      # return(sections_v[1:(plos_line - 1)])
-    # } else {
-      # splice_start_piece <- which(sections)[2] - 1
-      # splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
-      # splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
-      # return(c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)]))
-    # }
-
-  # } else {
-  #   return(sections_v)
-  # }
-
+  return(
+    c(sections_v[1:splice_start_piece],
+      sections_v[splice_end_piece:length(sections_v)])
+  )
 }
+
 # sentence <- pdf_text_sentences[927]
 #' test if text contains data availability statement
 #' @noRd
@@ -355,7 +348,7 @@
   DAS <- pdf_text_sentences[das_start:das_end]
 
   if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
-    DAS <- .splice_plos_twopager(DAS)
+    DAS <- splice_plos_twopager(DAS)
   }
    DAS |>
      paste(collapse = " ") |>
@@ -435,7 +428,7 @@
   cas_end <- cas_start + cas_end
 
   pdf_text_sentences[cas_start:cas_end] |>
-    # .splice_plos_twopager() |>
+    # splice_plos_twopager() |>
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
     stringr::str_trim() |>
