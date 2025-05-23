@@ -42,7 +42,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   regex_to_correct <- c(
     "a?cc(ession)? nrs?\\.$",
     "a?cc(ession)? nos?\\.$",
-    "fig\\.$",
+    "figs?\\.$",
     "doi\\.$",
     "drs?\\.",
     "zenodo\\.",

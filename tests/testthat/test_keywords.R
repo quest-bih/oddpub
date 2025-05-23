@@ -169,7 +169,9 @@ test_that("source_code",
           {
             expect_true(.detect_keywords("the source code was available ", "source_code"))
             expect_true(.detect_keywords("all data and code were uploaded ", "source_code"))
-            expect_true(.detect_keywords("available from github", "source_code"))
+            expect_true(.detect_keywords("all scripts related to the analysis ", "source_code"))
+            expect_true(.detect_keywords("code and data generated for ", "source_code"))
+            expect_false(.detect_keywords("available from github ", "source_code"))
             expect_false(.detect_keywords("bar code on the tube ", "source_code"))
           })
 

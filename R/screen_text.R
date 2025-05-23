@@ -17,6 +17,7 @@
       "data" = .format_keyword_vector(x, end_boundary = TRUE),
       "file_formats" = .format_keyword_vector(x, end_boundary = TRUE),
       "github" = .format_keyword_vector(x, end_boundary = TRUE),
+      "ownership_claim" = .format_keyword_vector(x, end_boundary = TRUE),
       "supplemental_table" = x,
       "supplemental_table_number" = x,
       "weblink" = x,
@@ -168,7 +169,7 @@
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement",
-                                "reuse", "software_use",  "grant",
+                                "reuse", "software_use",  "ownership_claim", "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
   # search for all relevant keyword categories
@@ -200,39 +201,32 @@
 }
 # sections_v <- pdf_text_sentences[das_start:das_end]
 # sections_v <- DAS
-#' search plos DAS when spread over two pages
-#' @noRd
-.splice_plos_twopager <- function(sections_v) {
+#' Splice sentences from e.g. DAS that were separated due to interpolated
+#'  sections in PLoS-formatted articles.
+#' @param sections_v Character vector of sentences that may contain
+#' interpolated sentences from abstract or other sections.
+#' @returns Character vector with sentences with interpolated sentences
+#' removed.
+#'
+#' @export
+splice_plos_twopager <- function(sections_v) {
 
+  # needs properly placed section tags in order to work!
   # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
-    sections <- stringr::str_detect(sections_v, "^<section> ")
+  sections <- stringr::str_detect(sections_v, "^(<section>|#+) ")
 
-    if (sum(sections) == 1) return(sections_v)
+  if (sum(sections) == 1) return(sections_v)
 
-    splice_start_piece <- which(sections)[2] - 1
-    splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
-    splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
+  splice_start_piece <- which(sections)[2] - 1
+  splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
+  splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
 
-    c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)])
-    # plos_line <- which.max(stringr::str_detect(sections_v, "<section> plos"))
-
-    # if (plos_line == length(sections_v)) {
-      # return(sections_v[-length(sections_v)])
-      # if plos line at the end of DAS there is no page break
-    # } else if (plos_line == which(sections)[2] & stringr::str_detect(sections_v[plos_line - 1], "\\.$")) {
-      # return(sections_v[1:(plos_line - 1)])
-    # } else {
-      # splice_start_piece <- which(sections)[2] - 1
-      # splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
-      # splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
-      # return(c(sections_v[1:splice_start_piece], sections_v[splice_end_piece:length(sections_v)]))
-    # }
-
-  # } else {
-  #   return(sections_v)
-  # }
-
+  return(
+    c(sections_v[1:splice_start_piece],
+      sections_v[splice_end_piece:length(sections_v)])
+  )
 }
+
 # sentence <- pdf_text_sentences[927]
 #' test if text contains data availability statement
 #' @noRd
@@ -280,9 +274,12 @@
       das_start <- min(das_start)
     }
 
-    # if more than two detections of DAS were made, then return full document
-  } else if (length(das_start) != 1) {
-    return(pdf_text_sentences)
+    # if more than two detections of DAS were made, then return the last one
+  } else if (length(das_start) > 2) {
+    das_start <- max(das_start)
+  } else if (length(das_start) == 0) {
+    # return empty string if no das was detected
+    return("")
   }
 
 
@@ -351,7 +348,7 @@
   DAS <- pdf_text_sentences[das_start:das_end]
 
   if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
-    DAS <- .splice_plos_twopager(DAS)
+    DAS <- splice_plos_twopager(DAS)
   }
    DAS |>
      paste(collapse = " ") |>
@@ -383,7 +380,7 @@
 
   cas_start <- which(cas_detections)
 
-  if (length(cas_start) == 2) {
+  if (length(cas_start) > 2) {
     cas_start <- max(cas_start)
   } else if (length(cas_start) != 1 ) {
     return("")
@@ -399,9 +396,9 @@
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
   cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
-                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.")) |>
+                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.|\\u2750")) |>
     which() - 1
-  # check if candidates are full sentences ending in full stop. This achieves splicing if section contines on next page
+  # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
@@ -431,7 +428,7 @@
   cas_end <- cas_start + cas_end
 
   pdf_text_sentences[cas_start:cas_end] |>
-    # .splice_plos_twopager() |>
+    # splice_plos_twopager() |>
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
     stringr::str_trim() |>
@@ -494,10 +491,11 @@
 
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
-    repositories <- protocol <- supplement <- source_code <- github <-
+    repositories <- protocol <- supplement <-
+    source_code <- software_use <- github <- ownership_claim <-
     upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
     com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
-    com_request <- com_unknown_source <- NULL
+    com_request <- com_unknown_source <- com_code_reuse <- NULL
 
 # odc <- open_data_categories[[1]]
   # pdf_text_sentences <- publ_sentences
@@ -508,21 +506,23 @@
   keyword_results_combined <- open_data_categories  |>
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
-                 (accession_nr | weblink) & available & !not_available & !was_available & !reuse &
+                 (accession_nr | weblink) & available &
+                 !not_available & !was_available & (!reuse | ownership_claim) &
                  ((!misc_non_data & !protocol & !supplement & !source_code & !grant) | data)
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & !reuse &
+                 !not_available & !was_available & (!reuse | ownership_claim) &
                  (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
-    purrr::map(dplyr::mutate, com_code = source_code & available &
-                 !not_available & !was_available & !reuse & !software_use &
-                 ((!upon_request & !supplement)|stringr::str_detect(publ_sentences, "git|www|http"))) |>
-    purrr::map(dplyr::mutate, com_suppl_code = supplement & source_code) |>
+    purrr::map(dplyr::mutate, com_code = source_code &
+                 !not_available & ((!was_available & !reuse & !software_use) | ownership_claim) &
+                 ((!upon_request & !supplement & !dataset & available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
+    purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
-    purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code) |>
+    purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code &
+                 (!not_available & (available | stringr::str_detect(publ_sentences, "www|http")|github))) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
@@ -681,7 +681,8 @@
     com_suppl_code <- com_code_reuse <- dataset <- com_file_formats <- com_reuse  <-
     com_code_reuse <- com_supplemental_data <- com_request <- com_github_data <-
     com_unknown_source <- article <- is_general_purpose <- is_supplement <-
-    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <- NULL
+    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <-
+    is_code_supplement <- NULL
 
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
@@ -721,7 +722,7 @@
 
   com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
     com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
-    com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
+    com_code_reuse <- com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
 
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
@@ -770,7 +771,7 @@
     dplyr::mutate(
       cas = ifelse(stringr::str_detect(stringr::str_sub(das, 1, 30), "(?<!accession) code|software|materials"), das, cas),
       open_code_statements =
-        paste(com_code, com_suppl_code, sep = " ") |>
+        paste(com_code, com_suppl_code, com_code_reuse, sep = " ") |>
         trimws()
       ) |>
     dplyr::select(article, das, open_data_statements, cas, open_code_statements)
