@@ -291,6 +291,7 @@ field_specific_repo:
   - "UniProt[KB]*"
   - "VectorBase"
   - "Virtual Trials Archive"
+  - "Vivli"
   - "Worldwide Protein Data Bank"
   - "wwPDB"
   - "Xenbase"
