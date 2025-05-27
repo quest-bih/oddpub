@@ -247,14 +247,11 @@ splice_plos_twopager <- function(sections_v) {
 
   keyword_list <- .create_keyword_list()
 
-  data_availability <- keyword_list[["data_availability"]]
-
-
-  das_detections <- furrr::future_map_lgl(pdf_text_sentences,
-                      \(sentence) stringr::str_detect(sentence, data_availability))
+  das_detections <- purrr::map_lgl(pdf_text_sentences,
+                      \(sentence) stringr::str_detect(sentence, keyword_list$data_availability))
 
   if (sum(das_detections) > 0) {
-    das_detections <- furrr::future_map_lgl(pdf_text_sentences,
+    das_detections <- purrr::map_lgl(pdf_text_sentences,
                                             \(sentence) .has_das(sentence, keyword_list))
   }
 
@@ -286,13 +283,14 @@ splice_plos_twopager <- function(sections_v) {
   str_das <- pdf_text_sentences[das_start] |>
     stringr::str_trim()
   str_das_sameline <- str_das |>
-    stringr::str_remove(data_availability) |>
+    stringr::str_remove(keyword_list$data_availability) |>
     stringr::str_remove("<section> ")
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
-  das_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(das_start + 1):length(pdf_text_sentences)],
-                                         \(sentence) stringr::str_detect(sentence, "(section|insert|iend)> (?!d )|^\\d\\.")) |>
+  das_end_candidates <- purrr::map_lgl(pdf_text_sentences[(das_start + 1):length(pdf_text_sentences)],
+                                         \(sentence) stringr::str_detect(sentence, "(section|insert|iend)> (?!d )|^\\d\\.") &
+                                         stringr::str_detect(sentence, keyword_list$section_stopwords)) |>
     which() - 1
 
   # if (length(pdf_text_sentences) - das_start <= 2) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
@@ -303,15 +301,13 @@ splice_plos_twopager <- function(sections_v) {
       ) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
-  completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[das_start + das_end_candidates],
+  completed_sentences <- purrr::map_lgl(pdf_text_sentences[das_start + das_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
-  if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != "." ) {
+  if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != ".") {
     # first_sentence <- das_start + 1
 
     das_end <- das_end_candidates[-1][completed_sentences[-1]][1]#
-
-
 
   } else {
     das_end <- das_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
@@ -351,13 +347,10 @@ splice_plos_twopager <- function(sections_v) {
     DAS <- splice_plos_twopager(DAS)
   }
    DAS |>
+     stats::na.omit() |>
      paste(collapse = " ") |>
      stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
      stringr::str_trim() |>
-     # in some cases the references or other sections interpolate between DAS title and DAS text
-     stringr::str_remove("<section> references.*") |> # remove references
-     stringr::str_remove("<section> authors.*") |> # remove author contributions
-     stringr::str_remove("<section> additional contr.*") |> # remove author contributions
      stringr::str_remove_all(" <section>") |>
      stringr::str_replace("(?<=repository)\\. ", ": ") |>  # for the weird cases when after repository a . and not : follows
      stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
@@ -373,10 +366,10 @@ splice_plos_twopager <- function(sections_v) {
 
   keyword_list <- .create_keyword_list()
 
-  code_availability <- keyword_list[["code_availability"]]
+  # code_availability <- keyword_list[["code_availability"]]
 
   cas_detections <- furrr::future_map_lgl(pdf_text_sentences,
-                                          \(sentence) stringr::str_detect(sentence, code_availability))
+                                          \(sentence) stringr::str_detect(sentence, keyword_list$code_availability))
 
   cas_start <- which(cas_detections)
 
@@ -389,14 +382,15 @@ splice_plos_twopager <- function(sections_v) {
   str_cas <- pdf_text_sentences[cas_start] |>
     stringr::str_trim()
   str_cas_sameline <- str_cas |>
-    stringr::str_remove(code_availability) |>
+    stringr::str_remove(keyword_list$code_availability) |>
     stringr::str_remove("<section> ")
 
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
   cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
-                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.|\\u2750")) |>
+                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.|\\u2750") &
+                                                stringr::str_detect(sentence, keyword_list$section_stopwords)) |>
     which() - 1
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
@@ -428,13 +422,11 @@ splice_plos_twopager <- function(sections_v) {
   cas_end <- cas_start + cas_end
 
   pdf_text_sentences[cas_start:cas_end] |>
-    # splice_plos_twopager() |>
+    stats::na.omit() |>
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
     stringr::str_trim() |>
-    # in some cases the references interpolate between CAS title and DAS text
-    stringr::str_remove("<section> references.*") |> # remove references
-    stringr::str_remove("funding.*") |> # remove funding
+    stringr::str_remove_all(" <section>") |>
     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
     .correct_tokenization()
 
@@ -500,7 +492,11 @@ splice_plos_twopager <- function(sections_v) {
 # odc <- open_data_categories[[1]]
   # pdf_text_sentences <- publ_sentences
   # search for open data keywords in the full texts
-  open_data_categories <- furrr::future_map(pdf_text_sentences, .map_keywords, .progress = TRUE)
+  p <- progressr::progressor(along = pdf_text_sentences)
+  open_data_categories <- furrr::future_map(pdf_text_sentences, \(x) {
+    p()
+    .map_keywords(x)
+  })
 
   # combine columns for the different open data keywords
   keyword_results_combined <- open_data_categories  |>
