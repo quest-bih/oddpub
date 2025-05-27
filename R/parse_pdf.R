@@ -1,3 +1,4 @@
+#' apply standardized naming rule for output files from input name and output folder
 #' @noRd
 .create_output_filename <- function(pdf_filename, output_folder)
 {
@@ -10,7 +11,7 @@
   return(output_filename)
 }
 
-#' convert PDF file to txt file and saves it to output_folder (can now deal with multiple column output)
+#' convert PDF file to txt file and saves it to output_folder (pdftools in R)
 #' @noRd
 
 
@@ -260,7 +261,7 @@ Mode <- function(x) {
 
   header_candidate <- suppressWarnings(
     # ht <-
-      text_data |>
+    text_data |>
       dplyr::filter(y < min(y) + 18,
                     !stringr::str_detect(text, "\\.$")) |>
       dplyr::arrange(y, x) |>
@@ -282,20 +283,20 @@ Mode <- function(x) {
       dplyr::mutate(section_on_line_one = any(is_section == TRUE & line_n == 1)) |>
       dplyr::filter((prop_width < 0.5 & font_size < 9) | max_x_jump > 170 |
                       prop_width < 0.2 |
-        y_jump > 20 |
-        potential_page_n |
-        has_coded_break,
-        section_on_line_one == FALSE,
-      is_section == FALSE,
-      !stringr::str_detect(font_name, "Bold")
+                      y_jump > 20 |
+                      potential_page_n |
+                      has_coded_break,
+                    section_on_line_one == FALSE,
+                    is_section == FALSE,
+                    !stringr::str_detect(font_name, "Bold")
       ) |>
       dplyr::filter((y_jump == max(y_jump) |
                        # stringr::str_detect(text, "[C,c]ontinued") |
                        stringr::str_detect(text, "20\\d{2}|\\u00a9"))
                     # & y_jump > 13
-                    ) |>
+      ) |>
       dplyr::pull(y)
-      )
+  )
 
   if (length(header_candidate) == 0) return(0) # in case no header is detected
 
@@ -330,7 +331,7 @@ Mode <- function(x) {
     text_data |>
       dplyr::filter(y > min_y,
                     height < 20,
-                    ) |>
+      ) |>
       dplyr::arrange(y, x) |>
       dplyr::mutate(jump_size = y - dplyr::lag(y, default = min_y),
                     line_n = abs(jump_size) > 4,
@@ -360,7 +361,7 @@ Mode <- function(x) {
                          max(line_n) - line_n < 3)
       #               # |
       #               #   potential_page_n == TRUE
-                    ) |>
+      ) |>
       dplyr::pull(y)
   )
 
@@ -404,7 +405,7 @@ Mode <- function(x) {
                   stringr::str_detect(text, "[A-Za-z]|\\d{1,3}|\\["),
                   !stringr::str_detect(text, "\\(")
 
-                  ) |>
+    ) |>
     dplyr::count(x) |>
     dplyr::slice_max(order_by = n, n = 5) |>
     dplyr::filter(n > 2) |>
@@ -572,12 +573,12 @@ Mode <- function(x) {
 
       suppressWarnings(
         layout_divider_y <- text_data |>
-        dplyr::filter(y > cc_tag_y - 10,
-                      font_size > dplyr::first(font_size),
-                      x_jump_size < -200,
-                      !stringr::str_detect(text, "AUTHOR")) |>
-        dplyr::summarise(divider = min(y) - 10) |>
-        dplyr::pull(divider)
+          dplyr::filter(y > cc_tag_y - 10,
+                        font_size > dplyr::first(font_size),
+                        x_jump_size < -200,
+                        !stringr::str_detect(text, "AUTHOR")) |>
+          dplyr::summarise(divider = min(y) - 10) |>
+          dplyr::pull(divider)
 
       )
 
@@ -586,7 +587,7 @@ Mode <- function(x) {
       } else {
         min_x <- 800
       }
-  } else {
+    } else {
       layout_divider_y <- 800
     }
 
@@ -691,7 +692,7 @@ Mode <- function(x) {
         insert > 0 & dplyr::lag(insert, default = 0) != insert ~ paste("\n<insert>", text),
         insert > 0 & dplyr::lead(insert, default = 0) != insert ~ paste(text, "\n<iend>\n"),
         .default = text)
-      )
+    )
 
   main_text <- cols_w_inserts |>
     dplyr::filter(insert == 0) |>
@@ -722,7 +723,7 @@ Mode <- function(x) {
       x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
       y_jump = abs(y - dplyr::lag(y, default = 0)),
       leads = (stringr::str_detect(dplyr::lead(text), "[A-Z]") |
-        stringr::str_detect(dplyr::lead(text, 2), "[A-Z]|continued"))
+                 stringr::str_detect(dplyr::lead(text, 2), "[A-Z]|continued"))
       &
         (!stringr::str_detect(dplyr::lag(text, default = ""), "^see$|^and$|^in$|,|Summary") |
            dplyr::lag(font_name) != font_name & dplyr::lag(font_size) != font_size) &
@@ -731,24 +732,25 @@ Mode <- function(x) {
       # has_insert_text = .str_has_insert(text),
       vertical = width <= height & stringr::str_length(text) > 2 & width < 15,
       verticality = mean(vertical, na.rm = TRUE)
-      ) |>
+    ) |>
     dplyr::filter(
+
       # y_jump != 0,
-                  .str_has_insert(text) &
-                    (y_jump >= 14 |
-                       (x > 300 & y < 100 & dplyr::lag(space) == FALSE) |
-                      (x_jump_size < -260) & y_jump < 10
-                     ) |
-                    stringr::str_detect(text, "^REAGENT$") &
-                    stringr::str_detect(dplyr::lead(text, 1), "^or$") &
-                    stringr::str_detect(dplyr::lead(text, 2), "^RESOURCE$"),
-                  stringr::str_length(text) > 2 |
-                    (stringr::str_detect(text, "^TA?$|^F$") &
-                       stringr::str_detect(dplyr::lead(text, 1), "^A$|^B$|^I$") &
-                       stringr::str_detect(dplyr::lead(text, 2), "^B$|^L$|^G$")),
-                  # is.na(dplyr::lag(space)) | dplyr::lag(space) == FALSE,
-                  leads == TRUE
-                  ) |>
+      .str_has_insert(text) &
+        (y_jump >= 14 |
+           (x > 300 & y < 100 & dplyr::lag(space) == FALSE) |
+           (x_jump_size < -260) & y_jump < 10
+      ) |
+        stringr::str_detect(text, "^REAGENT$") &
+        stringr::str_detect(dplyr::lead(text, 1), "^or$") &
+        stringr::str_detect(dplyr::lead(text, 2), "^RESOURCE$"),
+      stringr::str_length(text) > 2 |
+        (stringr::str_detect(text, "^TA?$|^F$") &
+           stringr::str_detect(dplyr::lead(text, 1), "^A$|^B$|^I$") &
+           stringr::str_detect(dplyr::lead(text, 2), "^B$|^L$|^G$")),
+      # is.na(dplyr::lag(space)) | dplyr::lag(space) == FALSE,
+      leads == TRUE
+    ) |>
     dplyr::select(-leads)
 
   insert_candidates <- insert_candidates |>
@@ -976,7 +978,7 @@ Mode <- function(x) {
                   is_subpscript == FALSE,
                   dplyr::lead(is_subpscript, default = FALSE) == FALSE,
                   text != "="
-                  ) |>
+    ) |>
     dplyr::arrange(y, x) |>
     .add_line_n() |>
     dplyr::mutate(first_col = x < midpage) |>
@@ -997,10 +999,10 @@ Mode <- function(x) {
                     dplyr::na_if(0),
                   n_cols_right = sum(first_col == FALSE & space == FALSE) |>
                     dplyr::na_if(0)
-                  ) |>
+    ) |>
     dplyr::ungroup() |>
     dplyr::mutate(has_fig_caption_right = any(stringr::str_detect(text, "^\\([a-zA-Z]\\)$") &
-                                                                  first_col == FALSE),
+                                                first_col == FALSE),
                   mean_cols = mean(n_cols, na.rm = TRUE),
                   mean_cols_left = mean(n_cols_left, na.rm = TRUE),
                   mean_cols_right = mean(n_cols_right, na.rm = TRUE),
@@ -1031,8 +1033,8 @@ Mode <- function(x) {
                        ),
                      twothirdscol = sum(last_col_x, na.rm = TRUE) > 0 &
                        # dplyr::first(mean_cols_left) == 0 &
-                                            nrow(cols_left_est) > 2
-                     )
+                       nrow(cols_left_est) > 2
+    )
 #####
   if (multicol_layout$twothirdscol == TRUE) {
     max_x <- cols_left_est |>
@@ -1055,22 +1057,23 @@ Mode <- function(x) {
   #                      ) |> # single word on line
   #     dplyr::pull(second_col)
 
-    if (short_title_followed_by_2col == TRUE
+  if (short_title_followed_by_2col == TRUE
         # |
         # empty_second_col == TRUE
-        ) {
-      cols <- 2
-    } else if (multicol_layout$multicol == TRUE |
-               multicol_layout$twocol == TRUE) {
-      cols <- 0
-    } else {
-      cols <- cols |>
-        dplyr::summarise(
-          n_breaks = sum(space == FALSE &
-                           (is.na(prop_space) | (prop_space > 1 & next_space_width > 5)),
-                         na.rm = TRUE)
-        ) |>
-        dplyr::pull(n_breaks)
+  ) {
+    cols <- 2
+  } else if (multicol_layout$multicol == TRUE |
+             multicol_layout$twocol == TRUE) {
+    cols <- 0
+  } else {
+    cols <- cols |>
+      dplyr::summarise(
+        n_breaks = sum(space == FALSE &
+                         (is.na(prop_space) | (prop_space > 1 &
+                                                 next_space_width > 5)),
+                       na.rm = TRUE)
+      ) |>
+      dplyr::pull(n_breaks)
     }
 
   if (cols < 2) { # 1 col or 2-col captions
@@ -1108,7 +1111,7 @@ Mode <- function(x) {
       dplyr::summarise(y = max(y) # TODO:perhaps mean here?
                        # ,
                        # rel_width = mean(rel_width)
-                       ) |>
+      ) |>
       dplyr::ungroup() |>
       dplyr::mutate(y_jump = dplyr::lead(y) - y) |>
       dplyr::filter(y_jump >= crit_jump_min,
@@ -1227,7 +1230,7 @@ Mode <- function(x) {
                   # for inserts on a page with the references
                   y_exceeded = dplyr::if_else(
                     (stringr::str_detect(first_insert$text, "^F") &
-                      is_fig_caption) |
+                       is_fig_caption) |
                       (has_references & font_size < dplyr::first(font_size)),
                     1,
                     y_exceeded),
@@ -1244,11 +1247,11 @@ Mode <- function(x) {
     dplyr::filter(
       font_size <= dplyr::first(font_size) + 0.5
       # font_size <= ceiling(dplyr::first(font_size))
-      )
+    )
 
   last_row <- last_row |>
-      dplyr::pull(y) |>
-      max()
+    dplyr::pull(y) |>
+    max()
 
   last_row
 }
@@ -1338,7 +1341,7 @@ Mode <- function(x) {
   left_margin_text <- text_data |>
     dplyr::filter(x < 40,
                   stringr::str_detect(text, "\\d{1,5}$")
-                  )
+    )
 
   if (nrow(left_margin_text) > 10) min_x <- max(min_x, max(left_margin_text$x))
 
@@ -1361,14 +1364,17 @@ Mode <- function(x) {
     # as well as the header and footer
     dplyr::filter(
       !(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
-                      !stringr::str_detect(dplyr::lag(text), "Fig(u|\\.)|Table|Supplement|Section|and|FIG(U|\\.)|TABLE")),
+                      !stringr::str_detect(dplyr::lag(text),
+          "Fig(u|\\.)|Table|Supplement|Section|and|FIG(U|\\.)|TABLE")),
                   y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
                   y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
                   width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
                   !stringr::str_detect(text, "^\\.\\W?$")) |> # remove zero width spaces and single punctuation
-    dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) - dplyr::lag(width, default = 0),
-                  is_subpscript = abs(x_jump_size) < 5 & dplyr::lag(font_size, default = 100) > font_size &
-                                                              dplyr::lead(font_size, default = 100) > font_size
+    dplyr::mutate(x_jump_size = x - dplyr::lag(x, default = 0) -
+                    dplyr::lag(width, default = 0),
+                  is_subpscript = abs(x_jump_size) < 5 &
+                    dplyr::lag(font_size, default = 100) > font_size &
+                    dplyr::lead(font_size, default = 100) > font_size
     )
 
 }
@@ -1445,7 +1451,7 @@ Mode <- function(x) {
     )) |>
     dplyr::ungroup()
 
- if (add_section_tags == TRUE) text_data <- text_data |>
+  if (add_section_tags == TRUE) text_data <- text_data |>
     .add_section_tags()
   if (is.character(text_data)) {
     return(text_data)
@@ -1500,7 +1506,7 @@ Mode <- function(x) {
   # text_data2 <- text_data |>
   #   filter(line_n > 27)
 
-  text_data |>
+ text_data |>
     dplyr::arrange(line_n) |>
     dplyr::mutate(
       dot = cumsum(dplyr::case_when(
@@ -1517,10 +1523,11 @@ Mode <- function(x) {
       newline_heading = dplyr::case_when(
         line_n == 1 & is.na(heading_font) ~ TRUE, # very first line
         line_n > dplyr::lag(line_n) & !stringr::str_detect(text, "\\.$") &
-           stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") ~ TRUE, # end of line can be full stop or some email or url
-        dplyr::lag(prop_blank > 0.8) & dplyr::lag(is_subpscript) == FALSE ~ TRUE, # previous line is very short
-           (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]")) & # some lines end with citation superscripts
-        font_name != dplyr::lag(font_name) & !stringr::str_detect(dplyr::lag(font_name), "Math") &
+          stringr::str_detect(dplyr::lag(text), "\\.$|@|www|http") ~ TRUE, # end of line can be full stop or some email or url
+        line_n > dplyr::lag(line_n) & dplyr::lag(prop_blank > 0.8) &
+          dplyr::lag(is_subpscript) == FALSE ~ TRUE, # previous line is very short
+        (dplyr::lag(font_size < 6) & !stringr::str_detect(dplyr::lag(text), "[[:lower:]]")) & # some lines end with citation superscripts
+          font_name != dplyr::lag(font_name) & !stringr::str_detect(dplyr::lag(font_name), "Math") &
           dplyr::lag(is_subpscript) == FALSE ~ TRUE,
         .default = FALSE),
       paragraph_start = abs(jump_size) > section_jump,

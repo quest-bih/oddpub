@@ -31,7 +31,8 @@ Imports:
     rlang,
     tidyr,
     lubridate,
-    yaml
+    yaml,
+    progressr
 Suggests: 
   testthat
 RoxygenNote: 7.3.2

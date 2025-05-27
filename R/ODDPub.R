@@ -31,11 +31,14 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
   # converts PDF file to txt file and saves it to output_folder
   # requires the pdftools library
   # some PDFs make take a very long time to process!
+  p <- progressr::progressor(along = pdf_filenames)
   conversion_success <-
-    suppressWarnings(furrr::future_map_lgl(pdf_filenames,
-                          \(x) .pdf_to_text(x, output_folder, overwrite_existing_files = overwrite_existing_files,
-                                            add_section_tags = add_section_tags), .progress = TRUE))
-
+    suppressWarnings(furrr::future_map_lgl(pdf_filenames, \(x) {
+      p()
+      .pdf_to_text(x, output_folder,
+                   overwrite_existing_files = overwrite_existing_files,
+                   add_section_tags = add_section_tags)
+      }))
   return(conversion_success)
 }
 
@@ -85,6 +88,7 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 #' open_data_search(pdf_load("examples/"), screen_das = "extra")
 #'
 #' future::plan(multisession) # add this for parallelization
+#' progressr::handlers(global = TRUE) # add this for visualizing the progress
 #'
 #' text_corpus <- pdf_load("examples/")
 #' results <- open_data_search(text_corpus)
@@ -99,22 +103,36 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
     is_code_reuse <- is_code_supplement <-
     is_code_reuse_old <- is_code_supplement_old <- NULL
 
-  pdf_text_sentences <- furrr::future_map(pdf_text_sentences, .remove_references)
+  message("Removing References:\n")
+  p <- progressr::progressor(along = pdf_text_sentences)
+  pdf_text_sentences <- furrr::future_map(pdf_text_sentences, \(x) {
+    p()
+    .remove_references(x)
+  })
 
   # pdf_text_sentences <- das_text_sentences
 
   ########## extract das and cas if available, if not, the full text is extracted instead
-
+  message("Extracting Data Availability Statements:\n")
+  p <- progressr::progressor(along = pdf_text_sentences)
   das_text_sentences <- pdf_text_sentences |>
-    furrr::future_map(.extract_das)
+    furrr::future_map(\(x) {
+     p()
+      .extract_das(x)
+    })
 
   # get the index of articles with das
   sentences_with_das <- das_text_sentences |>
     purrr::map_lgl(\(x) length(x) < 31 & x[1] != "") |> # It is assumed a DAS will not have more than 30 sentences
     which()
 
+  message("Extracting Code Availability Statements:\n")
+  p <- progressr::progressor(along = pdf_text_sentences)
   cas_text_sentences <- pdf_text_sentences |>
-    furrr::future_map(.extract_cas)
+    furrr::future_map(\(x) {
+      p()
+      .extract_cas(x)
+    })
 
   # get the index of articles with cas
   sentences_with_cas <- cas_text_sentences |>
@@ -177,7 +195,8 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
         dplyr::left_join(open_data_cat_old, by = "article") |>
         dplyr::mutate(open_data_category =
                         dplyr::case_when(
-                          open_data_cat_old != "" & open_data_category != "" ~ paste0(open_data_cat_old, ", ", open_data_category),
+                          open_data_cat_old != "" & open_data_category != "" ~
+                            paste0(open_data_cat_old, ", ", open_data_category),
                           .default = paste0(open_data_cat_old, open_data_category)),
                       open_data_category = purrr::map_chr(open_data_category, .remove_repeats),
                       is_code_reuse = is_code_reuse_old | is_code_reuse,
@@ -200,7 +219,8 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
 
   #extract detected sentences as well
   if(extract_sentences == TRUE) {
-    detected_sentences <- .open_data_sentences(pdf_text_sentences, das_text_sentences, sentences_with_das,
+    detected_sentences <- .open_data_sentences(pdf_text_sentences, das_text_sentences,
+                                               sentences_with_das,
                                                cas_text_sentences, keyword_results)
     open_data_results <- cbind(open_data_results, detected_sentences[, -1]) |>
       dplyr::as_tibble()

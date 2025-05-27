@@ -26,9 +26,12 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   txt_filenames <- file.path(pdf_text_folder, txt_filenames)
 
   # produce version of the full texts where all sentences are separate vector elements
+  p <- progressr::progressor(along = txt_filenames)
   pdf_text_sentences <- txt_filenames |>
-    furrr::future_map(\(x) .tokenize_sections(x, lowercase = lowercase), .progress = TRUE)
-
+    furrr::future_map(\(x) {
+      p()
+      .tokenize_sections(x, lowercase = lowercase)
+    })
   names(pdf_text_sentences) <- txt_filenames_short
 
   return(pdf_text_sentences)
@@ -47,12 +50,13 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
     "drs?\\.",
     "zenodo\\.",
     "neurovault\\.",
+    "e\\. ?g\\.",
     "et al\\.$",
     "ncbi\\.$",
     "github\\.$",
     "www\\.$",
     "no\\.",
-    " st\\.",
+    "\\bst\\.",
     "https?:\\/\\/$",
     "^(<section> )?\\w\\.$",
     "^(<section> )?\\d\\.\\d\\.$"
@@ -98,7 +102,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
 # tok <- tibble(text = tok)
 #' format
 #' @noRd
-# textfile <- paste0(pdf_text_folder, txt_filenames)
+# textfile <- file.path(pdf_text_folder, txt_filenames)
 # textfile <- txt_filenames
 .tokenize_sections <- function(textfile, lowercase = TRUE)
 {
@@ -117,7 +121,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
     warning(paste0(textfile, ": Document could not be parsed into sections! Check if the txt file parsed correctly!"))
   }
 
-  tokenized |>
+ tokenized |>
     stringr::str_replace_all(pattern = ",", replacement = "") |>
     stringr::str_replace_all(pattern = "- ", replacement = "") |>
     .correct_tokenization() |>
