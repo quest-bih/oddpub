@@ -118,7 +118,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   das_text_sentences <- pdf_text_sentences |>
     furrr::future_map(\(x) {
      p()
-      .extract_das(x)
+      .extract_cdas(x, type = "das")
     })
 
   # get the index of articles with das
@@ -131,7 +131,7 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   cas_text_sentences <- pdf_text_sentences |>
     furrr::future_map(\(x) {
       p()
-      .extract_cas(x)
+      .extract_cdas(x, type = "cas")
     })
 
   # get the index of articles with cas

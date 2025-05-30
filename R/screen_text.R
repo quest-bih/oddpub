@@ -213,7 +213,7 @@ splice_plos_twopager <- function(sections_v) {
 
   # needs properly placed section tags in order to work!
   # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
-  sections <- stringr::str_detect(sections_v, "^(<section>|#+) ")
+  sections <- stringr::str_detect(sections_v, "^(<section>|##+) ")
 
   if (sum(sections) == 1) return(sections_v)
 
@@ -232,126 +232,137 @@ splice_plos_twopager <- function(sections_v) {
 #' @noRd
 .has_das <- function(sentence, keyword_list) {
 
-  data_availability <- keyword_list[["data_availability"]]
+  data_availability <- keyword_list$data_availability
 
-  data_availability <- paste0("(<section>)\\W+[\\d,\\W]*(", data_availability, ")\\b")
+  data_availability <- paste0("(<section>|##+)\\W+[\\d,\\W]*(", data_availability, ")\\b")
   stringr::str_detect(sentence, data_availability)
 }
 
 # sentence <- "<section> data availability"
 # .has_das(sentence)
 
-#' extract data availability statement
+#' extract data and or code availability statement
 #' @noRd
-.extract_das <- function(pdf_text_sentences) {
+.extract_cdas <- function(pdf_text_sentences, type = "das") {
+
+  type <- match.arg(type, c("das", "cas"))
 
   keyword_list <- .create_keyword_list()
 
-  das_detections <- purrr::map_lgl(pdf_text_sentences,
-                      \(sentence) stringr::str_detect(sentence, keyword_list$data_availability))
+  if (type == "das") {
+    cdas_detections <- purrr::map_lgl(pdf_text_sentences,
+                                     \(sentence) stringr::str_detect(sentence, keyword_list$data_availability))
 
-  if (sum(das_detections) > 0) {
-    das_detections <- purrr::map_lgl(pdf_text_sentences,
-                                            \(sentence) .has_das(sentence, keyword_list))
+    if (sum(cdas_detections) > 0) {
+      cdas_detections <- purrr::map_lgl(pdf_text_sentences,
+                                       \(sentence) .has_das(sentence, keyword_list))
+    }
+    keyword_list$section_stopwords <- paste(keyword_list$section_stopwords, "|\\bcode availability")
+
+  } else {
+
+    cdas_detections <- furrr::future_map_lgl(pdf_text_sentences,
+                                            \(sentence) stringr::str_detect(sentence, keyword_list$code_availability))
   }
 
-  das_start <- which(das_detections)
+  cdas_start <- which(cdas_detections)
 
-  if (length(das_start) == 2) {
+  if (length(cdas_start) == 2) {
     # select detection with statement
-    statement_detections <- pdf_text_sentences[das_start] |>
-      stringr::str_detect("statement|availability of data")
+    statement_detections <- pdf_text_sentences[cdas_start] |>
+      stringr::str_detect("statement|availability of data(?! from)")
     # select detection without "data
-    quotation_detections <- !stringr::str_detect(pdf_text_sentences[das_start], '\\"data')
+    quotation_detections <- !stringr::str_detect(pdf_text_sentences[cdas_start], '\\"data')
     if (sum(quotation_detections) == 1) {
-      das_start <- das_start[quotation_detections] # select detection without "data
+      cdas_start <- cdas_start[quotation_detections] # select detection without "data
     } else if (sum(statement_detections) == 1) {
-      das_start <- das_start[statement_detections] # select detection with statement
+      cdas_start <- cdas_start[statement_detections] # select detection with statement
     } else {
-      das_start <- min(das_start)
+      cdas_start <- min(cdas_start)
     }
 
-    # if more than two detections of DAS were made, then return the last one
-  } else if (length(das_start) > 2) {
-    das_start <- max(das_start)
-  } else if (length(das_start) == 0) {
-    # return empty string if no das was detected
+    # if more than two detections of CDAS were made, then return the last one
+  } else if (length(cdas_start) > 2) {
+    cdas_start <- max(cdas_start)
+  } else if (length(cdas_start) == 0) {
+    # return empty string if no CDAS was detected
     return("")
   }
 
-
-  str_das <- pdf_text_sentences[das_start] |>
-    stringr::str_trim()
-  str_das_sameline <- str_das |>
-    stringr::str_remove(keyword_list$data_availability) |>
-    stringr::str_remove("<section> ")
-
+  # cdas_str <- pdf_text_sentences[cdas_start] |>
+  #   stringr::str_trim()
+  # cdas_str_sameline <- cdas_str |>
+  #   stringr::str_remove(keyword_list$data_availability) |>
+  #   stringr::str_remove(keyword_list$code_availability) |>
+  #   stringr::str_remove("(<section>|##+) ")
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
-  das_end_candidates <- purrr::map_lgl(pdf_text_sentences[(das_start + 1):length(pdf_text_sentences)],
-                                         \(sentence) stringr::str_detect(sentence, "(section|insert|iend)> (?!d )|^\\d\\.") &
-                                         stringr::str_detect(sentence, keyword_list$section_stopwords)) |>
+  cdas_end_candidates <- purrr::map_lgl(pdf_text_sentences[(cdas_start + 1):length(pdf_text_sentences)],
+                                         \(sentence) stringr::str_detect(sentence, "((section|insert|iend)>|#+) (?!d )|^\\d\\.") &
+                                         stringr::str_detect(sentence, keyword_list$section_stopwords)  &
+                                          !stringr::str_detect(sentence, "data") &
+                                          !stringr::str_detect(sentence, keyword_list$source_code)) |>
     which() - 1
 
   # if (length(pdf_text_sentences) - das_start <= 2) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
   if (
-    length(das_end_candidates) == 0 |
-    (length(das_end_candidates) == 1 & das_end_candidates[1] == 0) |
-    purrr::is_empty(das_end_candidates)
-      ) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
+    length(cdas_end_candidates) == 0 |
+    # (length(das_end_candidates) == 1 & das_end_candidates[1] == 0) |
+    purrr::is_empty(cdas_end_candidates)
+      ) return(pdf_text_sentences[cdas_start:length(pdf_text_sentences)])
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
-  completed_sentences <- purrr::map_lgl(pdf_text_sentences[das_start + das_end_candidates],
+  completed_sentences <- purrr::map_lgl(pdf_text_sentences[cdas_start + cdas_end_candidates],
                                                \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
 
-  if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != ".") {
-    # first_sentence <- das_start + 1
+  # if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != ".") {
+  #   # first_sentence <- das_start + 1
+  #
+  #   das_end <- das_end_candidates[-1][completed_sentences[-1]][1]#
+  #
+  # } else {
+  cdas_end <- cdas_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
 
-    das_end <- das_end_candidates[-1][completed_sentences[-1]][1]#
+  if (cdas_start / length(cdas_detections) < 0.1 & cdas_end != 0) { # for plos journals with DAS on first page
 
-  } else {
-    das_end <- das_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+      cdas_second_part <- furrr::future_map_lgl(pdf_text_sentences[(cdas_start + cdas_end + 1):length(pdf_text_sentences)],
+                                               \(sentence) stringr::str_detect(sentence, "(<section>|##+) funding:"))
 
-    if (das_start / length(das_detections) < 0.1 & das_end != 0) { # for plos journals with DAS on first page
-
-      das_second_part <- furrr::future_map_lgl(pdf_text_sentences[(das_start + das_end + 1):length(pdf_text_sentences)],
-                                               \(sentence) stringr::str_detect(sentence, "<section> funding:"))
-
-      if (sum(das_second_part) == 0) {
-        das_end <- das_end
+      if (sum(cdas_second_part) == 0) {
+        cdas_end <- cdas_end
         } else {
-          das_end <- das_end + which(das_second_part) - 1
+          cdas_end <- cdas_end + which(cdas_second_part) - 1
         }
     }
-  }
-
-  if (is.na(das_end)) {
+  # }
+  #
+  if (is.na(cdas_end)) {
 
     if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
-      das_end <- length(pdf_text_sentences) - das_start
+      cdas_end <- length(pdf_text_sentences) - cdas_start
     } else {
-      das_end <- min(das_end_candidates[das_end_candidates > 0], length(pdf_text_sentences) - das_start, na.rm = TRUE)
+      cdas_end <- min(cdas_end_candidates[cdas_end_candidates > 0], length(pdf_text_sentences) - cdas_start, na.rm = TRUE)
     }
 
   }
 
-  if (das_start + das_end > length(pdf_text_sentences)) {
-    das_end <- das_start
+  if (cdas_start + cdas_end > length(pdf_text_sentences)) {
+    cdas_end <- cdas_start
   }
 
-  das_end <- das_start + das_end
+  cdas_end <- cdas_start + cdas_end
 
-  DAS <- pdf_text_sentences[das_start:das_end]
+  CDAS <- pdf_text_sentences[cdas_start:cdas_end]
 
-  if (das_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
-    DAS <- splice_plos_twopager(DAS)
+  if (cdas_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
+    CDAS <- splice_plos_twopager(CDAS)
   }
-   DAS |>
+   CDAS |>
      stats::na.omit() |>
      paste(collapse = " ") |>
      stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
      stringr::str_trim() |>
-     stringr::str_remove_all(" <section>") |>
+     stringr::str_remove_all(" (<section>|##+)") |>
      stringr::str_replace("(?<=repository)\\. ", ": ") |>  # for the weird cases when after repository a . and not : follows
      stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
      tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
@@ -383,14 +394,15 @@ splice_plos_twopager <- function(sections_v) {
     stringr::str_trim()
   str_cas_sameline <- str_cas |>
     stringr::str_remove(keyword_list$code_availability) |>
-    stringr::str_remove("<section> ")
+    stringr::str_remove("(<section>|##+) ")
 
 
   # candidates are sentences after the first section but before the next
   # which begin with <section> or digit. (reference number at start of line)
   cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
-                                              \(sentence) stringr::str_detect(sentence, "section> (?!d )|^\\d\\.|\\u2750") &
-                                                stringr::str_detect(sentence, keyword_list$section_stopwords)) |>
+                                              \(sentence) stringr::str_detect(sentence, "(section>|##+) (?!d )|^\\d\\.|\\u2750") &
+                                                stringr::str_detect(sentence, keyword_list$section_stopwords) &
+                                                !stringr::str_detect(sentence, keyword_list$source_code)) |>
     which() - 1
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
@@ -426,7 +438,7 @@ splice_plos_twopager <- function(sections_v) {
     paste(collapse = " ") |>
     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
     stringr::str_trim() |>
-    stringr::str_remove_all(" <section>") |>
+    stringr::str_remove_all(" (<section>|##+)") |>
     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
     .correct_tokenization()
 
@@ -437,7 +449,7 @@ splice_plos_twopager <- function(sections_v) {
 .remove_references <- function(pdf_text_sentences) {
 
   line_before_refs <- pdf_text_sentences |>
-    stringr::str_detect("<section> r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
+    stringr::str_detect("(<section>|##+) r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
 
   if (length(line_before_refs) > 1) line_before_refs <- line_before_refs[length(line_before_refs)]
@@ -450,14 +462,14 @@ splice_plos_twopager <- function(sections_v) {
   # for journals that print useful information after the references (Elsevier, Science, etc.)
   line_after_refs <- suppressWarnings(
     pdf_text_sentences |>
-      stringr::str_detect("<section> (star\\+methods|open data)|<insert> key resources table") |>
+      stringr::str_detect("(<section>|##+) (star\\+methods|open data)|<insert> key resources table") |>
       which() |>
       max()
   )
   if (sum(line_after_refs) <= 0) {
     line_after_refs <- suppressWarnings(
       pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
-      stringr::str_detect("<section> (methods|acknowledge?ments:?)") |>
+      stringr::str_detect("(<section>|##+) (methods|acknowledge?ments:?)") |>
       which() |>
       min()
     )
