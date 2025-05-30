@@ -56,7 +56,6 @@
 
   if (stringr::str_detect(pdf_filename, "10\\.3390|e(L|l)ife")) return(1)
 
-
   text_data <- text_data |>
     dplyr::filter(insert == 0)
 
@@ -126,12 +125,12 @@
     dplyr::filter(stringr::str_detect(text, "References") & space == FALSE) |>
     dplyr::select(y, x)
 
-  introduction_xy <- text_data |>
+  introduction_yx <- text_data |>
     dplyr::filter(stringr::str_detect(text, "Introduction") & space == FALSE) |>
     dplyr::select(y, x)
 
-  introduction_y <- introduction_xy$y
-  introduction_x <- introduction_xy$x
+  introduction_y <- introduction_yx$y
+  introduction_x <- introduction_yx$x
 
   reference_y <- reference_yx$y
   reference_x <- reference_yx$x
@@ -161,12 +160,18 @@
 
   cols <- text_data |>
     dplyr::arrange(y, x) |>
+    # set the space param for words followed by subpscripts
+    dplyr::mutate(space = dplyr::case_when(
+      dplyr::lead(is_subpscript == TRUE) ~ TRUE,
+      .default = space
+    )) |>
     # exclude what could be references
     dplyr::filter(!stringr::str_detect(text, "^\\d{1,3}\\.?$"),
                   y < reference_y,
                   y > max(21, introduction_y), # exclude upper margin
                   rel_width > 0.3,
                   font_size > 4) |>
+
     .add_line_n()
 
   cols_x <- .find_cols_left_x(cols)
@@ -549,13 +554,6 @@ Mode <- function(x) {
     min_x <- .find_midpage_x(text_data |>
                                dplyr::filter(y > layout_divider_y))
 
-  } else if (stringr::str_detect(pdf_filename, "10\\.1001\\+jama")) {
-    layout_divider_y <- text_data |>
-      dplyr::filter(stringr::str_detect(text, "ARTICLE") &
-                      stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
-      dplyr::pull(y)
-    min_x <- .find_cols_left_x(text_data)$x[2]
-    if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
   } else if (stringr::str_detect(pdf_filename, "10\\.1159|10\\.1098\\+rs(if|pb)|10\\.3389\\+f|10\\.3324|10\\.1200|10\\.1182|10\\.1128")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "References|REFERENCES") & space == FALSE & x < 350) |>
@@ -591,6 +589,13 @@ Mode <- function(x) {
       layout_divider_y <- 800
     }
 
+  } else if (stringr::str_detect(pdf_filename, "10\\.1001\\+jama")) {
+    layout_divider_y <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "ARTICLE") &
+                      stringr::str_detect(dplyr::lead(text), "INFORMATION")) |>
+      dplyr::pull(y)
+    min_x <- .find_cols_left_x(text_data)$x[2]
+    if (purrr::is_empty(layout_divider_y)) layout_divider_y <- 800
   } else if (stringr::str_detect(pdf_filename, "jneurosci")) {
     layout_divider_y <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Significance|Received|Introduction"))
@@ -612,7 +617,7 @@ Mode <- function(x) {
     } else {
       min_x <- 800
     }
-  } else if (stringr::str_detect(pdf_filename, "10\\.1037")) {
+  } else if (stringr::str_detect(pdf_filename, "10\\.1073")) {
 
     affils <- text_data |>
       dplyr::filter(stringr::str_detect(text, "Author") &
@@ -670,12 +675,15 @@ Mode <- function(x) {
     # if above fails, take the max estimate, reducing in effect to a single column
     if (is.na(col3_x_est)) col3_x_est <- col3_x
 
-    if (cols < 3) col3_predivider_x <- col3_x
+    if (cols < 3) {
+      col3_predivider_x <- col3_x
+    } else {
+      col3_predivider_x <- col3_x_est
+    }
     # if max is at least 100 to the right of estimate, then estimate is good
     if (col2_x - col2_x_est > 100) col2_x <- col2_x_est
     if (col3_x - col3_x_est > 100) col3_x <- col3_x_est
   }
-
 
   cols_w_inserts <- text_data |>
     dplyr::arrange(insert) |>
@@ -1503,8 +1511,7 @@ Mode <- function(x) {
                                     dplyr::summarise(text = paste(text, collapse = " ")) |>
                                     dplyr::pull(text))
 
-  # text_data2 <- text_data |>
-  #   filter(line_n > 27)
+  # text_data2 <-
 
  text_data |>
     dplyr::arrange(line_n) |>
@@ -1531,10 +1538,6 @@ Mode <- function(x) {
           dplyr::lag(is_subpscript) == FALSE ~ TRUE,
         .default = FALSE),
       paragraph_start = abs(jump_size) > section_jump,
-      sameline_title = line_n > dplyr::lag(line_n) & heading_font &
-        (dplyr::lead(font_name) != font_name |
-           dplyr::lead(font_name, 2) != font_name |
-           dplyr::lead(font_name, 3) != font_name),
       # for the three-column science layout DAS may start within the line
       science_section =
         # (
@@ -1547,6 +1550,11 @@ Mode <- function(x) {
       # |
       # text == "Submitted"
       ,
+      sameline_title = line_n > dplyr::lag(line_n) & heading_font &
+        dplyr::lag(science_section == FALSE) &
+        (dplyr::lead(font_name) != font_name |
+           dplyr::lead(font_name, 2) != font_name |
+           dplyr::lead(font_name, 3) != font_name),
       # for some journals with das on first page (e.g. elsevier jclinepi, erj, etc.)
       plain_section =
         # should follow a new line should start with a capital, but not end on a capital (with or without fullstop) or a comma

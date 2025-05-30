@@ -74,18 +74,21 @@ karger_paper <- pdftools::pdf_data(test_path("10.1159+000521415.pdf"),
 }
 
 .extract_gap_coords <- function(text_data) {
-  text_data |>
+  gaps <- text_data |>
     dplyr::group_by(column) |>
     dplyr::summarise(min_x = min(x),
-                     max_x = max(x)) |>
-    dplyr::summarise(gap_l = mean(dplyr::if_else(column == 1, max_x, NA), na.rm = TRUE),
-                     gap_r = mean(dplyr::if_else(column == 2, min_x, NA), na.rm = TRUE)) |>
-    as.numeric()
+                     max_x = max(x))
+
+  gaps <- gaps |>
+    dplyr::summarise(gap_l1 = mean(dplyr::if_else(column == 1, max_x, NA), na.rm = TRUE),
+                     gap_r1 = mean(dplyr::if_else(column == 2, min_x, NA), na.rm = TRUE),
+                     gap_l2 = mean(dplyr::if_else(column == 2, max_x, NA), na.rm = TRUE),
+                     gap_r2 = mean(dplyr::if_else(column == 3, min_x, NA), na.rm = TRUE))
+
+  as.numeric(gaps)
 }
 
-context("header and footer detection")
-
-test_that("headers", {
+test_that("header detection", {
   expect_equal(.find_header_y(r2_paper[[6]]), 0) # first text 37
   expect_equal(.find_header_y(wkh_paper[[3]]), 0) # no header first text 34
   expect_equal(.find_header_y(oxford_paper[[4]]), 0) # no header first text 41 (page 3)
@@ -118,7 +121,7 @@ test_that("headers", {
 
 # text_data <- jama_paper[[3]]
 
-test_that("footers", {
+test_that("footer detection", {
   expect_equal(.find_footer_y(wiley_paper[[10]]), 706) # no footer
   expect_equal(.find_footer_y(degr_paper[[2]]), 715) # no footer
   expect_equal(.find_footer_y(ios_paper[[6]]), 723) # no footer
@@ -152,9 +155,8 @@ test_that("footers", {
 
 # text_data <- jama_paper[[5]]
 # text_data <- asco_paper[[2]] |> .clear_margins("")
-context("insert flagging")
 
-test_that("figures", {
+test_that("insert flagging: figures", {
   wiley_paper[[5]] |>
     .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
@@ -364,7 +366,7 @@ test_that("figures", {
 
 })
 
-test_that("regular tables", {
+test_that("insert flagging: regular tables", {
 
   wiley_paper[[6]] |>
     .clear_margins(pdf_filename = "10.1002") |>
@@ -544,7 +546,7 @@ test_that("horizontal full page tables", {
 #
 # })
 
-test_that("vertical tables", {
+test_that("insert flagging: vertical tables", {
 
  tand_paper[[7]] |>
     .clear_margins(pdf_filename = "10.1080") |>
@@ -576,7 +578,7 @@ test_that("vertical tables", {
 
 })
 
-test_that("appendix table with contributions", {
+test_that("insert flagging: appendix table with contributions", {
   wkh_paper[[4]] |>
     .clear_margins(pdf_filename = "10.1212") |>
     .add_rel_width() |>
@@ -593,9 +595,18 @@ test_that("appendix table with contributions", {
 
 })
 
-context("page layout estimation")
+test_that("single column layout estimation", {
+  cell_paper[[14]] |>
+    .clear_margins(pdf_filename = "10.1016+j.celrep") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .est_col_n(pdf_filename = "10.1016+j.celrep") |>
+    floor() |>
+    expect_equal(1)
 
-test_that("two-column layouts", {
+})
+
+test_that("two-column layout estimation", {
   cell_paper[[6]] |>
     .clear_margins(pdf_filename = "10.1016+j.celrep") |>
     .add_rel_width() |>
@@ -638,7 +649,7 @@ test_that("two-column layouts", {
 
 })
 
-test_that("three column layouts", {
+test_that("three column layout estimation", {
 
   embo_paper[[2]] |>
     .clear_margins(pdf_filename = "10.15252") |>
@@ -667,7 +678,7 @@ test_that("three column layouts", {
 
 })
 
-test_that("mixed layouts", {
+test_that("mixed layout estimation", {
 
   jama_paper[[8]] |>
     .clear_margins(pdf_filename = "10.1001+jama") |>
@@ -684,14 +695,6 @@ test_that("mixed layouts", {
     .add_column_info(cols = 3, pdf_filename = "10.1001+jama") |>
     .extract_col_dim(3) |>
     expect_equal(c(72, 206, 345, 716))
-
-  pnas_paper[[10]] |>
-    .clear_margins(pdf_filename = "10.1037") |>
-    .add_rel_width() |>
-    .flag_all_inserts() |>
-    .add_column_info(cols = 2, pdf_filename = "10.1037") |>
-    .extract_col_dim(2) |>
-    expect_equal(c(300, 544, 38, 293))
 
   asco_paper[[9]] |>
     .clear_margins(pdf_filename = "10.1200") |>
@@ -732,9 +735,18 @@ test_that("mixed layouts", {
     .add_column_info(cols = 2, pdf_filename = "10.1159") |>
     .extract_col_dim(2) |>
     expect_equal(c(304, 536, 62, 104))
+
+  pnas_paper[[10]] |>
+    .clear_margins(pdf_filename = "10.1073") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1073") |>
+    .extract_col_dim(2) |>
+    expect_equal(c(300, 544, 38, 293))
+
 })
 
-test_that("column widths", {
+test_that("column width estimation", {
 
   wiley_paper[[10]] |>
     .clear_margins(pdf_filename = "10.1002") |>
@@ -742,7 +754,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1002") |>
     .extract_gap_coords() |>
-    expect_equal(c(282, 306))
+    expect_equal(c(282, 306, 545, 45))
 
   nature_paper[[5]] |>
     .clear_margins(pdf_filename = "10.1038") |>
@@ -750,7 +762,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1038") |>
     .extract_gap_coords() |>
-    expect_equal(c(280, 301))
+    expect_equal(c(280, 301, 544, NaN))
 
   springer_paper[[12]] |>
     .clear_margins(pdf_filename = "10.1007") |>
@@ -758,7 +770,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1007") |>
     .extract_gap_coords() |>
-    expect_equal(c(284, 306))
+    expect_equal(c(284, 306, 541, NaN))
 
   elsevier_paper[[6]] |>
     .clear_margins(pdf_filename = "10.1016+j.") |>
@@ -766,7 +778,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1016+j.") |>
     .extract_gap_coords() |>
-    expect_equal(c(284, 306))
+    expect_equal(c(284, 306, 553, 37))
 
   pnas_paper[[10]] |>
     .clear_margins(pdf_filename = "10.1073") |>
@@ -774,7 +786,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1073") |>
     .extract_gap_coords() |>
-    expect_equal(c(276, 300))
+    expect_equal(c(276, 300, 544, 49))
 
   tand_paper[[11]] |>
     .clear_margins(pdf_filename = "10.1080") |>
@@ -782,7 +794,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1080") |>
     .extract_gap_coords() |>
-    expect_equal(c(287, 332))
+    expect_equal(c(287, 332, 534, NaN))
 
   oxford_paper[[8]] |>
     .clear_margins(pdf_filename = "10.1093") |>
@@ -790,7 +802,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1093") |>
     .extract_gap_coords() |>
-    expect_equal(c(308, 318))
+    expect_equal(c(308, 318, 556, 54))
 
   bmc_paper[[5]] |>
     .clear_margins(pdf_filename = "10.1186") |>
@@ -798,7 +810,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1186") |>
     .extract_gap_coords() |>
-    expect_equal(c(283, 304))
+    expect_equal(c(283, 304, 532, NaN))
 
   # asco_paper[[9]] |>
   #   .clear_margins(pdf_filename = "10.1200") |>
@@ -814,7 +826,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1212") |>
     .extract_gap_coords() |>
-    expect_equal(c(285, 307))
+    expect_equal(c(285, 307, 535, 307))
 
   degr_paper[[6]] |>
     .clear_margins(pdf_filename = "10.1515") |>
@@ -822,7 +834,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1515") |>
     .extract_gap_coords() |>
-    expect_equal(c(279, 297))
+    expect_equal(c(279, 297, 525, NaN))
 
   fsf_paper[[8]] |>
     .clear_margins(pdf_filename = "10.3324") |>
@@ -830,7 +842,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.3324") |>
     .extract_gap_coords() |>
-    expect_equal(c(298, 314))
+    expect_equal(c(298, 314, 542, 68))
 
   amegr_paper[[16]] |>
     .clear_margins(pdf_filename = "10.21037") |>
@@ -838,7 +850,7 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.21037") |>
     .extract_gap_coords() |>
-    expect_equal(c(278, 308))
+    expect_equal(c(278, 308, 539, 45))
 
   plos_paper[[1]] |>
     .clear_margins(pdf_filename = "10.1371") |>
@@ -846,7 +858,17 @@ test_that("column widths", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1371") |>
     .extract_gap_coords() |>
-    expect_equal(c(179, 200))
+    expect_equal(c(179, 200, 560, NaN))
+
+## special cases for three-col layouts
+  science_paper[[7]] |>
+    .clear_margins(pdf_filename = "10.1126") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 3, pdf_filename = "10.1126") |>
+    .extract_gap_coords() |>
+    expect_equal(c(193, 214, 371, 393))
+
 
 })
 
