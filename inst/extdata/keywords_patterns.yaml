@@ -625,7 +625,7 @@ section_stopwords:
   - "authors"
   - "funding"
   - "competing interest"
-  - "supplement"
+  # - "supplement"
   - "appendix"
   - "RE$"
   - "disclaimer"

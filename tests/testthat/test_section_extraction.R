@@ -148,6 +148,9 @@ das_last_line <- c("line third-to-last",
                    "line before last",
                    "<section> data availability statement anonymized data will be made publicly available at a future date."
                    )
+das_hyphen <- c("<section> data availability: all data used in these analyses are freely available on a database which can be found at https://multi-hyphenated-",
+                "<section> words-database.org/home or www.somerepodatabase.org.",
+                "<section> author contributions: typical contribution statement about who analyzed data.")
 # pdf_text_sentences <- das_last_line
 das_cas <- c("<section> data and code availability all data reported in this paper will be shared by the lead contact upon request.")
 
@@ -168,6 +171,8 @@ test_that("das_extraction",
                                                         "this paper does not report original code.",
                                                         "any additional information required to reanalyze the data reported in this paper is available from the lead contact upon request."))
             expect_equivalent(.extract_cdas(das_last_line), das_last_line[3])
+            expect_equivalent(.extract_cdas(das_hyphen), "<section> data availability: all data used in these analyses are freely available on a database which can be found at https://multi-hyphenated- words-database.org/home or www.somerepodatabase.org.")
+
           })
 
 

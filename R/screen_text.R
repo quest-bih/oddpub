@@ -299,9 +299,11 @@ splice_plos_twopager <- function(sections_v) {
   # which begin with <section> or digit. (reference number at start of line)
   cdas_end_candidates <- purrr::map_lgl(pdf_text_sentences[(cdas_start + 1):length(pdf_text_sentences)],
                                          \(sentence) stringr::str_detect(sentence, "((section|insert|iend)>|#+) (?!d )|^\\d\\.") &
-                                         stringr::str_detect(sentence, keyword_list$section_stopwords)  &
-                                          !stringr::str_detect(sentence, "data") &
-                                          !stringr::str_detect(sentence, keyword_list$source_code)) |>
+                                         stringr::str_detect(sentence, keyword_list$section_stopwords)
+                                        # &
+                                        #   !stringr::str_detect(sentence, "data")&
+                                        #   !stringr::str_detect(sentence, keyword_list$source_code)
+                                        ) |>
     which() - 1
 
   # if (length(pdf_text_sentences) - das_start <= 2) return(pdf_text_sentences[das_start:length(pdf_text_sentences)])
@@ -370,79 +372,79 @@ splice_plos_twopager <- function(sections_v) {
 
 }
 
-
-#' extract code availability statement
-#' @noRd
-.extract_cas <- function(pdf_text_sentences) {
-
-  keyword_list <- .create_keyword_list()
-
-  # code_availability <- keyword_list[["code_availability"]]
-
-  cas_detections <- furrr::future_map_lgl(pdf_text_sentences,
-                                          \(sentence) stringr::str_detect(sentence, keyword_list$code_availability))
-
-  cas_start <- which(cas_detections)
-
-  if (length(cas_start) > 2) {
-    cas_start <- max(cas_start)
-  } else if (length(cas_start) != 1 ) {
-    return("")
-  }
-
-  str_cas <- pdf_text_sentences[cas_start] |>
-    stringr::str_trim()
-  str_cas_sameline <- str_cas |>
-    stringr::str_remove(keyword_list$code_availability) |>
-    stringr::str_remove("(<section>|##+) ")
-
-
-  # candidates are sentences after the first section but before the next
-  # which begin with <section> or digit. (reference number at start of line)
-  cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
-                                              \(sentence) stringr::str_detect(sentence, "(section>|##+) (?!d )|^\\d\\.|\\u2750") &
-                                                stringr::str_detect(sentence, keyword_list$section_stopwords) &
-                                                !stringr::str_detect(sentence, keyword_list$source_code)) |>
-    which() - 1
-  # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
-  completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
-                                               \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
-
-  if (stringr::str_length(str_cas_sameline) < 5) {
-    # first_sentence <- das_start + 1
-
-    cas_end <- cas_end_candidates[-1][completed_sentences[-1]][1]#
-
-  } else {
-    cas_end <- cas_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
-  }
-
-  if (is.na(cas_end)) {
-    cas_end <- min(cas_end_candidates)
-
-    if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
-      cas_end <- length(pdf_text_sentences) - cas_start
-    } else {
-      cas_end <- min(cas_end_candidates[cas_end_candidates > 0], length(pdf_text_sentences) - cas_start)
-    }
-  }
-
-  if (cas_start + cas_end > length(pdf_text_sentences)) {
-    cas_end <- length(pdf_text_sentences) - cas_start
-  }
-
-  cas_end <- cas_start + cas_end
-
-  pdf_text_sentences[cas_start:cas_end] |>
-    stats::na.omit() |>
-    paste(collapse = " ") |>
-    stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
-    stringr::str_trim() |>
-    stringr::str_remove_all(" (<section>|##+)") |>
-    tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
-    .correct_tokenization()
-
-}
+#'
+#' #' extract code availability statement
+#' #' @noRd
+#' .extract_cas <- function(pdf_text_sentences) {
+#'
+#'   keyword_list <- .create_keyword_list()
+#'
+#'   # code_availability <- keyword_list[["code_availability"]]
+#'
+#'   cas_detections <- furrr::future_map_lgl(pdf_text_sentences,
+#'                                           \(sentence) stringr::str_detect(sentence, keyword_list$code_availability))
+#'
+#'   cas_start <- which(cas_detections)
+#'
+#'   if (length(cas_start) > 2) {
+#'     cas_start <- max(cas_start)
+#'   } else if (length(cas_start) != 1 ) {
+#'     return("")
+#'   }
+#'
+#'   str_cas <- pdf_text_sentences[cas_start] |>
+#'     stringr::str_trim()
+#'   str_cas_sameline <- str_cas |>
+#'     stringr::str_remove(keyword_list$code_availability) |>
+#'     stringr::str_remove("(<section>|##+) ")
+#'
+#'
+#'   # candidates are sentences after the first section but before the next
+#'   # which begin with <section> or digit. (reference number at start of line)
+#'   cas_end_candidates <- furrr::future_map_lgl(pdf_text_sentences[(cas_start + 1):length(pdf_text_sentences)],
+#'                                               \(sentence) stringr::str_detect(sentence, "(section>|##+) (?!d )|^\\d\\.|\\u2750") &
+#'                                                 stringr::str_detect(sentence, keyword_list$section_stopwords) &
+#'                                                 !stringr::str_detect(sentence, keyword_list$source_code)) |>
+#'     which() - 1
+#'   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
+#'   completed_sentences <- furrr::future_map_lgl(pdf_text_sentences[cas_start + cas_end_candidates],
+#'                                                \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
+#'
+#'   if (stringr::str_length(str_cas_sameline) < 5) {
+#'     # first_sentence <- das_start + 1
+#'
+#'     cas_end <- cas_end_candidates[-1][completed_sentences[-1]][1]#
+#'
+#'   } else {
+#'     cas_end <- cas_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
+#'   }
+#'
+#'   if (is.na(cas_end)) {
+#'     cas_end <- min(cas_end_candidates)
+#'
+#'     if (!any(completed_sentences) | is.na(completed_sentences)[1]) {
+#'       cas_end <- length(pdf_text_sentences) - cas_start
+#'     } else {
+#'       cas_end <- min(cas_end_candidates[cas_end_candidates > 0], length(pdf_text_sentences) - cas_start)
+#'     }
+#'   }
+#'
+#'   if (cas_start + cas_end > length(pdf_text_sentences)) {
+#'     cas_end <- length(pdf_text_sentences) - cas_start
+#'   }
+#'
+#'   cas_end <- cas_start + cas_end
+#'
+#'   pdf_text_sentences[cas_start:cas_end] |>
+#'     stats::na.omit() |>
+#'     paste(collapse = " ") |>
+#'     stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
+#'     stringr::str_trim() |>
+#'     stringr::str_remove_all(" (<section>|##+)") |>
+#'     tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
+#'     .correct_tokenization()
+#'
+#' }
 
 #'
 #' @noRd
