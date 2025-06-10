@@ -45,7 +45,9 @@ The package exposes four functions that allow the following workflow:
 ``` r
 oddpub::pdf_convert(pdf_folder, output_folder)
 ```
-Converts PDFs contained in one folder to txt-files and saves them into the output folder.
+Converts PDFs contained in one folder to txt-files and saves them into the output folder. This conversion does not aim to parse the whole pdf cleanly, but to correctly detect the column layout and to (liberally) add section tags at the beginning of article sections, including data and code availability statements, to enable their detection and extraction. This is a crucial step in the workflow and conversion via other methods will result in poorer performance.
+A convention that will further enhance the PDF to txt conversion is to name the PDF files as the DOI of the publication, with slashes "/" replaced by plus signs "+", e.g. 10.1371+journal.pone.0302787.pdf. The txt file names are the same as the input PDF, except for the file extension.
+The DOI information in the file name improves the detection of the column layout of the input PDF file and therefore the quality of the txt output and the remaining ODDPub detection algorithms.
 
 ``` r
 pdf_text_sentences <- oddpub::pdf_load(pdf_text_folder)
