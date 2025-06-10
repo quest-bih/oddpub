@@ -43,29 +43,31 @@ for source code or code repositories.
 The package exposes four functions that allow the following workflow:
 
 ``` r
-oddpub::pdf_convert(PDF_folder, output_folder)
+oddpub::pdf_convert(pdf_folder, output_folder)
 ```
 Converts PDFs contained in one folder to txt-files and saves them into the output folder.
 
 ``` r
-PDF_text_sentences <- oddpub::pdf_load(pdf_text_folder)
+pdf_text_sentences <- oddpub::pdf_load(pdf_text_folder)
 ```
 Loads all text files from given folder.
 
 ``` r
-open_data_results <- oddpub::open_data_search(PDF_text_sentences)
+open_data_results <- oddpub::open_data_search(pdf_text_sentences)
 ```
 Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the identified Open Data/Code categories as well as the detected sentences, which can be deactivated using the additional parameter ```detected_sentences = FALSE```.
 
 ``` r
 future::plan(multisession)
-open_data_results <- oddpub::open_data_search(PDF_text_sentences)
+progressr::handlers(global = TRUE)
+open_data_results <- oddpub::open_data_search(pdf_text_sentences, screen_das = "extra")
 ```
-Paralellized version of the algorithm that starts several parallel processes with the use of the packages `future` and `furrr`.
+Paralellized version of the algorithm that starts several parallel processes with the use of the packages `future` and `furrr`, as well as progress visualization via `progressr`.
+
 
 To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.73 and specificity of 0.97.
 
-The algorithm has been updated in 2024. A new validation is planned for early 2025.
+The algorithm has been updated since the original publication and validation. A new validation is planned for Q4 2025.
 
 ## Detailed description of the keywords
 
