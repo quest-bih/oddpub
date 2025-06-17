@@ -105,7 +105,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
 #' @noRd
 # textfile <- file.path(pdf_text_folder, txt_filenames)
 # textfile <- txt_filenames
-.tokenize_sections <- function(textfile, lowercase = TRUE)
+.tokenize_sections <- function(textfile, lowercase = TRUE, remove_regex = NULL)
 {
   tokenized <- readr::read_lines(textfile) |>
     paste(collapse = " ") |>
