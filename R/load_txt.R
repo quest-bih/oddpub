@@ -31,7 +31,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
   pdf_text_sentences <- txt_filenames |>
     furrr::future_map(\(x) {
       p()
-      .tokenize_sections(x, lowercase = lowercase, remove_regex = ",")
+      .tokenize_sections(x, lowercase = lowercase, remove_regex = remove_regex)
     })
   names(pdf_text_sentences) <- txt_filenames_short
 
