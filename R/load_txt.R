@@ -7,6 +7,7 @@
 #'
 #' @param pdf_text_folder String of the folder name from which the converted files will be loaded.
 #' @param lowercase Boolean, whether the text is set to lowercase upon loading. Defaults to TRUE.
+#' @param remove_regex String, the regular expression for symbols to remove, by default commas.
 #'
 #' @return List with one element per document.
 #' Each document is split into its sentences and saved as a vector of strings.
@@ -16,7 +17,7 @@
 #' pdf_load("examples/", lowercase = FALSE)
 #' }
 #' @export
-pdf_load <- function(pdf_text_folder, lowercase = TRUE)
+pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
 {
 
   # read in full text from .txt files
@@ -30,7 +31,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
   pdf_text_sentences <- txt_filenames |>
     furrr::future_map(\(x) {
       p()
-      .tokenize_sections(x, lowercase = lowercase)
+      .tokenize_sections(x, lowercase = lowercase, remove_regex = ",")
     })
   names(pdf_text_sentences) <- txt_filenames_short
 
@@ -121,8 +122,12 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE)
     warning(paste0(textfile, ": Document could not be parsed into sections! Check if the txt file parsed correctly!"))
   }
 
+  if (!is.null(remove_regex)) {
+    tokenized <- tokenized |>
+      stringr::str_replace_all(pattern = remove_regex, replacement = "")
+  }
+
  tokenized |>
-    stringr::str_replace_all(pattern = ",", replacement = "") |>
     stringr::str_replace_all(pattern = "- ", replacement = "") |>
     .correct_tokenization() |>
     stats::na.omit()

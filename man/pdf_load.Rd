@@ -4,12 +4,14 @@
 \alias{pdf_load}
 \title{Load converted PDFs.}
 \usage{
-pdf_load(pdf_text_folder, lowercase = TRUE)
+pdf_load(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
 }
 \arguments{
 \item{pdf_text_folder}{String of the folder name from which the converted files will be loaded.}
 
 \item{lowercase}{Boolean, whether the text is set to lowercase upon loading. Defaults to TRUE.}
+
+\item{remove_regex}{String, the regular expression for symbols to remove, by default commas.}
 }
 \value{
 List with one element per document.
