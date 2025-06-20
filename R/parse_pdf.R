@@ -629,9 +629,18 @@ Mode <- function(x) {
         dplyr::pull(y) |>
         max()
       layout_divider_y <- layout_divider_y + 5
+
+      # add phantom Reference Tag to improve section recognition later
+      reference_row <- affils |>
+        dplyr::mutate(width = 20, height = 5, x = 35, y = layout_divider_y,
+                      text = "References", rel_width = 0.1)
+
+      text_data <- text_data |>
+        dplyr::bind_rows(reference_row)
     } else {
       layout_divider_y <- 800
     }
+
 
   }
 

@@ -786,7 +786,7 @@ test_that("column width estimation", {
     .flag_all_inserts() |>
     .add_column_info(cols = 2, pdf_filename = "10.1073") |>
     .extract_gap_coords() |>
-    expect_equal(c(276, 300, 544, 49))
+    expect_equal(c(276, 300, 544, 35))
 
   tand_paper[[11]] |>
     .clear_margins(pdf_filename = "10.1080") |>
