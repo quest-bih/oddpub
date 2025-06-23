@@ -257,7 +257,7 @@ splice_plos_twopager <- function(sections_v) {
       cdas_detections <- purrr::map_lgl(pdf_text_sentences,
                                        \(sentence) .has_das(sentence, keyword_list))
     }
-    keyword_list$section_stopwords <- paste(keyword_list$section_stopwords, "|\\bcode availability")
+    keyword_list$section_stopwords <- paste0(keyword_list$section_stopwords, "|\\bcode availability")
 
   } else {
 
