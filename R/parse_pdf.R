@@ -204,16 +204,19 @@
   # if (midpage_gap == 0) return(1) # TODO: but it could also be three for nonJama?
 
   cols <- cols |>
+    dplyr::mutate(midpage_words = dplyr::between(x, midpage_gap, midpage_gap + 15) |
+                    dplyr::between(x + width, midpage_gap, midpage_gap + 15) |
+                    x < midpage_gap & x + width > midpage_gap) |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(ret_per_line = sum(space == FALSE),
-                     midpage_words = sum(dplyr::between(x, midpage_gap, midpage_gap + 15)),
+                     midpage_words = sum(midpage_words),
                      max_x = max(x))
 
   midpage_words <- cols |>
     dplyr::filter(midpage_words > 0) |>
     nrow()
 
-  if (midpage_words / nrow(cols) < 0.2 & midpage_gap > 220) return (2) # if words cross midpage gap less than 0.2 of rows assume 2col layout
+  if (midpage_words / nrow(cols) <= 0.2 & midpage_gap > 220) return (2) # if words cross midpage gap less than 0.2 of rows assume 2col layout
 
   rows_over_one <- cols |>
     dplyr::filter(ret_per_line > 1) |>
@@ -413,10 +416,10 @@ Mode <- function(x) {
     ) |>
     dplyr::count(x) |>
     dplyr::slice_max(order_by = n, n = 5) |>
-    dplyr::filter(n > 2) |>
+    dplyr::filter(n > 2 | x == 300) |>
     dplyr::arrange(x) |>
     dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
-    dplyr::filter(x_jump > 50 | x == x_jump)
+    dplyr::filter(x_jump > 90 | x == x_jump) # increased from 50, was too small for some
 }
 
 #' find right x coordinates of the potential columns on a page
@@ -459,7 +462,7 @@ Mode <- function(x) {
   if (length(gaps_r) == 0) gaps_r <- 304
 
   # the left edge of the gap (the lower x value)
-  gaps_l <- .find_cols_right_x(text_data, min_x = min_x) |>
+  gaps_l <- .find_cols_right_x(text_data, min_x = min(gaps_r, na.rm = TRUE) - 50) |>
     dplyr::filter(x < min(gaps_r),
                   x != 0) |>
     dplyr::pull(x)
@@ -789,7 +792,7 @@ Mode <- function(x) {
 #' detect if a string has the regex for insert
 #' @noRd
 .str_has_insert <- function(string) {
-  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.)|^TABLE$|^KEY$|^REAGENT$")
+  stringr::str_detect(string, "^TA?$|^F$|^I$|^Table$|^Fig(u|\\.)|^Appendix(?!,)|^FIG(U|\\.|$)|^TABLE$|^KEY$|^REAGENT$")
 }
 
 
@@ -878,7 +881,7 @@ Mode <- function(x) {
     prop_widths_left <- has_fig_caption_right <-last_col_x <-
     prop_space <- n_breaks <- NULL
 
-  # text_data <- flagged_text_data |> filter(insert == 0)
+  # text_data <- flagged_text_data |> dplyr::filter(insert == 0)
   start_x <- .find_insert_min_x(text_data)
   if (start_x > 199) return(800)
 
@@ -1032,7 +1035,8 @@ Mode <- function(x) {
     dplyr::summarise(two_col_layout = max(x, na.rm = TRUE) < midpage &
                        dplyr::first(n_cols) < dplyr::first(mean_cols) &
                        dplyr::first(mean_cols) > 1 &
-                       dplyr::first(mean_cols) < 2.5) |>
+                       dplyr::first(mean_cols) < 2.5 &
+                       dplyr::first(mean_prop_widths_right > 0.1)) |>
     dplyr::pull(two_col_layout)
 
   cols_left_est <- .find_cols_left_x(text_data)
@@ -1350,7 +1354,15 @@ Mode <- function(x) {
   if (end_x > 600) {
     max_x <- end_x + 2
   } else {
+
+    downloaded_vert_x <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "Downloaded"),
+                    x > 200,
+                    height > width) |>
+      dplyr::pull(x)
+
     max_x <- 563 # right margin in most journals
+    max_x <- min(max_x, downloaded_vert_x)
   }
   max_height <- 300 # vertical text, e.g. column separator "......"
 

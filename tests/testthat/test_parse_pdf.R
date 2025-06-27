@@ -50,7 +50,10 @@ bmc_paper <- pdftools::pdf_data(test_path("10.1186+s42466-019-0022-4.pdf"),
                                 font_info = TRUE)
 karger_paper <- pdftools::pdf_data(test_path("10.1159+000521415.pdf"),
                                 font_info = TRUE)
-### need a 1128 and 1182 here
+sage_paper <- pdftools::pdf_data(test_path("10.1177+00207640231162277.pdf"),
+                                 font_info = TRUE)
+asm_paper <- pdftools::pdf_data(test_path("10.1128+spectrum.02839-23.pdf"),
+                                font_info = TRUE)
 
 # text_data <- wp
 .extract_insert_dim <- function(text_data, insert_num) {
@@ -109,6 +112,8 @@ test_that("header detection", {
   expect_equal(.find_header_y(bmc_paper[[3]]), 33) # first text 81
   expect_equal(.find_header_y(springer_paper[[3]]), 34) # first text 55
   expect_equal(.find_header_y(elife_paper[[5]]), 36) # first text 53 (page 2)
+  expect_equal(.find_header_y(sage_paper[[6]]), 40) # first text 68
+  expect_equal(.find_header_y(asm_paper[[5]]), 40) # first text 71
   expect_equal(.find_header_y(plos_paper[[5]]), 40) # first text 77
   expect_equal(.find_header_y(frontiers_paper[[8]]), 43) # first text 91 (page 3)
   expect_equal(.find_header_y(nature_paper[[5]]), 45) # first text 59
@@ -126,10 +131,11 @@ test_that("footer detection", {
   expect_equal(.find_footer_y(degr_paper[[2]]), 715) # no footer
   expect_equal(.find_footer_y(ios_paper[[6]]), 723) # no footer
   expect_equal(.find_footer_y(bmc_paper[[3]]), 729) # no footer
+  expect_equal(.find_footer_y(sage_paper[[6]]), 731) # no footer
   expect_equal(.find_footer_y(science_paper[[7]]), 731) # last text 705
   expect_equal(.find_footer_y(asco_paper[[2]]), 735) # last text 709
   expect_equal(.find_footer_y(jama_paper[[3]]), 743) # last text 718
-  expect_equal(.find_footer_y(fsf_paper[[4]]), 773) # no footer
+  expect_equal(.find_footer_y(asm_paper[[9]]), 749) # last text 727
   expect_equal(.find_footer_y(springer_paper[[12]]), 736) # no visible footer
   expect_equal(.find_footer_y(amegr_paper[[10]]), 736) # last text 695
   expect_equal(.find_footer_y(tand_paper[[6]]), 745) # no footer
@@ -138,12 +144,12 @@ test_that("footer detection", {
   expect_equal(.find_footer_y(nature_paper[[5]]), 753) # last text 727
   expect_equal(.find_footer_y(elsevier_paper[[4]]), 754) # last text 731
   expect_equal(.find_footer_y(pnas_paper[[5]]), 754) # last text 731
-  expect_equal(.find_footer_y(wkh2_paper[[3]]), 760) # last text 738
   expect_equal(.find_footer_y(cell_paper[[8]]), 756) # last text 727
   expect_equal(.find_footer_y(embo_paper[[2]]), 756) # last text 728
   expect_equal(.find_footer_y(wkh_paper[[3]]), 756) # last text 731
   expect_equal(.find_footer_y(mdpi_paper[[14]]), 759) # no footer
   expect_equal(.find_footer_y(tand_paper[[4]]), 760) # no footer
+  expect_equal(.find_footer_y(wkh2_paper[[3]]), 760) # last text 738
   expect_equal(.find_footer_y(oxford_paper[[7]]), 767) # last text 720
   expect_equal(.find_footer_y(oxford_paper[[2]]), 764) # last text 725
   expect_equal(.find_footer_y(tand_paper[[7]]), 764) # no footer
@@ -364,6 +370,13 @@ test_that("insert flagging: figures", {
     .extract_insert_dim(2) |>
     expect_equal(c(42, 178, 717, 738))
 
+  asm_paper[[6]] |>
+    .clear_margins(pdf_filename = "10.1128") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(42, 387, 730, 730))
+
 })
 
 test_that("insert flagging: regular tables", {
@@ -529,11 +542,25 @@ test_that("insert flagging: regular tables", {
     .extract_insert_dim(2) |>
     expect_equal(c(42, 528, 234, 487))
 
+  sage_paper[[3]] |>
+    .clear_margins(pdf_filename = "10.1177") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(312, 534, 68, 449))
+
+  sage_paper[[4]] |>
+    .clear_margins(pdf_filename = "10.1177") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(49, 505, 243, 389))
+
 })
 
 test_that("horizontal full page tables", {
 
-  text_data <- mdpi_paper[[4]] |>
+  mdpi_paper[[4]] |>
     .clear_margins(pdf_filename = "10.3390+toxins") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
@@ -576,6 +603,13 @@ test_that("insert flagging: vertical tables", {
    .extract_insert_dim(1) |>
    expect_equal(c(44, 526, 86, 698))
 
+ asm_paper[[4]] |>
+   .clear_margins(pdf_filename = "10.1128") |>
+   .add_rel_width() |>
+   .flag_all_inserts() |>
+   .extract_insert_dim(1) |>
+   expect_equal(c(42, 329, 71, 172))
+
 })
 
 test_that("insert flagging: appendix table with contributions", {
@@ -601,6 +635,14 @@ test_that("single column layout estimation", {
     .add_rel_width() |>
     .flag_all_inserts() |>
     .est_col_n(pdf_filename = "10.1016+j.celrep") |>
+    floor() |>
+    expect_equal(1)
+
+  plos_paper[[8]] |>
+    .clear_margins(pdf_filename = "10.1371") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .est_col_n(pdf_filename = "10.1371") |>
     floor() |>
     expect_equal(1)
 
@@ -639,13 +681,21 @@ test_that("two-column layout estimation", {
     floor() |>
     expect_equal(2)
 
-  plos_paper[[8]] |>
-    .clear_margins(pdf_filename = "10.1371") |>
+  sage_paper[[5]] |>
+    .clear_margins(pdf_filename = "10.1177") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
-    .est_col_n(pdf_filename = "10.1371") |>
+    .est_col_n(pdf_filename = "10.1177") |>
     floor() |>
-    expect_equal(1)
+    expect_equal(2)
+
+  sage_paper[[6]] |>
+    .clear_margins(pdf_filename = "10.1177") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .est_col_n(pdf_filename = "10.1177") |>
+    floor() |>
+    expect_equal(2)
 
 })
 
@@ -743,6 +793,14 @@ test_that("mixed layout estimation", {
     .add_column_info(cols = 2, pdf_filename = "10.1073") |>
     .extract_col_dim(2) |>
     expect_equal(c(300, 544, 38, 293))
+
+  asm_paper[[10]] |>
+    .clear_margins(pdf_filename = "10.1128") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1128") |>
+    .extract_col_dim(1) |>
+    expect_equal(c(41, 372, 71, 248))
 
 })
 
@@ -869,6 +927,13 @@ test_that("column width estimation", {
     .extract_gap_coords() |>
     expect_equal(c(193, 214, 371, 393))
 
+  sage_paper[[6]] |>
+    .clear_margins(pdf_filename = "10.1177") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1177") |>
+    .extract_gap_coords() |>
+    expect_equal(c(277, 300, 527, NaN))
 
 })
 
