@@ -2,17 +2,17 @@ citHeader("To cite this package in publications use:")
 
 citEntry(
   entry    = "Manual",
-  title    = "ODDPub Taal",
+  title    = "ODDPub Vulcan Point",
   author   = c(
     person("Vladislav", "Nachev", comment = c(ORCID = "0000-0003-0521-6153")),
     person("Nico", "Riedel", comment = c(ORCID = "0000-0002-3808-1163"))
   ),
-  year     = "2024",
+  year     = "2025",
   url      = "https://github.com/quest-bih/oddpub",
-  note     = "v7.1.0",
+  note     = "v7.2.1",
   textVersion = paste(
-    "Nachev, V. & Riedel, N. (2024).",
-    "ODDPub Volcano Island: v7.1.0.",
+    "Nachev, V. & Riedel, N. (2025).",
+    "ODDPub Vulcan Point: v7.2.1.",
     "https://github.com/quest-bih/oddpub"
   )
 )
