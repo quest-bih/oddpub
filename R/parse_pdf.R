@@ -1362,14 +1362,7 @@ Mode <- function(x) {
   footer <- text_data |>
     dplyr::filter(y >= insert_y$y) |>
     dplyr::arrange(y, x) |>
-    dplyr::mutate(insert_n = insert_n,
-                  n = 1:dplyr::n(),
-      text = dplyr::case_when(
-      x == insert_y$x & y == insert_y$y ~ paste0("<insert>", text),
-      n == max(n) ~ paste0(text, "<iend>"),
-      .default = text
-    )) |>
-    dplyr::select(-n)
+    dplyr::mutate(insert = insert_n)
 
   text_data |>
     dplyr::filter(y < insert_y$y) |>
