@@ -52,7 +52,7 @@
   ralc <- space <- text <- y <- x <- line_n <-
     has_jama <- text_left_margin <- insert <-
     dac <- contrib <- rel_width <- font_size <-
-    n_cols <- ret_per_line <- NULL
+    n_cols <- ret_per_line <- width <- NULL
 
   if (stringr::str_detect(pdf_filename, "10\\.3390|e(L|l)ife")) return(1)
 
@@ -879,7 +879,7 @@ Mode <- function(x) {
     space <- n_cols <- n_cols_left <- n_cols_right <- prop_widths_right <-
     line_start_y <- mean_cols <- two_col_layout <- mean_cols_left <-
     prop_widths_left <- has_fig_caption_right <-last_col_x <-
-    prop_space <- n_breaks <- NULL
+    prop_space <- n_breaks <- mean_prop_widths_right <- NULL
 
   # text_data <- flagged_text_data |> dplyr::filter(insert == 0)
   start_x <- .find_insert_min_x(text_data)
@@ -1305,24 +1305,75 @@ Mode <- function(x) {
   flagged_text_data <- text_data |>
     dplyr::mutate(insert = 0)
 
-  if (nrow(inserts) == 0) return(flagged_text_data)
+  if (nrow(inserts) > 0) {
+    for (i in 1:nrow(inserts)) {
+      # i <- 1
+      flagged_text_data <- flagged_text_data |>
+        .flag_as_insert(c(.find_insert_min_x(flagged_text_data |>
+                                               dplyr::filter(insert == 0)) - 2,
+                          .find_insert_max_x(flagged_text_data |>
+                                               dplyr::filter(insert == 0)),
+                          .find_insert_min_y(flagged_text_data |>
+                                               dplyr::filter(insert == 0)) - 2,
+                          .find_insert_max_y(flagged_text_data |>
+                                               dplyr::filter(insert == 0)) + 2),
+                        insert_n = i)
 
-  for (i in 1:nrow(inserts)) {
-    # i <- 1
-    flagged_text_data <- flagged_text_data |>
-      .flag_as_insert(c(.find_insert_min_x(flagged_text_data |>
-                                             dplyr::filter(insert == 0)) - 2,
-                        .find_insert_max_x(flagged_text_data |>
-                                             dplyr::filter(insert == 0)),
-                        .find_insert_min_y(flagged_text_data |>
-                                             dplyr::filter(insert == 0)) - 2,
-                        .find_insert_max_y(flagged_text_data |>
-                                             dplyr::filter(insert == 0)) + 2),
-                      insert_n = i)
-
+    }
   }
 
+  flagged_text_data <- .flag_insert_footer(flagged_text_data)
+
   flagged_text_data
+}
+
+#' find caption as footer
+#' @noRd
+.find_footer_insert_min_y <- function(text_data) {
+  x <- y <- y_jump <- NULL
+
+  top_x <- text_data |>
+    dplyr::count(x, sort = TRUE) |>
+    dplyr::slice(1:2) |>
+    dplyr::pull(x) |>
+    min()
+
+  text_data |>
+    dplyr::filter(x < top_x + 50) |>
+    dplyr::arrange(y, x) |>
+    dplyr::mutate(y_jump = y - dplyr::lag(y)) |>
+    dplyr::filter(y_jump > 0,
+                  y > max(y) / 2,
+                  y_jump > 30)
+}
+
+
+#' flag caption in footer as insert
+#' @noRd
+.flag_insert_footer <- function(text_data) {
+
+  x <- y <- text <- n <- NULL
+
+  insert_y <- .find_footer_insert_min_y(text_data)
+  insert_n <- max(text_data$insert) + 1
+
+  if (nrow(insert_y) == 0) return(text_data)
+
+  footer <- text_data |>
+    dplyr::filter(y >= insert_y$y) |>
+    dplyr::arrange(y, x) |>
+    dplyr::mutate(insert_n = insert_n,
+                  n = 1:dplyr::n(),
+      text = dplyr::case_when(
+      x == insert_y$x & y == insert_y$y ~ paste0("<insert>", text),
+      n == max(n) ~ paste0(text, "<iend>"),
+      .default = text
+    )) |>
+    dplyr::select(-n)
+
+  text_data |>
+    dplyr::filter(y < insert_y$y) |>
+    dplyr::bind_rows(footer)
 }
 
 #' detect margins and remove text from them, as well as from hidden text layers
