@@ -1298,7 +1298,7 @@ Mode <- function(x) {
 #' @noRd
 .flag_all_inserts <- function(text_data) {
 
-  insert <- NULL
+  y <- insert <- NULL
 
   inserts <- .find_inserts(text_data)
 
@@ -1322,7 +1322,14 @@ Mode <- function(x) {
     }
   }
 
-  flagged_text_data <- .flag_insert_footer(flagged_text_data)
+  last_insert_y <- suppressWarnings(flagged_text_data |>
+                                      dplyr::filter(insert == 5) |>
+                                      dplyr::pull(y) |>
+                                      max())
+
+  if (last_insert_y > 400) {
+    flagged_text_data <- .flag_insert_footer(flagged_text_data)
+  }
 
   flagged_text_data
 }
@@ -1330,7 +1337,7 @@ Mode <- function(x) {
 #' find caption as footer
 #' @noRd
 .find_footer_insert_min_y <- function(text_data) {
-  x <- y <- y_jump <- NULL
+  x <- y <- y_jump <- font_size <- NULL
 
   top_x <- text_data |>
     dplyr::count(x, sort = TRUE) |>
@@ -1338,13 +1345,26 @@ Mode <- function(x) {
     dplyr::pull(x) |>
     min()
 
-  text_data |>
+  footer_y_candidate <- text_data |>
     dplyr::filter(x < top_x + 50) |>
     dplyr::arrange(y, x) |>
     dplyr::mutate(y_jump = y - dplyr::lag(y)) |>
     dplyr::filter(y_jump > 0,
-                  y > max(y) / 2,
+                  y > max(y) * 2 / 3,
                   y_jump > 30)
+
+  text_in_gap <- text_data |>
+    dplyr::filter(y < footer_y_candidate$y,
+                  y >= footer_y_candidate$y - footer_y_candidate$y_jump + 2)
+
+  if (nrow(text_in_gap) == 0) {
+    # in no text in gap, then return footer candidate
+    return(footer_y_candidate)
+  } else {
+    # return empty tibble if there was text found in gap candidate
+    return(footer_y_candidate |> dplyr::filter(font_size < 0))
+  }
+
 }
 
 

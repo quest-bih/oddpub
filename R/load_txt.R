@@ -67,7 +67,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
   pdf_text_corrected <- pdf_text
   sentence_paste_idx <- pdf_text  |>
     stringr::str_sub(-14, -1) |>
-    stringr::str_detect(regex_to_correct) |>
+    stringr::str_detect(stringr::regex(regex_to_correct, ignore_case = TRUE)) |>
     which()
 
   #for all indices do a pairwise pasting
