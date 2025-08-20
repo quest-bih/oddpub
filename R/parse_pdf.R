@@ -204,8 +204,8 @@
   # if (midpage_gap == 0) return(1) # TODO: but it could also be three for nonJama?
 
   cols <- cols |>
-    dplyr::mutate(midpage_words = dplyr::between(x, midpage_gap, midpage_gap + 15) |
-                    dplyr::between(x + width, midpage_gap, midpage_gap + 15) |
+    dplyr::mutate(midpage_words = dplyr::between(x, midpage_gap, midpage_gap + 10) |
+                    dplyr::between(x + width, midpage_gap, midpage_gap + 10) |
                     x < midpage_gap & x + width > midpage_gap) |>
     dplyr::group_by(line_n) |>
     dplyr::summarise(ret_per_line = sum(space == FALSE),
@@ -416,7 +416,7 @@ Mode <- function(x) {
     ) |>
     dplyr::count(x) |>
     dplyr::slice_max(order_by = n, n = 5) |>
-    dplyr::filter(n > 2 | x == 300) |>
+    dplyr::filter(n > 2 | (n > 1 & x == 300)) |>
     dplyr::arrange(x) |>
     dplyr::mutate(x_jump = x - dplyr::lag(x, default = 0)) |>
     dplyr::filter(x_jump > 90 | x == x_jump) # increased from 50, was too small for some
@@ -1572,7 +1572,7 @@ Mode <- function(x) {
     heading_font <- prop_blank <- jump_size <-
     space <- dot <- insert <- paragraph_start <-
     sameline_title <- ends_dot <- newline_heading <-
-    science_section <- plain_section <-
+    science_section <- plain_section <- common_section_title <-
     section_start <- NULL
 
   section_jump <- text_data$jump_size[text_data$jump_size > 3] |>
@@ -1651,8 +1651,14 @@ Mode <- function(x) {
            stringr::str_detect(dplyr::lead(text, 4), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 4) | # e.g. Availability of data and materials: & line_n == dplyr::lead(line_n, 4)
            stringr::str_detect(dplyr::lead(text, 5), "(?<!\\(\\w{1,5} ?):$") & dot == dplyr::lead(dot, 5)) | # e.g. Disclosure of potential conflict of interest: & line_n == dplyr::lead(line_n, 5)
         text == "*" & dplyr::lag(space) == FALSE,
+      common_section_title =
+        stringr::str_detect(text,
+                            stringr::regex("acknowledge?ments|author|introduction|abstract|method|result|discussion",
+                                           ignore_case = TRUE)),
       section_start = insert == 0 &
+        !stringr::str_detect(dplyr::lag(text), "-$") &
         ((paragraph_start & (heading_font | prop_blank > 0.35 | dplyr::lag(prop_blank) > 0.35)) |
+           (paragraph_start & heading_font & common_section_title) |
            (heading_font & prop_blank > 0.8 & dplyr::lag(space == FALSE)) |
            sameline_title |
            (prop_blank > 0.6 & dplyr::lag(space == FALSE) & !ends_dot & stringr::str_length(text) > 1) |
