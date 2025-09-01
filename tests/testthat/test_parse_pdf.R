@@ -1,58 +1,60 @@
-plos_paper <- pdftools::pdf_data(test_path("10.1371+journal.pmed.1003873.pdf"),
+plos_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1371+journal.pmed.1003873.pdf"),
                                  font_info = TRUE)
-elife_paper <- pdftools::pdf_data(test_path("10.7554+elife.59907.pdf"),
+elife_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.7554+elife.59907.pdf"),
                                   font_info = TRUE)
-wiley_paper <- pdftools::pdf_data(test_path("10.1002+acm2.14114.pdf"),
+wiley_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1002+acm2.14114.pdf"),
                                   font_info = TRUE)
-wkh_paper <- pdftools::pdf_data(test_path("10.1212+NXI.0000000000000763.pdf"),
+wkh_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1212+NXI.0000000000000763.pdf"),
                                 font_info = TRUE)
-rs_paper <- pdftools::pdf_data(test_path("10.1098+rsif.2022.0070.pdf"),
+rs_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1098+rsif.2022.0070.pdf"),
                                font_info = TRUE)
-oxford_paper <- pdftools::pdf_data(test_path("10.1093+ndt+gfaa294.pdf"),
+oxford_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1093+ndt+gfaa294.pdf"),
                                    font_info = TRUE)
-frontiers_paper <- pdftools::pdf_data(test_path("10.3389+fimmu.2022.915001.pdf"),
+frontiers_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.3389+fimmu.2022.915001.pdf"),
                                       font_info = TRUE)
-jama_paper <- pdftools::pdf_data(test_path("10.1001+jama.2020.7172.pdf"),
+jama_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1001+jama.2020.7172.pdf"),
                                  font_info = TRUE)
-tand_paper <- pdftools::pdf_data(test_path("10.1080+21678421.2022.2104649.pdf"),
+tand_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1080+21678421.2022.2104649.pdf"),
                                  font_info = TRUE)
-springer_paper <- pdftools::pdf_data(test_path("10.1007+s00424-021-02582-7.pdf"),
+springer_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1007+s00424-021-02582-7.pdf"),
                                      font_info = TRUE)
-science_paper <- pdftools::pdf_data(test_path("10.1126+science.abm8668.pdf"),
+science_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1126+science.abm8668.pdf"),
                                     font_info = TRUE)
-nature_paper <- pdftools::pdf_data(test_path("10.1038+s41526-020-00129-1.pdf"),
+nature_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1038+s41526-020-00129-1.pdf"),
                                    font_info = TRUE)
-elsevier_paper <- pdftools::pdf_data(test_path("10.1016+j.ssmph.2022.101285.pdf"),
+elsevier_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1016+j.ssmph.2022.101285.pdf"),
                                   font_info = TRUE)
-cell_paper <- pdftools::pdf_data(test_path("10.1016+j.celrep.2022.110564.pdf"),
+cell_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1016+j.celrep.2022.110564.pdf"),
                                  font_info = TRUE)
-r2_paper <- pdftools::pdf_data(test_path("10.21203+rs.3.rs-2838995+v1.pdf"),
+r2_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.21203+rs.3.rs-2838995+v1.pdf"),
                                font_info = TRUE)
-asco_paper <- pdftools::pdf_data(test_path("10.1200+JCO.2017.74.7642.pdf"),
+asco_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1200+JCO.2017.74.7642.pdf"),
                                  font_info = TRUE)
-mdpi_paper <- pdftools::pdf_data(test_path("10.3390+toxins8070200.pdf"),
+mdpi_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.3390+toxins8070200.pdf"),
                                  font_info = TRUE)
-ios_paper <- pdftools::pdf_data(test_path("10.3233+TAD-190227.pdf"),
+ios_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.3233+TAD-190227.pdf"),
                                 font_info = TRUE)
-fsf_paper <- pdftools::pdf_data(test_path("10.3324+haematol.2017.168716.pdf"),
+fsf_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.3324+haematol.2017.168716.pdf"),
                                 font_info = TRUE)
-pnas_paper <- pdftools::pdf_data(test_path("10.1073+pnas.2123476119.pdf"),
+pnas_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1073+pnas.2123476119.pdf"),
                                  font_info = TRUE)
-wkh2_paper <- pdftools::pdf_data(test_path("10.1097+as9.0000000000000095.pdf"),
+wkh2_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1097+as9.0000000000000095.pdf"),
                                font_info = TRUE)
-embo_paper <- pdftools::pdf_data(test_path("10.15252+embr.202154000.pdf"),
+embo_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.15252+embr.202154000.pdf"),
                                  font_info = TRUE)
-amegr_paper <- pdftools::pdf_data(test_path("10.21037+jgo-20-203.pdf"),
+amegr_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.21037+jgo-20-203.pdf"),
                              font_info = TRUE)
-degr_paper <- pdftools::pdf_data(test_path("10.1515+jpm-2019-0153.pdf"),
+degr_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1515+jpm-2019-0153.pdf"),
                                  font_info = TRUE)
-bmc_paper <- pdftools::pdf_data(test_path("10.1186+s42466-019-0022-4.pdf"),
+bmc_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1186+s42466-019-0022-4.pdf"),
                                 font_info = TRUE)
-karger_paper <- pdftools::pdf_data(test_path("10.1159+000521415.pdf"),
+karger_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1159+000521415.pdf"),
                                 font_info = TRUE)
-sage_paper <- pdftools::pdf_data(test_path("10.1177+00207640231162277.pdf"),
+sage_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1177+00207640231162277.pdf"),
                                  font_info = TRUE)
-asm_paper <- pdftools::pdf_data(test_path("10.1128+spectrum.02839-23.pdf"),
+asm_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1128+spectrum.02839-23.pdf"),
+                                font_info = TRUE)
+agu_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1029+2025sw004559.pdf"),
                                 font_info = TRUE)
 
 # text_data <- wp
@@ -273,7 +275,7 @@ test_that("insert flagging: figures", {
     .extract_insert_dim(2) |>
     expect_equal(c(67, 504, 452, 487))
 
-  elife_paper[[6]] |>
+elife_paper[[6]] |>
     .clear_margins(pdf_filename = "10.7554+elife") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
