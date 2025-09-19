@@ -3,4 +3,4 @@
 export(open_data_search)
 export(pdf_convert)
 export(pdf_load)
-export(splice_plos_twopager)
+export(splice_margin_text)

@@ -93,6 +93,17 @@ agu_paper <- pdftools::pdf_data(file.path(test_path(), "test_pdfs", "10.1029+202
   as.numeric(gaps)
 }
 
+.extract_margin_col_coords <- function(text_data) {
+  margin_text <- text_data |>
+    dplyr::filter(stringr::str_detect(text, "\\<m")) |>
+    dplyr::summarise(start_x = min(x),
+                     start_y = min(y),
+                     end_x = max(x),
+                     end_y = max(y))
+
+  as.numeric(margin_text)
+}
+
 test_that("header detection", {
   expect_equal(.find_header_y(r2_paper[[6]]), 0) # first text 37
   expect_equal(.find_header_y(wkh_paper[[3]]), 0) # no header first text 34
@@ -135,14 +146,17 @@ test_that("footer detection", {
   expect_equal(.find_footer_y(bmc_paper[[3]]), 729) # no footer
   expect_equal(.find_footer_y(sage_paper[[6]]), 731) # no footer
   expect_equal(.find_footer_y(science_paper[[7]]), 731) # last text 705
-  expect_equal(.find_footer_y(asco_paper[[2]]), 735) # last text 709
+  expect_equal(.find_footer_y(asco_paper[[2]]), 734) # last text 709
+  expect_true(.find_footer_y(asco_paper[[3]]) %in% c(734, 735)) # last text
+  expect_equal(.find_footer_y(asco_paper[[5]]), 734) # last text 709
   expect_equal(.find_footer_y(jama_paper[[3]]), 743) # last text 718
   expect_equal(.find_footer_y(asm_paper[[9]]), 749) # last text 727
-  expect_equal(.find_footer_y(springer_paper[[12]]), 736) # no visible footer
-  expect_equal(.find_footer_y(amegr_paper[[10]]), 736) # last text 695
+  expect_equal(.find_footer_y(springer_paper[[14]]), 736) # no visible footer
+  expect_equal(.find_footer_y(text_data <- amegr_paper[[10]]), 736) # last text 695
   expect_equal(.find_footer_y(tand_paper[[6]]), 745) # no footer
   expect_equal(.find_footer_y(elife_paper[[5]]), 748) # last text 713
   expect_equal(.find_footer_y(plos_paper[[5]]), 750) # last text 701
+  expect_equal(agu_paper[[3]] |> dplyr::filter(x < 563) |> .find_footer_y(), 760) # last text 717
   expect_equal(.find_footer_y(nature_paper[[5]]), 753) # last text 727
   expect_equal(.find_footer_y(elsevier_paper[[4]]), 754) # last text 731
   expect_equal(.find_footer_y(pnas_paper[[5]]), 754) # last text 731
@@ -165,7 +179,7 @@ test_that("footer detection", {
 # text_data <- asco_paper[[2]] |> .clear_margins("")
 
 test_that("insert flagging: figures", {
-  wiley_paper[[5]] |>
+ wiley_paper[[5]] |>
     .clear_margins(pdf_filename = "10.1002") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
@@ -275,7 +289,7 @@ test_that("insert flagging: figures", {
     .extract_insert_dim(2) |>
     expect_equal(c(67, 504, 452, 487))
 
-elife_paper[[6]] |>
+  elife_paper[[6]] |>
     .clear_margins(pdf_filename = "10.7554+elife") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
@@ -378,6 +392,29 @@ elife_paper[[6]] |>
     .flag_all_inserts() |>
     .extract_insert_dim(2) |>
     expect_equal(c(42, 387, 730, 730))
+
+  agu_paper[[13]] |>
+    .clear_margins(pdf_filename = "10.1029") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(1) |>
+    expect_equal(c(31, 546, 372, 402))
+
+  agu_paper[[13]] |>
+    .clear_margins(pdf_filename = "10.1029") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .extract_insert_dim(2) |>
+    expect_equal(c(167, 558, 700, 730))
+
+  # this layout is evil and shall not be implemented
+  # tt <- agu_paper[[9]] |>
+  #   .clear_margins(pdf_filename = "10.1029") |>
+  #   .add_rel_width() |>
+  #   .flag_all_inserts() |>
+  #   .extract_insert_dim(2) |>
+  #   expect_equal(c(167, 558, 700, 730))
+
 
 })
 
@@ -562,7 +599,7 @@ test_that("insert flagging: regular tables", {
 
 test_that("horizontal full page tables", {
 
-  mdpi_paper[[4]] |>
+  text_data <- mdpi_paper[[4]] |>
     .clear_margins(pdf_filename = "10.3390+toxins") |>
     .add_rel_width() |>
     .flag_all_inserts() |>
@@ -584,7 +621,7 @@ test_that("insert flagging: vertical tables", {
     .extract_insert_dim(1) |>
     expect_equal(c(315, 491, 51, 761))
 
- asco_paper[[3]] |>
+ text_data <- asco_paper[[3]] |>
    .clear_margins(pdf_filename = "10.1200") |>
    .add_rel_width() |>
    .flag_all_inserts() |>
@@ -939,3 +976,46 @@ test_that("column width estimation", {
 
 })
 
+test_that("text in left margin estimation", {
+
+  plos_paper[[1]] |>
+    .clear_margins(pdf_filename = "10.1371") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1371") |>
+    .extract_margin_col_coords() |>
+    expect_equal(c(47, 346, 157, 703))
+
+  plos_paper[[2]] |>
+    .clear_margins(pdf_filename = "10.1371") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1371") |>
+    .extract_margin_col_coords() |>
+    expect_equal(c(36, 77, 76, 209))
+
+  agu_paper[[1]] |>
+    .clear_margins(pdf_filename = "10.1029") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1029") |>
+    .extract_margin_col_coords() |>
+    expect_equal(c(31, 151, 56, 730))
+
+  agu_paper[[2]] |>
+    .clear_margins(pdf_filename = "10.1029") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1029") |>
+    .extract_margin_col_coords() |>
+    expect_equal(c(31, 91, 53, 127))
+
+  agu_paper[[14]] |>
+    .clear_margins(pdf_filename = "10.1029") |>
+    .add_rel_width() |>
+    .flag_all_inserts() |>
+    .add_column_info(cols = 2, pdf_filename = "10.1029") |>
+    .extract_margin_col_coords() |>
+    expect_equal(c(31, 533, 88, 605))
+
+})

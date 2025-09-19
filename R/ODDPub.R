@@ -11,7 +11,7 @@
 #' @param add_section_tags Boolean. If TRUE (the default), adds '<section>' tags at the beginning of potential text sections.
 #' This needs to be set to TRUE for later recognition of Data and Code Availability Statements.
 #'
-#' @return Logical vector describing the conversion success for each PDF file.
+#' @returns Logical vector describing the conversion success for each PDF file.
 #'
 #' @export
 pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
@@ -78,7 +78,7 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 #'  e.g. PLoS, will most likely cause references to data sets to be missed.
 #'
 #'
-#' @return Tibble with one row per screened document and the filename and logical values for open data
+#' @returns Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus additional columns containing the identified open data/code categories
 #' as well as the sentences in which open data/code was detected.
 #'
@@ -227,4 +227,35 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   }
 
   return(open_data_results)
+}
+
+
+#' Splice sentences from margin text (important text in left margin in e.g. PLoS journals)
+#' across two pages and put all margin text first.
+#'
+#' @param text_sentences Vector of text sentences, typically from a
+#'  document corpus loaded with the pdf_load function.
+#'
+#' @returns Data frame of the text with metadata about text in margins.
+#'
+#'
+#' @export
+splice_margin_text <- function(text_sentences) {
+
+  text <- margin_start <- margin_end <- start_cumul <- end_cumul <-
+    is_margin_text <- NULL
+
+
+  text_tib <- tibble::tibble(text = text_sentences) |>
+    dplyr::mutate(margin_start = stringr::str_detect(text, "<margin>"),
+                  margin_end = stringr::str_detect(text, "<mend>"),
+                  start_cumul = cumsum(margin_start),
+                  end_cumul = cumsum(margin_end),
+                  is_margin_text = start_cumul > end_cumul |
+                    dplyr::lag(start_cumul, default = 0) >
+                    dplyr::lag(end_cumul, default = 0)) |>
+    dplyr::arrange(dplyr::desc(is_margin_text))
+
+  text_tib
+
 }

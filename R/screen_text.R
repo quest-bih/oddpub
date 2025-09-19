@@ -201,31 +201,31 @@
 }
 # sections_v <- pdf_text_sentences[das_start:das_end]
 # sections_v <- DAS
-#' Splice sentences from e.g. DAS that were separated due to interpolated
-#'  sections in PLoS-formatted articles.
-#' @param sections_v Character vector of sentences that may contain
-#' interpolated sentences from abstract or other sections.
-#' @returns Character vector with sentences with interpolated sentences
-#' removed.
-#'
-#' @export
-splice_plos_twopager <- function(sections_v) {
-
-  # needs properly placed section tags in order to work!
-  # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
-  sections <- stringr::str_detect(sections_v, "^(<section>|##+) ")
-
-  if (sum(sections) == 1) return(sections_v)
-
-  splice_start_piece <- which(sections)[2] - 1
-  splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
-  splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
-
-  return(
-    c(sections_v[1:splice_start_piece],
-      sections_v[splice_end_piece:length(sections_v)])
-  )
-}
+# #'Splice sentences from e.g. DAS that were separated due to interpolated
+# #' sections in PLoS-formatted articles.
+# #'@param sections_v Character vector of sentences that may contain
+# #'interpolated sentences from abstract or other sections.
+# #' @returns Character vector with sentences with interpolated sentences
+# #' removed.
+# #'
+# #' @export
+# splice_plos_twopager <- function(sections_v) {
+#
+#   # needs properly placed section tags in order to work!
+#   # if (any(stringr::str_detect(sections_v, "<section> plos"))) {
+#   sections <- stringr::str_detect(sections_v, "^(<section>|##+) ")
+#
+#   if (sum(sections) == 1) return(sections_v)
+#
+#   splice_start_piece <- which(sections)[2] - 1
+#   splice_end_piece <- sections[length(sections):1] |> which.max() # invert vector to find last occurrence of section
+#   splice_end_piece <- length(sections) - splice_end_piece + 1 # last occurence of section
+#
+#   return(
+#     c(sections_v[1:splice_start_piece],
+#       sections_v[splice_end_piece:length(sections_v)])
+#   )
+# }
 
 # sentence <- pdf_text_sentences[927]
 #' test if text contains data availability statement
@@ -234,7 +234,7 @@ splice_plos_twopager <- function(sections_v) {
 
   data_availability <- keyword_list$data_availability
 
-  data_availability <- paste0("(<section>|##+)\\W+[\\d,\\W]*(", data_availability, ")\\b")
+  data_availability <- paste0("(<section>|##+)\\W+[\\d,\\W]*(", "(<margin> )?", data_availability, ")\\b")
   stringr::str_detect(sentence, data_availability)
 }
 
@@ -248,6 +248,11 @@ splice_plos_twopager <- function(sections_v) {
   type <- match.arg(type, c("das", "cas"))
 
   keyword_list <- .create_keyword_list()
+
+  pdf_text_tib <- splice_margin_text(pdf_text_sentences) |>
+    dplyr::mutate(text = stringr::str_remove_all(text, "\\s+<(margin|mend)>"))
+
+  pdf_text_sentences <- pdf_text_tib$text
 
   if (type == "das") {
     cdas_detections <- purrr::map_lgl(pdf_text_sentences,
@@ -325,17 +330,17 @@ splice_plos_twopager <- function(sections_v) {
   # } else {
   cdas_end <- cdas_end_candidates[completed_sentences][1] # the first complete sentence before the beginning of a section
 
-  if (cdas_start / length(cdas_detections) < 0.1 & cdas_end != 0) { # for plos journals with DAS on first page
-
-      cdas_second_part <- furrr::future_map_lgl(pdf_text_sentences[(cdas_start + cdas_end + 1):length(pdf_text_sentences)],
-                                               \(sentence) stringr::str_detect(sentence, "(<section>|##+) funding:"))
-
-      if (sum(cdas_second_part) == 0) {
-        cdas_end <- cdas_end
-        } else {
-          cdas_end <- cdas_end + which(cdas_second_part) - 1
-        }
-    }
+  # if (cdas_start / length(cdas_detections) < 0.1 & cdas_end != 0) { # for plos journals with DAS on first page
+  #
+  #     cdas_second_part <- furrr::future_map_lgl(pdf_text_sentences[(cdas_start + cdas_end + 1):length(pdf_text_sentences)],
+  #                                              \(sentence) stringr::str_detect(sentence, "(<section>|##+) funding:"))
+  #
+  #     if (sum(cdas_second_part) == 0) {
+  #       cdas_end <- cdas_end
+  #       } else {
+  #         cdas_end <- cdas_end + which(cdas_second_part) - 1
+  #       }
+  #   }
   # }
   #
   if (is.na(cdas_end)) {
@@ -348,7 +353,7 @@ splice_plos_twopager <- function(sections_v) {
 
   }
 
-  if (cdas_start + cdas_end > length(pdf_text_sentences)) {
+  if ((cdas_start + cdas_end) > length(pdf_text_sentences)) {
     cdas_end <- cdas_start
   }
 
@@ -356,15 +361,15 @@ splice_plos_twopager <- function(sections_v) {
 
   CDAS <- pdf_text_sentences[cdas_start:cdas_end]
 
-  if (cdas_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
-    CDAS <- splice_plos_twopager(CDAS)
-  }
+  # if (cdas_start < 50 & any(stringr::str_detect(pdf_text_sentences[1:10], "plos"), na.rm = TRUE)) {
+  #   CDAS <- splice_plos_twopager(CDAS)
+  # }
    CDAS |>
      stats::na.omit() |>
      paste(collapse = " ") |>
      stringr::str_remove_all("\\u200b") |> # remove zerowidth spaces
      stringr::str_trim() |>
-     stringr::str_remove_all(" (<section>|##+)") |>
+     stringr::str_remove_all(" (<section>|##+)") |> # remove interim tags
      stringr::str_replace("(?<=repository)\\. ", ": ") |>  # for the weird cases when after repository a . and not : follows
      stringr::str_replace("(?<=were analy(z|s)ed in this study)\\.", ":") |>  # for the standard phrasing of data re-use
      tokenizers::tokenize_regex(pattern = "(?<=\\.) ", simplify = TRUE) |> # tokenize sentences
@@ -469,7 +474,7 @@ splice_plos_twopager <- function(sections_v) {
   if (sum(line_after_refs) <= 0) {
     line_after_refs <- suppressWarnings(
       pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
-      stringr::str_detect("(<section>|##+) (methods|acknowledge?ments:?)") |>
+      stringr::str_detect("(<section>|##+) ((methods$)|acknowledge?ments:?|additional|author)") |>
       which() |>
       min()
     )
