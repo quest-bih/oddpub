@@ -108,7 +108,7 @@ test_that("header detection", {
   expect_equal(.find_header_y(r2_paper[[6]]), 0) # first text 37
   expect_equal(.find_header_y(wkh_paper[[3]]), 0) # no header first text 34
   expect_equal(.find_header_y(oxford_paper[[4]]), 0) # no header first text 41 (page 3)
-  expect_equal(.find_header_y(rs_paper[[10]]), 44) # first text 44 (page number also on 44)
+  expect_equal(.find_header_y(rs_paper[[10]]), 0) # first text 44 (page number also on 44, but gets removed with margin)
   expect_equal(.find_header_y(pnas_paper[[5]]), 0) # first text 49
   expect_equal(.find_header_y(fsf_paper[[4]]), 20) # first text 71
   expect_equal(.find_header_y(science_paper[[7]]), 22) # first text 49

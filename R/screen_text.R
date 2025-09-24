@@ -245,6 +245,8 @@
 #' @noRd
 .extract_cdas <- function(pdf_text_sentences, type = "das") {
 
+  text <- NULL
+
   type <- match.arg(type, c("das", "cas"))
 
   keyword_list <- .create_keyword_list()

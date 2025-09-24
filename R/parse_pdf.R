@@ -52,7 +52,7 @@
   ralc <- space <- text <- y <- x <- line_n <-
     has_jama <- text_left_margin <- insert <-
     dac <- contrib <- rel_width <- font_size <-
-    n_cols <- ret_per_line <- width <- NULL
+    is_subpscript <- n_cols <- ret_per_line <- width <- NULL
 
   if (stringr::str_detect(pdf_filename, "10\\.3390|e(L|l)ife")) return(1)
 
@@ -225,7 +225,9 @@
                     dplyr::between(x + width, midpage_gap, midpage_gap + 10) |
                     x < midpage_gap & x + width > midpage_gap) |>
     dplyr::group_by(line_n) |>
-    dplyr::summarise(ret_per_line = sum(space == FALSE),
+    dplyr::summarise(ret_per_line = sum(space == FALSE & is_subpscript == FALSE &
+                                          dplyr::lag(is_subpscript == FALSE,
+                                                     default = FALSE)),
                      midpage_words = sum(midpage_words),
                      max_x = max(x))
 
@@ -296,8 +298,12 @@ Mode <- function(x) {
 
   keyword_list <- .create_keyword_list()
 
-  starts_with_section <- stringr::str_detect(tolower(text_data$text[1]),
-                                             keyword_list$section_stopwords)
+  stopwords <- paste0(keyword_list$section_stopwords, "|\\bauthor|\\bdata")
+
+  starts_with_section <- stringr::str_detect(
+    tolower(text_data$text[1]),
+    stringr::regex(stopwords, ignore_case = TRUE)
+    )
 
   starts_with_insert <- .str_has_insert(text_data$text[1])
 
@@ -371,6 +377,8 @@ Mode <- function(x) {
     has_insert <- NULL
 
   page_width <- .get_page_width(text_data)
+
+
   min_y <- min(max(text_data$y) - 50, 700)
 
   if (min_y < 400) return(max(text_data$y) + 3) # in case no footer was detected
@@ -380,19 +388,40 @@ Mode <- function(x) {
       .add_vertical()
   }
 
+  keyword_list <- .create_keyword_list()
+
+  section_title <- paste0(keyword_list$section_stopwords, "|\\bauthor|\\bdata")
+
   # text_data <-
   footer_candidate <- text_data |>
     dplyr::filter(y > min_y,
-                  height < 20,
+                  height < 20
     ) |>
     .add_rel_width() |>
     dplyr::mutate(potential_page_n = stringr::str_detect(text, "\\d{1,5}$") &
+                    !stringr::str_detect(text, "\\:") &
                     vertical == FALSE &
-                    rel_width < 0.2 &
                     y > 700 &
+                    (rel_width < 0.2 | y >= 800) &
                     space == FALSE &
                     (x < 100 | x > 500 | dplyr::between(x, 250, 320)),
-                  is_subpscript = FALSE)
+                  is_subpscript = FALSE,
+                  section_title = stringr::str_detect(
+                    text, stringr::regex(section_title, ignore_case = TRUE)
+                  ) & (font_size > 10)
+    )
+
+  if (sum(footer_candidate$section_title) > 0) {
+
+    section_y <- footer_candidate |>
+      dplyr::filter(section_title) |>
+      dplyr::pull(y) |>
+      max()
+
+    footer_candidate <- footer_candidate |>
+      dplyr::filter(y > section_y)
+
+  }
 
 
   #### TODO: experimental
@@ -432,15 +461,17 @@ Mode <- function(x) {
       .find_y_gap() |>
       dplyr::pull(y) |>
       min()
-  )
+    )
 
   if (!is.infinite(y_gap)) {
+
     y_postgap <- footer_candidate |>
       dplyr::filter(y > y_gap + 3 | potential_page_n == TRUE) |>
       dplyr::pull(y) |>
       min()
 
    return(y_postgap)
+
   } else {
 
     y_amplitude <- max(footer_candidate$y) -
