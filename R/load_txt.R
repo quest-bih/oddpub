@@ -53,6 +53,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
     "neurovault\\.",
     "e\\. ?g\\.",
     "et al\\.$",
+    "\U00AD",
     "ncbi\\.$",
     "github\\.$",
     "www\\.$",
@@ -75,7 +76,8 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
   {
     for(i in 1:length(sentence_paste_idx))
     {
-      pdf_text_corrected <- .paste_idx(pdf_text_corrected, sentence_paste_idx[i]-(i-1))
+      pdf_text_corrected <- .paste_idx(pdf_text_corrected, sentence_paste_idx[i]-(i-1)) |>
+        stringr::str_remove_all("\U00AD")
     }
   }
 
@@ -110,7 +112,7 @@ pdf_load <- function(pdf_text_folder, lowercase = TRUE, remove_regex = ",")
   tokenized <- readr::read_lines(textfile) |>
     paste(collapse = " ") |>
     stringr::str_replace_all("\n", ".") |>
-    stringr::str_remove_all("[\U200A-\U200F\U00AD]") |>
+    stringr::str_remove_all("[\U200A-\U200F]") |>
     stringr::str_squish() |>
     tokenizers::tokenize_sentences(simplify = TRUE, lowercase = lowercase) |>
     tokenizers::tokenize_regex(pattern = " (?=<(section|insert|iend)>)", simplify = TRUE)
