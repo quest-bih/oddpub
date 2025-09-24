@@ -567,8 +567,11 @@ Mode <- function(x) {
 .find_cols_left_x <- function(text_data) {
   x <- n <- x_jump <- insert <- space <- text <- NULL
 
-  text_data <- text_data |>
-    dplyr::filter(insert == 0)
+  if ("insert" %in% names(text_data)) {
+    text_data <- text_data |>
+      dplyr::filter(insert == 0)
+  }
+
 
   if (nrow(text_data) == 0) return(tibble::tibble(x = 0))
 
@@ -1554,7 +1557,9 @@ Mode <- function(x) {
                   y_exceeded = cumsum(y_exceeded)) |>
     dplyr::filter(y_exceeded == 0, is_potential_section_start == FALSE, font_size >= 5)
 
-  if (nrow(last_row) == 0 | (is_last_insert == FALSE & min_y_next_insert == max(last_row$y) + 2)) {
+  max_lastrow <- suppressWarnings(max(last_row$y))
+
+  if (nrow(last_row) == 0 | (is_last_insert == FALSE & min_y_next_insert == max_lastrow + 2)) {
     return(min_y_next_insert - 3)
   }
 
