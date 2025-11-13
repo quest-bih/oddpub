@@ -6,3 +6,4 @@
 ^\.httr-oauth$
 ^LICENSE\.md$
 .travis.yml
+^CITATION\.cff$

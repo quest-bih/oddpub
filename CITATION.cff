@@ -1,0 +1,304 @@
+# --------------------------------------------
+# CITATION file created with {cffr} R package
+# See also: https://docs.ropensci.org/cffr/
+# --------------------------------------------
+ 
+cff-version: 1.2.0
+message: 'To cite package "oddpub" in publications use:'
+type: software
+license: AGPL-3.0-or-later
+title: 'oddpub: Detection of Open Data & Open Code statements in biomedical publications'
+version: 7.2.3
+doi: 10.5281/zenodo.3741403
+identifiers:
+- description: This is the collection of archived snapshots of all versions of ODDPub
+  type: doi
+  value: 10.5281/zenodo.3741403
+- description: This is the Reasearch Resource Identifier (RRID)
+  type: url
+  value: https://scicrunch.org/resolver/SCR_018385
+abstract: 'Detection of Open Data & Open Code statements in biomedical publications.
+  Uses publication PDFs as input and returns both Open Data/Code: ''TRUE/FALSE'',
+  the detected statement, as well as additional metadata.'
+authors:
+- family-names: Riedel
+  given-names: Nico
+- family-names: Nachev
+  given-names: Vladislav
+  email: vladislav.nachev@charite.de
+  orcid: https://orcid.org/0000-0003-0521-6153
+preferred-citation:
+  type: generic
+  title: 'ODDPub: A text-mining algorithm to detect data sharing in biomedical publications'
+  authors:
+  - family-names: Nachev
+    given-names: Vladislav
+    orcid: https://orcid.org/0000-0003-0521-6153
+    email: vladislav.nachev@charite.de
+  - family-names: Riedel
+    given-names: Nico
+    orcid: https://orcid.org/0000-0002-3808-1163
+  year: '2025'
+  url: https://github.com/quest-bih/oddpub
+  doi: 10.5281/zenodo.3741403
+  notes: v7.2.3 RRID:SCR_018385
+repository-code: https://github.com/quest-bih/oddpub
+url: https://github.com/quest-bih/oddpub
+date-released: '2025-11-13'
+contact:
+- family-names: Nachev
+  given-names: Vladislav
+  email: vladislav.nachev@charite.de
+  orcid: https://orcid.org/0000-0003-0521-6153
+references:
+- type: software
+  title: 'R: A Language and Environment for Statistical Computing'
+  notes: Depends
+  url: https://www.R-project.org/
+  authors:
+  - name: R Core Team
+  institution:
+    name: R Foundation for Statistical Computing
+    address: Vienna, Austria
+  year: '2025'
+  version: '>= 4.1.0'
+- type: software
+  title: tokenizers
+  abstract: 'tokenizers: Fast, Consistent Tokenization of Natural Language Text'
+  notes: Imports
+  url: https://docs.ropensci.org/tokenizers/
+  repository: https://CRAN.R-project.org/package=tokenizers
+  authors:
+  - family-names: Mullen
+    given-names: Lincoln
+    email: lincoln@lincolnmullen.com
+    orcid: https://orcid.org/0000-0001-5103-6917
+  year: '2025'
+  doi: 10.32614/CRAN.package.tokenizers
+- type: software
+  title: stringr
+  abstract: 'stringr: Simple, Consistent Wrappers for Common String Operations'
+  notes: Imports
+  url: https://stringr.tidyverse.org
+  repository: https://CRAN.R-project.org/package=stringr
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  year: '2025'
+  doi: 10.32614/CRAN.package.stringr
+- type: software
+  title: vctrs
+  abstract: 'vctrs: Vector Helpers'
+  notes: Imports
+  url: https://vctrs.r-lib.org/
+  repository: https://CRAN.R-project.org/package=vctrs
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  - family-names: Henry
+    given-names: Lionel
+    email: lionel@posit.co
+  - family-names: Vaughan
+    given-names: Davis
+    email: davis@posit.co
+  year: '2025'
+  doi: 10.32614/CRAN.package.vctrs
+- type: software
+  title: readr
+  abstract: 'readr: Read Rectangular Text Data'
+  notes: Imports
+  url: https://readr.tidyverse.org
+  repository: https://CRAN.R-project.org/package=readr
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  - family-names: Hester
+    given-names: Jim
+  - family-names: Bryan
+    given-names: Jennifer
+    email: jenny@posit.co
+    orcid: https://orcid.org/0000-0002-6983-2759
+  year: '2025'
+  doi: 10.32614/CRAN.package.readr
+- type: software
+  title: dplyr
+  abstract: 'dplyr: A Grammar of Data Manipulation'
+  notes: Imports
+  url: https://dplyr.tidyverse.org
+  repository: https://CRAN.R-project.org/package=dplyr
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+    orcid: https://orcid.org/0000-0003-4757-117X
+  - family-names: François
+    given-names: Romain
+    orcid: https://orcid.org/0000-0002-2444-4226
+  - family-names: Henry
+    given-names: Lionel
+  - family-names: Müller
+    given-names: Kirill
+    orcid: https://orcid.org/0000-0002-1416-3412
+  - family-names: Vaughan
+    given-names: Davis
+    email: davis@posit.co
+    orcid: https://orcid.org/0000-0003-4777-038X
+  year: '2025'
+  doi: 10.32614/CRAN.package.dplyr
+- type: software
+  title: purrr
+  abstract: 'purrr: Functional Programming Tools'
+  notes: Imports
+  url: https://purrr.tidyverse.org/
+  repository: https://CRAN.R-project.org/package=purrr
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+    orcid: https://orcid.org/0000-0003-4757-117X
+  - family-names: Henry
+    given-names: Lionel
+    email: lionel@posit.co
+  year: '2025'
+  doi: 10.32614/CRAN.package.purrr
+- type: software
+  title: pdftools
+  abstract: 'pdftools: Text Extraction, Rendering and Converting of PDF Documents'
+  notes: Imports
+  url: https://ropensci.r-universe.dev/pdftools
+  repository: https://CRAN.R-project.org/package=pdftools
+  authors:
+  - family-names: Ooms
+    given-names: Jeroen
+    email: jeroenooms@gmail.com
+    orcid: https://orcid.org/0000-0002-4035-0289
+  year: '2025'
+  doi: 10.32614/CRAN.package.pdftools
+- type: software
+  title: furrr
+  abstract: 'furrr: Apply Mapping Functions in Parallel using Futures'
+  notes: Imports
+  url: https://furrr.futureverse.org/
+  repository: https://CRAN.R-project.org/package=furrr
+  authors:
+  - family-names: Vaughan
+    given-names: Davis
+    email: davis@rstudio.com
+  - family-names: Dancho
+    given-names: Matt
+    email: mdancho@business-science.io
+  year: '2025'
+  doi: 10.32614/CRAN.package.furrr
+- type: software
+  title: tibble
+  abstract: 'tibble: Simple Data Frames'
+  notes: Imports
+  url: https://tibble.tidyverse.org/
+  repository: https://CRAN.R-project.org/package=tibble
+  authors:
+  - family-names: Müller
+    given-names: Kirill
+    email: kirill@cynkra.com
+    orcid: https://orcid.org/0000-0002-1416-3412
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@rstudio.com
+  year: '2025'
+  doi: 10.32614/CRAN.package.tibble
+- type: software
+  title: rlang
+  abstract: 'rlang: Functions for Base Types and Core R and ''Tidyverse'' Features'
+  notes: Imports
+  url: https://rlang.r-lib.org
+  repository: https://CRAN.R-project.org/package=rlang
+  authors:
+  - family-names: Henry
+    given-names: Lionel
+    email: lionel@posit.co
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  year: '2025'
+  doi: 10.32614/CRAN.package.rlang
+- type: software
+  title: tidyr
+  abstract: 'tidyr: Tidy Messy Data'
+  notes: Imports
+  url: https://tidyr.tidyverse.org
+  repository: https://CRAN.R-project.org/package=tidyr
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  - family-names: Vaughan
+    given-names: Davis
+    email: davis@posit.co
+  - family-names: Girlich
+    given-names: Maximilian
+  year: '2025'
+  doi: 10.32614/CRAN.package.tidyr
+- type: software
+  title: yaml
+  abstract: 'yaml: Methods to Convert R Data to YAML and Back'
+  notes: Imports
+  url: https://github.com/vubiostat/r-yaml/
+  repository: https://CRAN.R-project.org/package=yaml
+  authors:
+  - family-names: Garbett
+    given-names: Shawn P
+  - family-names: Stephens
+    given-names: Jeremy
+  - family-names: Simonov
+    given-names: Kirill
+  - family-names: Xie
+    given-names: Yihui
+  - family-names: Dong
+    given-names: Zhuoer
+  - family-names: Wickham
+    given-names: Hadley
+  - family-names: Horner
+    given-names: Jeffrey
+  - name: reikoch
+  - family-names: Beasley
+    given-names: Will
+  - family-names: O'Connor
+    given-names: Brendan
+  - family-names: Warnes
+    given-names: Gregory R.
+  - family-names: Quinn
+    given-names: Michael
+  - family-names: Kamvar
+    given-names: Zhian N.
+  - family-names: Gao
+    given-names: Charlie
+  year: '2025'
+  doi: 10.32614/CRAN.package.yaml
+- type: software
+  title: progressr
+  abstract: 'progressr: An Inclusive, Unifying API for Progress Updates'
+  notes: Imports
+  url: https://progressr.futureverse.org
+  repository: https://CRAN.R-project.org/package=progressr
+  authors:
+  - family-names: Bengtsson
+    given-names: Henrik
+    email: henrikb@braju.com
+    orcid: https://orcid.org/0000-0002-7579-5165
+  year: '2025'
+  doi: 10.32614/CRAN.package.progressr
+- type: software
+  title: testthat
+  abstract: 'testthat: Unit Testing for R'
+  notes: Suggests
+  url: https://testthat.r-lib.org
+  repository: https://CRAN.R-project.org/package=testthat
+  authors:
+  - family-names: Wickham
+    given-names: Hadley
+    email: hadley@posit.co
+  year: '2025'
+  doi: 10.32614/CRAN.package.testthat
+

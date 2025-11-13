@@ -1,20 +1,19 @@
-citHeader("To cite this package in publications use:")
-
-citEntry(
-  entry    = "Manual",
-  title    = "ODDPub Vulcan Point",
+bibentry(
+  header = "To cite this package in publications use:",
+  bibtype = "Misc",
+  title = "{ODDPub}: A text-mining algorithm to detect data sharing in biomedical publications",
+  shortitle = "{ODDPub}",
   author   = c(
     person("Vladislav", "Nachev", comment = c(ORCID = "0000-0003-0521-6153")),
     person("Nico", "Riedel", comment = c(ORCID = "0000-0002-3808-1163"))
   ),
   year     = "2025",
   url      = "https://github.com/quest-bih/oddpub",
-  note     = "v7.2.1",
+  doi      = "10.5281/zenodo.3741403",
+  note     = c("v7.2.3", "{RRID:SCR_018385}"),
   textVersion = paste(
     "Nachev, V. & Riedel, N. (2025).",
-    "ODDPub Vulcan Point: v7.2.1.",
+    "ODDPub Sumatra: v7.2.3.",
     "https://github.com/quest-bih/oddpub"
   )
 )
-
-
