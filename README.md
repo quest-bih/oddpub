@@ -11,7 +11,7 @@ publication. It is tailored towards biomedical literature.
 
 ## Authors
 
-Nico Riedel, Vladislav Nachev, Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
+Nico Riedel, Vladislav Nachev (vladislav.nachev@charite.de), Miriam Kip, Evgeny Bobrov (evgeny.bobrov@bih-charite.de) - QUEST Center for Transforming Biomedical Research, Berlin Institute of Health
 
 ## Publication
 
@@ -22,8 +22,8 @@ More information on the development and validation of the algorithm can be found
 The latest version of the algorithm is structured as an R package and can easily be installed with the following command:
 
 ``` r
-# install.packages("devtools") # if devtools currently not installed
-devtools::install_github("quest-bih/oddpub")
+# install.packages("pak") # if pak currently not installed
+pak::pak("quest-bih/oddpub")
 ```
 
 ## Description
@@ -33,21 +33,49 @@ sentence. Multiple categories have to match for a single sentence to trigger a
 detection. Among keyword categories are categories for specific biomedical
 repositories as well as their corresponding accession numbers (as regular
 expressions), general-purpose repositories or different file formats typically
-used to distribute raw data in the supplement.
+used to distribute raw data in the supplement. (If the algorithm is applied to
+fields other than biomedicine, classification performance is expected to be
+lower, due to unfamiliar discipline-specific repository names.)
 
 Additionally, Open Code dissemination is detected using keywords categories
-for source code or code repositories.
+for source code or typical code repositories.
 
 ## Usage
 
-The package exposes four functions that allow the following workflow:
+The package exposes three main functions. For faster computation these functions
+can be started in several parallel processes with the use of the packages
+`future` and `furrr`. Progress visualization is done via `progressr`.
+This allows for the following workflow:
 
 ``` r
-oddpub::pdf_convert(pdf_folder, output_folder)
+library(oddpub)
+library(furrr) # for parallel processing and considerably faster screening
+library(progressr) # for visualizing computational progress
+
+plan(multisession) # general setting for parallel processing
+handlers(global = TRUE) # general setting for progress visualization
+
+pdf_folder <- "/path/to/input/pdf/files" # make sure slashes are right-leaning
+txt_folder <- "/path/to/output/txt/files" # make sure slashes are right-leaning
+
+conversion_success <- pdf_convert(pdf_folder, txt_folder)
+
+# examine if any files failed to convert:
+list.files(pdf_folder)[!conversion_success] 
 ```
-Converts PDFs contained in one folder to txt-files and saves them into the output folder. This conversion does not aim to parse the whole pdf cleanly, but to correctly detect the column layout and to (liberally) add section tags at the beginning of article sections, including data and code availability statements, to enable their detection and extraction. This is a crucial step in the workflow and conversion via other methods will result in poorer performance.
-A convention that will further enhance the PDF to txt conversion is to name the PDF files as the DOI of the publication, with slashes "/" replaced by plus signs "+", e.g. 10.1371+journal.pone.0302787.pdf. The txt file names are the same as the input PDF, except for the file extension.
-The DOI information in the file name improves the detection of the column layout of the input PDF file and therefore the quality of the txt output and the remaining ODDPub detection algorithms.
+Converts PDFs contained in one folder to txt-files and saves them into the output
+folder. This conversion does not aim to parse the whole pdf cleanly, but to
+detect the column layout and to (liberally) add section tags at the beginning of
+article sections, including data and code availability statements, to enable
+their detection and extraction. This is a crucial step in the workflow and
+conversion via other methods will result in poorer performance.
+A convention that will further enhance the PDF to txt conversion is to name the
+PDF files as the DOI of the publication, with slashes "/" replaced by plus signs
+"+", e.g. 10.1371+journal.pone.0302787.pdf. The txt file names are the same as
+the input PDF, except for the file extension.
+The DOI information in the file name improves the detection of the column layout
+of the input PDF file and therefore the quality of the txt output and the
+remaining ODDPub detection algorithms.
 
 ``` r
 pdf_text_sentences <- oddpub::pdf_load(pdf_text_folder)
@@ -55,27 +83,39 @@ pdf_text_sentences <- oddpub::pdf_load(pdf_text_folder)
 Loads all text files from given folder.
 
 ``` r
-open_data_results <- oddpub::open_data_search(pdf_text_sentences)
-```
-Actual Open Data detection. Returns for each file if Open Data or Open Code is detected. Additionally returns the identified Open Data/Code categories as well as the detected sentences, which can be deactivated using the additional parameter ```detected_sentences = FALSE```.
-
-``` r
-future::plan(multisession)
-progressr::handlers(global = TRUE)
 open_data_results <- oddpub::open_data_search(pdf_text_sentences, screen_das = "extra")
 ```
-Paralellized version of the algorithm that starts several parallel processes with the use of the packages `future` and `furrr`, as well as progress visualization via `progressr`.
+Actual Open Data detection. Returns for each file if Open Data or Open Code is
+detected. Additionally returns the identified Open Data/Code categories,
+as well as the detected sentences, which can be deactivated using the
+additional parameter ```detected_sentences = FALSE```.
 
+The output data frame can be exported to csv, with the help of the `readr`
+package.
 
-To validate the algorithm, we manually screened a sample of 792 publications that were randomly selected from PubMed. On this validation dataset, our algorithm detects Open Data publications with a sensitivity of 0.73 and specificity of 0.97.
+```r
+write_csv(open_data_results, "path/to/output/folder/open_data_results.csv") 
+  
+```
 
-The algorithm has been updated since the original publication and validation. A new validation is planned for Q4 2025.
+## Validation
+
+To validate the algorithm, we manually screened a sample of 792 publications
+that were randomly selected from PubMed. On this validation dataset,
+our algorithm detects Open Data publications with a sensitivity of 0.73
+and specificity of 0.97.
+
+The algorithm has been updated since the original publication and validation.
+A new validation is planned for Q4 2026.
 
 ## Detailed description of the keywords
 
-In the following, we give an overview over the different parts of the keywords used in the algorithm
+In the following, we give an overview over the different parts of the keywords
+used in the algorithm.
 
-Those are the combined keyword categories that are searched in the full text. If a hit was detected in any of these combined categories, the paper is flagged as Open Data. For definitions of the individual keyword categories, see below.
+Those are the combined keyword categories that are searched in the full text.
+If a hit was detected in any of these combined categories, the paper is flagged
+as Open Data. For definitions of the individual keyword categories, see below.
 
 | Combined Keyword Category | Keywords |
 |---------------------------|----------|
