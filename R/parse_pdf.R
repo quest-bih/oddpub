@@ -27,7 +27,7 @@
     success <- TRUE
   } else  {
     tryCatch({
-      suppressWarnings({
+      suppressMessages({
         text <- pdftools::pdf_data(pdf_filename, font_info = TRUE) |>
           furrr::future_map_chr(\(x) .textbox_to_str(x, pdf_filename, add_section_tags = add_section_tags))
           # purrr::map_chr(\(x) .textbox_to_str(x, pdf_filename))
