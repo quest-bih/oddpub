@@ -169,6 +169,8 @@ field_specific_repo:
   - "Computational Chemistry Datasets"
   - "ConnectomeDB"
   - "Conserved domains"
+  - "DANDI"
+  - "dandiarchive"
   - "CPTAC"
   - "Crystallography Open Database"
   - "CXIDB"
@@ -277,6 +279,8 @@ field_specific_repo:
   - "SAMS"
   - "Sequence Read Archive"
   - "SICAS Medical Image Repository"
+  - "SPARC"
+  - "sparc\\.science"
   - "SRA"
   - "STRENDA"
   - "St. Jude Cloud"
@@ -318,6 +322,9 @@ accession_nr:
   - "10.15468"
   - "10.5063"
   - "10.12751" # GIN
+  - "10.48324" # DANDI
+  - "DANDI:[[:digit:]]{6}" # DANDI dandiset ID
+  - "10.26275" # SPARC
   - "fcon_ ?1000\\.projects\\.nitrc\\.org" # URL for INDI
   - "(?<!of )[[:digit:]]{6,10}\\b"
   - "[A-Z]{2,3}_[:digit:]{5,}"
