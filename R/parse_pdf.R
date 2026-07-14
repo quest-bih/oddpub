@@ -1473,6 +1473,17 @@ Mode <- function(x) {
   is_last_insert <- rlang::is_empty(min_y_next_insert)
   # & !stringr::str_detect(first_insert$text, "^T")
   if (is_last_insert == TRUE) {
+
+    resource_availability <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "RESOURCE") & x == min(x),
+                    font_size > 8)
+
+    has_resource_availability <- nrow(resource_availability) > 0
+
+    if (has_resource_availability) {
+      return(resource_availability$y - 5)
+    }
+
     if (max_x == 800) {
       suppressWarnings(y_gap <- .find_y_gap(text_data, crit_jump_min = crit_jump_min,
                                             crit_font_size = first_insert$font_size) |>
@@ -1508,9 +1519,6 @@ Mode <- function(x) {
   #   min()
 
   has_references <- any(stringr::str_detect(text_data$text, "REFERENCES"))
-  # has_references <- any(stringr::str_detect(end_section$text, "REFERENCES"))
-  # has_abbreviations <- any(stringr::str_detect(end_section$text, "Abbreviations"))
-
 
   min_y_next_insert <- min(max(text_data$y) + 2, text_around_next_insert)
 
@@ -1610,7 +1618,7 @@ Mode <- function(x) {
 
   if (nrow(inserts) > 0) {
     for (i in 1:nrow(inserts)) {
-      # i <- 1
+      # i <- 2
       flagged_text_data <- flagged_text_data |>
         .flag_as_insert(c(.find_insert_min_x(flagged_text_data |>
                                                dplyr::filter(insert == 0)) - 2,
@@ -1712,7 +1720,7 @@ Mode <- function(x) {
       dplyr::filter(font_name != "BBKNAK+AdvTT6780a46b")
   } else if (stringr::str_detect(pdf_filename, "10\\.1371")) {
     text_data <- text_data |>
-      dplyr::filter(!stringr::str_detect(font_name, "LMNJSZ"))
+      dplyr::filter(!stringr::str_detect(font_name, "LMNJSZ|TeX_CM_Roman"))
   } else if (stringr::str_detect(pdf_filename, "10\\.3390")) {
     text_data <- text_data |>
       dplyr::filter(!stringr::str_detect(font_name, "Palatino|Font"))
@@ -1771,7 +1779,7 @@ Mode <- function(x) {
     dplyr::filter(
       !(stringr::str_detect(text, "^\\d{1,3}\\.*$") & space == FALSE &
                       !stringr::str_detect(dplyr::lag(text),
-          "Fig(u|\\.)|Table|Supplement|Section|and|FIG(U|\\.)|TABLE")),
+          "Fig(u|\\.)|Table|Supplement|Section|and|FIG(U|\\.)|TABLE|Data")),
                   y > min_y + 2, # remove header, extra 2 to compensate fuzzy y values
                   y < max_y - 2, # remove footer, extra 2 to compensate fuzzy y values
                   width > 1 | stringr::str_detect(text, "I|J|i|l|1"),
@@ -1829,7 +1837,7 @@ Mode <- function(x) {
 .textbox_to_str <- function(text_data, pdf_filename, add_section_tags = TRUE) {
 
   x <- y <- column <- line_n <- width <- text <-
-    prop_blank <- jump_size <- NULL
+    rel_width <- prop_blank <- jump_size <- NULL
 
   if (nrow(text_data) == 0) return("")
 
@@ -1846,10 +1854,11 @@ Mode <- function(x) {
   })
 
   cols <- .est_col_n(text_data, pdf_filename) |> floor()
+  cols <- max(1, cols)
+
   n_alnum_rows <- text_data |>
     dplyr::filter(stringr::str_detect(text, "[:alnum:]")) |>
     nrow()
-
 
   if (n_alnum_rows < 2) return("")
 
@@ -1863,11 +1872,15 @@ Mode <- function(x) {
     dplyr::arrange(column, line_n, x) |>
     dplyr::mutate(jump_size = y - dplyr::lag(y, default = 0)) |>
     dplyr::group_by(line_n) |>
-    dplyr::mutate(prop_blank = dplyr::case_when( # calculate approx. prop. blank space on line
-      cols == 1 ~ 1 - rel_width,
-      cols == 2 ~ 1 - sum(width)/(page_width/2),
-      .default = 1 - sum(width)/(page_width/3)
-    )) |>
+    dplyr::mutate(prop_blank = {
+      if (cols == 1) {
+        1 - rel_width
+      } else if (cols == 2) {
+        1 - sum(width)/(page_width/2)
+      } else {
+        1 - sum(width)/(page_width/3)
+      }
+    }) |>
     dplyr::ungroup()
 
   if (add_section_tags == TRUE) text_data <- text_data |>
@@ -1963,6 +1976,8 @@ Mode <- function(x) {
       ,
       sameline_title = (line_n > dplyr::lag(line_n) & heading_font &
         dplyr::lag(science_section == FALSE) &
+          dplyr::lag(n = 2, science_section == FALSE) &
+          dplyr::lag(n = 3, science_section == FALSE) &
         (dplyr::lead(font_name) != font_name |
            dplyr::lead(font_name, 2) != font_name |
            dplyr::lead(font_name, 3) != font_name)) |>

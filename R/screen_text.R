@@ -18,6 +18,7 @@
       "file_formats" = .format_keyword_vector(x, end_boundary = TRUE),
       "github" = .format_keyword_vector(x, end_boundary = TRUE),
       "ownership_claim" = .format_keyword_vector(x, end_boundary = TRUE),
+      "recommendation" = .format_keyword_vector(x, end_boundary = TRUE),
       "supplemental_table" = x,
       "supplemental_table_number" = x,
       "weblink" = x,
@@ -168,7 +169,7 @@
   sentence_search_keywords <- c("available", "was_available", "not_available",
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
-                                "not_data", "source_code", "supplement",
+                                "not_data", "source_code", "supplement", "recommendation",
                                 "reuse", "software_use",  "ownership_claim", "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
@@ -277,19 +278,26 @@
   if (length(cdas_start) == 2) {
     # select detection with statement
     statement_detections <- pdf_text_sentences[cdas_start] |>
-      stringr::str_detect("statement|availability of data(?! from)")
+      stringr::str_detect("statement(?!s)|availability of data(?! from)")
     # select detection without "data
-    quotation_detections <- !stringr::str_detect(pdf_text_sentences[cdas_start], '\\"data')
+    quotation_detections <- !stringr::str_detect(pdf_text_sentences[cdas_start],
+                                                 '\\"data')
+    online_content <- stringr::str_detect(
+      pdf_text_sentences[cdas_start],
+      "statements of data and code availability are available")
     if (sum(quotation_detections) == 1) {
       cdas_start <- cdas_start[quotation_detections] # select detection without "data
     } else if (sum(statement_detections) == 1) {
       cdas_start <- cdas_start[statement_detections] # select detection with statement
+    } else if (sum(online_content) == 1) {
+      cdas_start <- cdas_start[!online_content] # select detection without nature portfolio online content
     } else {
       cdas_start <- min(cdas_start)
     }
 
     # if more than two detections of CDAS were made, then return the last one
   } else if (length(cdas_start) > 2) {
+
     cdas_start <- max(cdas_start)
   } else if (length(cdas_start) == 0) {
     # return empty string if no CDAS was detected
@@ -322,7 +330,7 @@
 
   # check if candidates are full sentences ending in full stop. This achieves splicing if section continues on next page
   completed_sentences <- purrr::map_lgl(pdf_text_sentences[cdas_start + cdas_end_candidates],
-                                               \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$"))
+                                               \(sentence) stringr::str_detect(sentence, "(?<!www)\\..?$|(upon request\\.?$|doi\\.org)"))
 
   # if (stringr::str_length(str_das_sameline) < 5 & str_das_sameline != ".") {
   #   # first_sentence <- das_start + 1
@@ -455,45 +463,76 @@
 #' @noRd
 .remove_references <- function(pdf_text_sentences) {
 
+  n_refs <- 1
+
   line_before_refs <- pdf_text_sentences |>
     stringr::str_detect("(<section>|##+) r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
 
-  if (length(line_before_refs) > 1) line_before_refs <- line_before_refs[length(line_before_refs)]
+
+  if (length(line_before_refs) == 2) n_refs <- 2
+
+  # if (length(line_before_refs) > 1) line_before_refs <- line_before_refs[length(line_before_refs)]
 
   if (sum(line_before_refs) == 0) {
     # if no references detected
     return(pdf_text_sentences)
   }
+  # i <- 1
+  for(i in n_refs:1) {
+    # for journals that print useful information after the references (Elsevier, Science, etc.)
+    lbr <- line_before_refs[i]
 
-  # for journals that print useful information after the references (Elsevier, Science, etc.)
-  line_after_refs <- suppressWarnings(
-    pdf_text_sentences |>
-      stringr::str_detect("(<section>|##+) (star\\+methods|open data)|<insert> key resources table") |>
-      which() |>
-      max()
-  )
-  if (sum(line_after_refs) <= 0) {
     line_after_refs <- suppressWarnings(
-      pdf_text_sentences[line_before_refs:length(pdf_text_sentences)] |>
-      stringr::str_detect("(<section>|##+) ((methods$)|acknowledge?ments:?|additional|author)") |>
-      which() |>
-      min()
+      pdf_text_sentences |>
+        stringr::str_detect("(<section>|##+) (open data)|<insert> key resources table") |>
+        # stringr::str_detect("(<section>|##+) (star\\+methods|open data)|<insert> key resources table") |>
+        which() |>
+        max()
     )
-    line_after_refs <- line_after_refs + line_before_refs - 1
+    if (sum(line_after_refs) <= 0) {
+      line_after_refs <- suppressWarnings(
+        pdf_text_sentences[(lbr + 1):length(pdf_text_sentences)] |>
+          stringr::str_detect("(<section>|##+) ((methods$)|acknowledge?ments:?|additional|author)") |>
+          which() |>
+          min()
+      )
+      line_after_refs <- line_after_refs + lbr
+    }
+
+    if (sum(line_after_refs) <= 0 | is.infinite(line_after_refs)) line_after_refs <- 0
+
+    # excise references for special case Elsevier or Nature journals
+    if (line_after_refs > lbr) {
+      pdf_text_sentences <- (c(pdf_text_sentences[1:lbr],
+                         pdf_text_sentences[line_after_refs:length(pdf_text_sentences)]))
+    } else {
+      # excise references for most journals
+      pdf_text_sentences <- (pdf_text_sentences[1:lbr])
+    }
   }
 
-  if (sum(line_after_refs) <= 0 | is.infinite(line_after_refs)) line_after_refs <- 0
-
-  # excise references for special case Elsevier journals
-  if (line_after_refs > line_before_refs) {
-    return(c(pdf_text_sentences[1:line_before_refs],
-             pdf_text_sentences[line_after_refs:length(pdf_text_sentences)]))
-  }
-  # excise references for most journals
-  pdf_text_sentences[1:line_before_refs]
-
+  return(pdf_text_sentences)
 }
+
+# for Nature journals remove the Nature Portfolio at the end if it exists
+
+#' @noRd
+.remove_nature_portfolio <- function(pdf_text_sentences) {
+
+  npp <- numeric(0)
+  if (stringr::str_detect(pdf_text_sentences, "nature portfolio") |> sum() > 2) {
+    npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$"))
+
+    npp <- npp[length(npp)]
+  }
+
+  if (sum(npp) != 0) {
+    pdf_text_sentences <- pdf_text_sentences[1:(npp - 1)]
+  }
+  return(pdf_text_sentences)
+}
+
 # kw <- keyword_results_combined[[1]]
 #'
 #' @noRd
@@ -502,11 +541,11 @@
 
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
-    repositories <- protocol <- supplement <-
+    repositories <- protocol <- supplement <- recommendation <-
     source_code <- software_use <- github <- ownership_claim <-
     upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
     com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
-    com_request <- com_unknown_source <- com_code_reuse <- NULL
+    com_request <- com_unknown_source <- com_recommendation <- com_code_reuse <- NULL
 
 # odc <- open_data_categories[[1]]
   # pdf_text_sentences <- publ_sentences
@@ -522,17 +561,24 @@
     purrr::map(dplyr::mutate, com_specific_repo =
                  field_specific_repo &
                  (accession_nr | weblink) & available &
-                 !not_available & !was_available & (!reuse | ownership_claim) &
-                 ((!misc_non_data & !protocol & !supplement & !source_code & !grant) | data)
+                 !not_available &  !recommendation &
+                 ((!was_available & !reuse) | ownership_claim) &
+                 ((!misc_non_data & !protocol & !supplement &
+                     !source_code & !grant) | data)
                )|>
     purrr::map(dplyr::mutate, com_general_repo = repositories & available &
-                 !not_available & !was_available & (!reuse | ownership_claim) &
-                 (!misc_non_data & !protocol & !supplement & !source_code | data)) |>
+                 !not_available & !recommendation &
+                 ((!was_available & !reuse) | ownership_claim) &
+                 (!misc_non_data & !protocol &
+                    !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
     purrr::map(dplyr::mutate, com_code = source_code &
-                 !not_available & ((!was_available & !reuse & !software_use) | ownership_claim) &
-                 ((!upon_request & !supplement & !dataset & available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
+                 !not_available & ((!was_available & !reuse &
+                                      !software_use & !recommendation) |
+                                     ownership_claim) &
+                 ((!upon_request & !supplement & !dataset &
+                     available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
     purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
@@ -542,16 +588,26 @@
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
       com_n_weblinks > 1 ~ data & available & weblink &
-        !not_available & !accession_nr & !com_general_repo & !reuse & !com_specific_repo, # maybe exclude supplements here as well
+        !not_available & !accession_nr & !com_general_repo &
+        !reuse & !com_specific_repo, # maybe exclude supplements here as well
       .default = data & available & weblink &
         !not_available & !accession_nr & !com_general_repo & !reuse &
         !com_specific_repo & !com_github_data & !supplement & !misc_non_data
     )) |>
+    purrr::map(dplyr::mutate, com_recommendation = recommendation &
+                 data & available & !not_available & !was_available &
+                 !com_reuse & !com_code_reuse &
+                 (repositories | field_specific_repo)) |>
     purrr::map(dplyr::select, publ_sentences, com_specific_repo, com_general_repo,
-                com_github_data, dataset, com_code, com_suppl_code, com_reuse, com_code_reuse, com_request, com_unknown_source)
+                com_github_data, dataset, com_code, com_suppl_code, com_reuse,
+               com_code_reuse, com_request, com_unknown_source,
+               com_recommendation)
 
   return(keyword_results_combined)
 }
+
+
+
 
 #' keyword search on the tokenized sentences
 #' @noRd
@@ -642,7 +698,8 @@
                          request,
                          github,
                          unknown_source,
-                         data_journal
+                         data_journal,
+                         recommendation
                          )
 {
   category = vector()
@@ -670,6 +727,9 @@
   if (unknown_source == TRUE) {
     category <- category |> c("unknown/misspecified source")
   }
+  if (recommendation == TRUE) {
+    category <- category |> c("recommendation")
+  }
   if (data_journal == TRUE) {
     category <- category |> c("data journal")
   }
@@ -695,9 +755,10 @@
   com_general_repo <- com_specific_repo <- is_data_journal <- com_code <-
     com_suppl_code <- com_code_reuse <- dataset <- com_file_formats <- com_reuse  <-
     com_code_reuse <- com_supplemental_data <- com_request <- com_github_data <-
-    com_unknown_source <- article <- is_general_purpose <- is_supplement <-
-    is_reuse <- is_open_data <- is_open_code <- open_data_category <- is_code_reuse <-
-    is_code_supplement <- NULL
+    com_unknown_source <- com_recommendation <- article <-
+    is_general_purpose <- is_supplement <- recommendation <-
+    is_reuse <- is_open_data <- is_open_code <-
+    open_data_category <- is_code_reuse <- is_code_supplement <- NULL
 
   #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
@@ -722,7 +783,8 @@
                                                                    is_supplement, is_reuse, com_request,
                                                                    com_github_data,
                                                                    com_unknown_source,
-                                                                   is_data_journal), .OD_category),
+                                                                   is_data_journal,
+                                                                   com_recommendation), .OD_category),
                   is_code_supplement = com_suppl_code,
                   is_code_reuse = com_code_reuse) |>
     tibble::add_column(article = names(pdf_text_sentences)) |>
@@ -737,7 +799,8 @@
 
   com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
     com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
-    com_code_reuse <- com_suppl_code <- article <- open_data_statements <- open_code_statements <- NULL
+    com_code_reuse <- com_suppl_code <- com_recommendation <- article <-
+    open_data_statements <- open_code_statements <- NULL
 
   keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
@@ -770,7 +833,9 @@
                                      "com_code_reuse",
                                      "com_request",
                                      "com_unknown_source",
-                                     "com_file_formats", "com_supplemental_data", "das", "cas")
+                                     "com_recommendation",
+                                     "com_file_formats",
+                                     "com_supplemental_data", "das", "cas")
   open_data_sentences[is.na(open_data_sentences)] = "" #unify empty fields
 
   #collapse the found statements into one column for Open Data and one for Open Code
@@ -779,7 +844,9 @@
       open_data_statements =
         paste(com_specific_repo, com_general_repo,
               com_github_data, dataset, com_file_formats,
-              com_supplemental_data, com_reuse, com_code_reuse, com_unknown_source, sep = " ") |>
+              com_supplemental_data, com_reuse, com_code_reuse,
+              com_unknown_source, com_recommendation,
+              sep = " ") |>
         trimws()
                   ) |>
     # copy over das to cas if das is actually also a cas

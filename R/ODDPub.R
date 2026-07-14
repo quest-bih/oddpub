@@ -107,7 +107,8 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   p <- progressr::progressor(along = pdf_text_sentences)
   pdf_text_sentences <- furrr::future_map(pdf_text_sentences, \(x) {
     p()
-    .remove_references(x)
+    .remove_nature_portfolio(x) |>
+      .remove_references()
   })
 
   # pdf_text_sentences <- das_text_sentences
@@ -117,13 +118,14 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   p <- progressr::progressor(along = pdf_text_sentences)
   das_text_sentences <- pdf_text_sentences |>
     furrr::future_map(\(x) {
-     p()
+      p()
       .extract_cdas(x, type = "das")
     })
 
   # get the index of articles with das
   sentences_with_das <- das_text_sentences |>
-    purrr::map_lgl(\(x) length(x) < 31 & x[1] != "") |> # It is assumed a DAS will not have more than 30 sentences
+    # here assuming a DAS will not have more than 34 sentences
+    purrr::map_lgl(\(x) length(x) < 35 & x[1] != "") |>
     which()
 
   message("Extracting Code Availability Statements:\n")
