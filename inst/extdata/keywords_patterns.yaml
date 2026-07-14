@@ -124,7 +124,7 @@ ownership_claim:
   - "in this study\\: this data can be found here"
   - "bespoke"
 
-no_code:
+no_new_code:
   - "this paper does not report original code"
 
 not_available:
@@ -150,7 +150,7 @@ not_available:
 
 recommendation:
   - "(c|sh)ould (be|aid)(?! found)"
-  - "recommend|propose|suggest"
+  - "recommend|propose|suggest|encourage"
 
 field_specific_repo:
   - "10xgenomics"

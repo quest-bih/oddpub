@@ -170,7 +170,7 @@
                                 "field_specific_repo", "accession_nr", "repositories",
                                 "github", "data", "all_data",
                                 "not_data", "source_code", "supplement", "recommendation",
-                                "reuse", "software_use",  "ownership_claim", "grant",
+                                "reuse", "software_use", "no_new_code", "ownership_claim", "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
 
   # search for all relevant keyword categories
@@ -542,7 +542,7 @@
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
     repositories <- protocol <- supplement <- recommendation <-
-    source_code <- software_use <- github <- ownership_claim <-
+    source_code <- software_use <- no_new_code <- github <- ownership_claim <-
     upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
     com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
     com_request <- com_unknown_source <- com_recommendation <- com_code_reuse <- NULL
@@ -555,6 +555,7 @@
     p()
     .map_keywords(x)
   })
+
 
   # combine columns for the different open data keywords
   keyword_results_combined <- open_data_categories  |>
@@ -573,6 +574,7 @@
                     !supplement & !source_code | data)) |>
     purrr::map(dplyr::mutate, com_github_data = data & github & available &
                  !not_available & !was_available) |>
+    purrr::map(dplyr::mutate, no_new_code = any(no_new_code == TRUE)) |>
     purrr::map(dplyr::mutate, com_code = source_code &
                  !not_available & ((!was_available & !reuse &
                                       !software_use & !recommendation) |
@@ -583,7 +585,13 @@
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
     purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code &
-                 (!not_available & (available | stringr::str_detect(publ_sentences, "www|http")|github))) |>
+                 (!not_available &
+                    (available | stringr::str_detect(publ_sentences, "www|http")|github))) |>
+    # if no new code statement detected downgrade software detection to code_reuse
+    purrr::map(dplyr::mutate, com_code_reuse = ifelse(no_new_code == TRUE,
+                                                      com_code | com_code_reuse, com_code_reuse)) |>
+    purrr::map(dplyr::mutate, com_code = ifelse(no_new_code == TRUE,
+                                                      FALSE, com_code)) |>
     purrr::map(dplyr::mutate, com_request = upon_request) |>
     purrr::map(dplyr::mutate, com_n_weblinks = stringr::str_count(publ_sentences, "www|http")) |>
     purrr::map(dplyr::mutate, com_unknown_source = dplyr::case_when(
