@@ -62,6 +62,7 @@ reuse_statements:
 was_available:
   - "(was|were) provided"
   - "(was|were)? ?(?<!as )previously published"
+  - "available from previous publications?"
   - "(was|were|have been)? ?published previously"
   - "(was|were) included in(?!( ?\\b\\w+\\b){1,3} analys)"
   - "(was|were) contained in"
@@ -71,7 +72,7 @@ was_available:
   - "(was|were) deposited by"
   - "(has (been )?)?previously (been )?deposited"
   - "(was|were) reproduced"
-  - "(previous|prior) study"
+  - "(previous|prior) (study|analysis|paper|publication)"
   - "we found evidence in"
   - "we examined( ?\\b\\w+\\b){1,5} (deposited )?in"
   - "made their( ?\\b\\w+\\b){1,5} available"
@@ -86,7 +87,6 @@ was_available:
   - "available in( ?\\b\\w+\\b){1,5} previous"
   - "checked( ?\\b\\w+\\b){1,5} on( ?\\b\\w+\\b){1,5} freely available"
   - "(in|from|using)( ?\\b\\w+\\b){0,2} (previous|prior) study"
-  - "using( ?\\b\\w+\\b){1,5} functions? in( ?\\b\\w+\\b){1,5} package"
   - "using commonly accessible"
   - "using data from( the)?"
   - "(machine learning )?frameworks? used"
@@ -95,24 +95,32 @@ was_available:
   - "(?<!(approvals?|permissions?|permit|consent|waiver) )(we|was|were) obtained(?!( ?\\b\\w+\\b){0,2} (with|using|approvals?|permissions?|permit|consent|waiver))"
 
 software_use:
-  - "((packages?|tools?)|algorithms)( ?\\b\\w+\\b){0,5} used in this study"
+  - "((packages?|tools?)|algorithms)( ?\\b\\w+\\b){0,5} (applied|used) in this (study|investigation)"
   - "package was used to"
+  - "ggplot2|google"
   - "references for all r packages"
+  - "all used r packages"
+  - "with the r software package"
+  - "in r software"
   - "using the open-source software \\w+"
-  - "(we used|using)( ?\\b\\w+\\b){1,7} (package|algorithm|macro|library|toolkit|(r )?software)"
+  - "(we used|using)( ?\\b\\w+\\b){1,7} \\'?((r-? ?)?package|algorithm|macro|library|toolkit|(r-?)?software)"
+  - "using( ?\\b\\w+\\b){1,5} functions? in( ?\\b\\w+\\b){1,5} package"
   - "source identifier software and algorithms.* 20\\d{2}"
   - "toolkit used for"
+  - "with the aid of package vignettes"
+  - "their source code is provided"
   - "is a free software (which|that)"
-  - "(in|from) the (r|python) (package|library) \\w+ \\(.*\\)"
+  - "(in|from|by) the (r|python) (package|library) [^\\s]*+ \\(.*\\)"
+  - "(in|from|by) the [^\\s]*+ (r|python) (package|library) \\(.*\\)"
   - "(pipeline|library)( [^\\s]*(\\)|\\b)){0,5} was employed"
   - "(we used|using)( ?[^\\s]*(\\)|\\b)){0,3} avail-?able (at|on|from).*github"
   #- "(pre)processing was performed using"
   #- "toolkit used for (pre)processing?"
   - "open-?source solutions were employed"
 
-will_be_available:
-  - "will be (made )?(available|accessible)"
-  - "will be uploaded"
+# will_be_available:
+#   - "will be( ?[^\\s]*(\\)|\\b)){0,3} (available|accessible)"
+#   - "will be uploaded"
 
 ownership_claim:
   - "our"
@@ -126,6 +134,10 @@ ownership_claim:
 
 no_new_code:
   - "this paper does not report original code"
+  - "no custom (software|code) was developed during this study"
+  - "no custom software codes were generated as part of this study"
+  - "code developed for this work cannot be made publicly available"
+  - "the analytical code( ?\\b\\w+\\b){0,9} is not publicly available in a repository."
 
 not_available:
   - "not included"
@@ -133,11 +145,14 @@ not_available:
   - "not released"
   - "not provided"
   - "not contained in"
+  - "available on google"
   - "not( (openly|commercially))? available"
   - "lack of (openly-? ?)? available"
   - "unless( ?\\b\\w+\\b){1,3} are available"
-  - "when available"
+  - "there is no( ?\\b(\\w|[^\\w])+\\b){1,3} available"
+  - "(if|when(ever)?) available"
   - "not accessible"
+  - "without access"
   - "not submitted"
   - "not (developed|generated|produced)"
   - "did not( ?\\b\\w+\\b){1,5} generate"
@@ -147,9 +162,17 @@ not_available:
   - "does not report original"
   - "not applicable"
   - "being( ?\\b\\w+\\b){0,2} made (available|accessible)"
+  - "will be( ?[^\\s]*(\\)|\\b)){0,3} (available|accessible)"
+  - "will be uploaded"
 
 recommendation:
-  - "(c|sh)ould (be|aid)(?! found)"
+  - "(c|sh)ould( then)? (be|aid)(?! found)"
+  - "would (add|make|help|aid)"
+  - "can( also)? help"
+  - "may( also)? consider"
+  - "this requires that"
+  - "strive to"
+  - "used to distribute code"
   - "recommend|propose|suggest|encourage"
 
 field_specific_repo:
@@ -347,6 +370,7 @@ accession_nr:
   - "10.6073"
   - "10.15468"
   - "10.5063"
+  - "10.14278|rodare" # Rodare
   - "10.12751" # GIN
   - "10.48324" # DANDI
   - "DANDI:[[:digit:]]{6}" # DANDI dandiset ID
@@ -433,7 +457,7 @@ not_data:
 
 source_code:
   - "source codes?"
-  - "code files?"
+  - "(?<!postal )code files?"
   - "software code"
   - "(?<!in the )(entire|full|complete) analysis(?! (set|population))"
   - "analysis ((script|code)s?\\b)"
@@ -467,11 +491,11 @@ source_code:
   - "SAS scripts?"
   - "SPSS scripts?"
   - "r[-, ]+script"
-  - "(script|code)s? (is|are) available"
+  - "(?<!questionnaire )(script|code)s? (is|are) available"
   - "(script|code)s? used can be found"
-  - "open[-, ]+source (software|tool)"
+  - "(?<!in the )open[-, ]+source (software|tool)"
   - "r[-, ]+codes?"
-  - "(?<!(using|via|through)( the)? )r[-, ]+package"
+  - "(?<!(using|via|through)( the)? )r[-, ]+package(?! \\(v\\.)"
   - "python script"
   - "toolbox in (python|r|matlab)\\b"
   - "python codes?"
@@ -481,7 +505,7 @@ source_code:
   # - "(pipeline|library)( ?\\S+\\b\\S?){0,5} github"
   - "(pipeline|library).*github"
   - "matlab (script|codes|implementation)"
-  - "macros?\\s(?!(group|level))"
+  - "macros?\\s(?!(group|level|and micro))"
   #- "(software algorithm|source identifier software and algorithms).* (20\\d{2}\\b|this paper)"
 
 weblink:
@@ -498,6 +522,7 @@ supplement:
   - "supplement(?!ed)"
   - "supplementa(l|ry) (data|material|information)"
   - "in the additional file"
+  - "in appendix"
 
 file_formats:
   - "csv"
@@ -513,12 +538,15 @@ upon_request:
   - "(up)?on( reasonable)? request"
   - "on author( ?\\b\\w+\\b){0,5} request"
   - "by request"
+  - "available upon"
   - "can be requested by"
   - "bona fide researchers"
   - "via a direct request to"
   - "without undue reservation"
   - "the corresponding author"
+  - "from.*@ ?[\\w\\.\\-]+\\.(com|org|edu|de)"
   - "the lead contact"
+  - "(up)?on demand"
   - "proposal form"
   - "(upon|after) approval"
   - "the technical contact"

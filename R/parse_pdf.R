@@ -1474,14 +1474,18 @@ Mode <- function(x) {
   # & !stringr::str_detect(first_insert$text, "^T")
   if (is_last_insert == TRUE) {
 
-    resource_availability <- text_data |>
-      dplyr::filter(stringr::str_detect(text, "RESOURCE") & x == min(x),
-                    font_size > 8)
+    # preserve references or resource_availability
+    refs_or_resource_availability <- text_data |>
+      dplyr::filter(stringr::str_detect(text, "RESOURCE") &
+                      x == min(x) & font_size > 8 |
+                      text == "References" &
+                      x < max_x &
+                      (x == min(x) | x > min_x))
 
-    has_resource_availability <- nrow(resource_availability) > 0
+    has_refs_or_resource_availability <- nrow(refs_or_resource_availability) > 0
 
-    if (has_resource_availability) {
-      return(resource_availability$y - 5)
+    if (has_refs_or_resource_availability) {
+      return(refs_or_resource_availability$y[1] - 5)
     }
 
     if (max_x == 800) {

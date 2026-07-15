@@ -522,9 +522,9 @@
 
   npp <- numeric(0)
   if (stringr::str_detect(pdf_text_sentences, "nature portfolio") |> sum() > 2) {
-    npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$"))
+    npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$|last updated by author"))
 
-    npp <- npp[length(npp)]
+    npp <- npp[1]
   }
 
   if (sum(npp) != 0) {
