@@ -85,8 +85,9 @@ Loads all text files from given folder.
 ``` r
 open_data_results <- oddpub::open_data_search(pdf_text_sentences, screen_das = "extra")
 ```
-Actual Open Data detection. Returns for each file if Open Data or Open Code is
-detected. Additionally returns the identified Open Data/Code categories,
+Actual Open Data detection. Returns for each file if Open Data or
+Open Code is detected.
+Additionally returns the identified Open Data/Code categories,
 as well as the detected sentences, which can be deactivated using the
 additional parameter ```detected_sentences = FALSE```.
 
@@ -111,75 +112,112 @@ A new validation is planned for Q4 2026.
 ## Detailed description of the keywords
 
 In the following, we give an overview over the different parts of the keywords
-used in the algorithm.
+used in the algorithm, in pseudo-code with function and keyword definitions.
 
-Those are the combined keyword categories that are searched in the full text.
-If a hit was detected in any of these combined categories, the paper is flagged
-as Open Data. For definitions of the individual keyword categories, see below.
+We begin with high-level keyword categories that are searched in the full text.
+During screening these categories are applied as search filters on the sentence level and are therefore
+not mutually exclusive on the level of the publication (`open_data_category`
+would list both values detected). Thus, if keywords in any sentence are detected
+to match any of the following two categories below, the publication is flagged
+as Open Data (`is_open_data` is set to TRUE).
+For definitions of the individual lower-level keywords, see below.
 
-| Combined Keyword Category | Keywords |
+| Compound Keyword Category | Keywords | Flag in `open_data_category` | Sentences extracted? |
+|---------------------------|----------|------------------------------|----------------------|
+| Field-specific repository | FIELD_SPECIFIC_REPO NEAR (ACCESSION_NR OR WEBLINK) NEAR (AVAILABLE NOT (NOT_AVAILABLE OR RECOMMENDATION)) NEAR (OWNERSHIP_CLAIM OR NOT (WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT)) | field-specific repository | Yes |
+| General-purpose repository| REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR RECOMMENDATION)) NEAR (OWNERSHIP_CLAIM OR NOT (WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE)) | general-purpose repository | Yes |
+
+In addition, if the DOI of the journal publication belongs to one of known
+so-called (open access) data journals, the publication is also flagged as
+open data (`is_open_data` is set to TRUE).
+
+| Keyword Category          | Keywords | Flag in `open_data_category` | Sentences extracted? |
+|---------------------------|----------|------------------------------|----------------------|
+| Data journal              | DATA_JOURNAL [applied at DOI] | data journal | No |
+
+Further copound categories of interest are listed below. They may refer to data
+that do not satisfy our open data criteria, (`is_open_data` is not set to TRUE)
+but are still detected and reported.
+
+| Compound Keyword Category | Keywords | Flag in `open_data_category` | Sentences extracted? |
+|---------------------------|----------|------------------------------|----------------------|
+| Supplemental data sharing | DATASET OR ALL_DATA_FILE_FORMATS OR SUPPLEMENTAL_DATA | supplement | Yes |
+| Dataset on Github |	DATA NEAR GITHUB NEAR AVAILABLE NOT(NOT_AVAILABLE OR WAS_AVAILABLE) | github | Yes |
+| Re-use | REUSE_STATEMENTS OR (WAS_AVAILABLE NEAR_WD(30) (FIELD_SPECIFIC_REPO OR REPOSITORIES OR GITHUB)) NEAR (DATA OR NOT(MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT))| re-use | Yes |
+| Recommendation | RECOMMENDATION NEAR DATA NEAR AVAILABLE NEAR (REPOSITORIES OR FIELD_SPECIFIC_REPO) NEAR NOT(NOT_AVAILABLE OR WAS_AVAILABLE OR Re-use OR Code re-use) | recommendation | Yes |
+| Unknown/misspecified source | DATA NEAR AVAILABLE NEAR WEBLINK NOT(NOT_AVAILABLE OR ACCESSION_NR OR SUPPLEMENT OR Field-specific repository OR General-purpose repository OR Re-use OR Dataset on Github OR MISC_NOT_DATA OR SUPPLEMENT) | unknown/misspecified source | Yes |
+| Upon request | UPON_REQUEST | upon request | No |
+
+The category *unknown/misspecified* catches cases that are potentially open data,
+but missing a specific mention of e.g. accession number, or are linked to a
+personal website, or a repository not listed in 
+FIELD_SPECIFIC_REPO or REPOSITORIES. 
+When multiple weblinks are detected in
+the same statement then the conditions
+`Dataset Github OR MISC_NOT_DATA OR SUPPLEMENT` are dropped to avoid detecting
+links back to the original publication, GitHub or other non-data related sources.
+GitHub is not a suitable data sharing repository, because it lacks persistence.
+The categories *re-use*, *recommendation*, and *unknown/misspecified source* are
+being continuously developed and their final definitions will be updated after
+validation.
+
+The detection of Open Code statements follows a similar logic, but only three
+categories are flagged in the output as separate Boolean variables:
+ `is_open_code`, `is_code_supplement`, and `is_code_reuse`:
+
+| Keyword Category          | Keywords | Output column | Sentences extracted? |
+|---------------------------|----------|---------------|----------------------|
+| Open code availability    | SOURCE_CODE NEAR NOT(NOT_AVAILABLE) NEAR (OWNERSHIP_CLAIM OR NOT(WAS_AVAILABLE OR REUSE OR SOFTWARE_USE OR RECOMMENDATION)) NEAR (GIT_OR_URL OR (AVAILABLE NEAR NOT(UPON_REQUEST OR SUPPLEMENT OR DATASET))) | is_open_code | Yes |
+| Code in supplement        | SOURCE_CODE NEAR (SUPPLEMENT OR DATASET) | is_code_supplement | Yes |
+| Code re-use               | SOURCE_CODE NEAR (REUSE OR SOFTWARE_USE) NEAR NOT(NOT_AVAILABLE) NEAR (AVAILABLE OR GIT_OR_URL) | is_code_reuse | Yes | 
+| No custom software        | NO_NEW_CODE | - | No |
+
+If a match for NO_NEW_CODE (for example "This paper does not report original
+code.") is detected anywhere in the publication, then any detections for
+*Open code availability* get converted to *Code re-use* instead.
+
+Further compound categories that are not extracted,
+but used for the detection of higher-level categories are defined below: 
+
+| Keyword Category          | Keywords |
 |---------------------------|----------|
-| Field-specific repository        | FIELD_SPECIFIC_REPO NEAR (ACCESSION_NR OR WEBLINK) NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT)) |
-| General-purpose repository | REPOSITORIES NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE))) |
+| DATASET                   | (DATASET_NAME OUTER DATASET_NUMBER) |
+| ALL_DATA_FILE_FORMATS     | (ALL_DATA NOT(NOT_DATA)) NEAR_WD(12) FILE_FORMATS |
+| SUPPLEMENTAL_DATA         | SUPPLEMENTAL_TABLE NEAR_WD(12) (FILE_FORMATS OR ALL_DATA) |
+| GIT_OR_URL                | GUTHUB OR NEAR ("www" OR "http") |
 
-The previous two categories are the only potentially open data references in line with our criteria.
-Further categories of interest that may refer to data that do not satisfy our criteria, but are detected and reported, are listed below.
+Individual keyword and function defintions are further explained below
+(for corresponding regular expressions, check the `keywords_patterns.yml` file): 
 
-| Combined Keyword Category | Keywords |
-|---------------------------|----------|
-| Dataset |	(DATASET_NAME OUTER_SYM DATASET_NUMBER) OR SUPPLEMENTAL_DATASET |
-| Supplemental table or data |	SUPPLEMENTAL_TABLE NEAR_WD(10) (FILE_FORMATS OR ALL_DATA) |
-| Supplementary raw/full data with specific file format | (ALL_DATA NOT NOT_DATA) NEAR_WD(10) FILE_FORMATS |
-| Dataset on Github |	DATA NEAR GITHUB NEAR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE)) |
-| Upon request | UPON_REQUEST |
-| Re-use | REUSE_STATEMENTS OR (WAS_AVAILABLE NEAR_WD(30) (ACCESSION_NR OR FIELD_SPECIFIC_REPO OR REPOSITORIES OR GITHUB)) NEAR (DATA OR NOT (MISC_NOT_DATA OR PROTOCOL OR SUPPLEMENT OR SOURCE_CODE OR GRANT))|
-| Unknown/misspecified source | DATA NEAR AVAILABLE NEAR WEBLINK NOT (NOT_AVAILABLE OR ACCESSION_NR OR SUPPLEMENT OR Field-specific repository OR General-purpose repository or Re-use OR Dataset on Github OR MISC_NOT_DATA) |
-
-Further, experimental categories such as re-use and unknown/misspecified source are being actively developed
-and their final definitions will be updated after validation.
-
-Additionally, the detection of Open Code statements is done with the following keywords:
-
-| Combined Keyword Category | Keywords |
-|---------------------------|----------|
-| Source-code availability  | SOURCE_CODE NEAR AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR REUSE) NEAR (NOT UPON_REQUEST OR GIT_OR_URL) |
-| Supplementary Source-code | SOURCE_CODE NEAR SUPPLEMENT |
-| All Open Code keywords combined | SOURCE_CODE NEAR (SUPPLEMENT OR (AVAILABLE NOT (NOT_AVAILABLE OR WAS_AVAILABLE OR UPON_REQUEST)) |
-
-Individual keyword categories (out of date, will be updated in 2025): 
-
-| Definitions    | Description  |  Keywords  |
-|----------------|--------------|------------|
-| x NEAR y       | Are the two keywords (or groups of keywords) x and y in the same sentence? | |
-| x NEAR_WD(n) y | Second definition of NEAR. This time counts how many words are between the two keywords. If the number lies below a cutoff value (e.g. 10 words), the two input words are considered "near". This additional definition is needegit d for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" | |
-| NOT y          | y is not included in the same sentence | |
-| AVAILABLE      | Abbreviation for a set of words that frequently occur to denote that the data have been made available in some way | ("included" OR "deposited" OR "released" OR "is provided" OR "are provided" OR "contained in" OR "available" OR "reproduce" OR "accessible" OR "can be accessed" OR "submitted" OR "can be downloaded" OR "reported in" OR "uploaded" OR "are public on") |
-| WAS_AVAILABLE  | Set of words that indicate that data is not made available in the paper, but instead that data from a different source was used | ("was provided" OR  "were provided" OR  "was contained in" OR  "were contained in" OR  "was available" OR  "were available" OR  "was accessible" OR  "were accessible" OR  "deposited by" OR  "were reproduced") |
-| NOT_AVAILABLE  | Set of negated availability phrases | ("not included" OR  "not deposited" OR  "not released" OR  "not provided" OR  "not contained in" OR  "not available" OR  "not accessible" OR  "not submitted")|
-| UPON_REQUEST   | Phrase describing that data are only available upon request | ("upon request" OR "on request" OR "upon reasonable request") |
-| ALL_DATA       | Set of words describing all data or raw data | ("all data" OR  "all array data" OR  "raw data" OR  "full data set" OR  "full dataset" OR  "crystallographic data" OR  "subject-level data") |
-| NOT_DATA       | Set of negations of the data phrases | ("not all data" OR "not all array data" OR "no raw data" OR "no full data set" OR "no full dataset") |
-| FIELD_SPECIFIC_REPO        | Set of names and abbreviations of field-specific repositories | ("GEO" OR "Gene Expression Omnibus" OR "European Nucleotide Archive" OR "National Center for Biotechnology Information" OR "European Molecular Biology Laboratory" OR "EMBL-EBI" OR "BioProject" OR "Sequence Read Archive" OR "SRA" OR "ENA" OR "MassIVE" OR "ProteomeXchange" OR "Proteome Exchange" OR "ProteomeExchange" OR "MetaboLights" OR "Array-Express" OR "ArrayExpress" OR "Array Express" OR "PRIDE" OR "DNA Data Bank of Japan" OR "DDBJ" OR "Genbank" OR "Protein Databank" OR "Protein Data Bank" OR "PDB" OR "Metagenomics Rapid Annotation using Subsystem Technology" OR "MG-RAST" OR "metabolights" OR "OpenAgrar" OR "Open Agrar" OR "Electron microscopy data bank" OR "emdb" OR "Cambridge Crystallographic Data Centre" OR "CCDC" OR "Treebase" OR "dbSNP" OR "dbGaP" OR "IntAct" OR "ClinVar" OR "European Variation Archive" OR "dbVar" OR "Mgnify" OR "NCBI Trace Archive" OR "NCBI Assembly" OR "UniProtKB" OR "Protein Circular Dichroism Data Bank" OR "PCDDB" OR "Crystallography Open Database" OR "Coherent X-ray Imaging Data Bank" OR "CXIDB" OR "Biological Magnetic Resonance Data Bank" OR "BMRB" OR "Worldwide Protein Data Bank" OR "wwPDB" OR "Structural Biology Data Grid" OR "NeuroMorpho" OR "G-Node" OR "Neuroimaging Informatics Tools and Resources Collaboratory" OR "NITRC" OR "EBRAINS" OR "GenomeRNAi" OR "Database of Interacting Proteins" OR "IntAct" OR "Japanese Genotype-phenotype Archive" OR "Biological General Repository for Interaction Datasets" OR "PubChem" OR "Genomic Expression Archive" OR "PeptideAtlas" OR "Environmental Data Initiative" OR "LTER Network Information System Data Portal" OR "Global Biodiversity Information Facility" OR "GBIF" OR "Integrated Taxonomic Information System" OR "ITIS" OR "Knowledge Network for Biocomplexity" OR "Morphobank" OR "Kinetic Models of Biological Systems" OR "KiMoSys" OR "The Network Data Exchange" OR "NDEx" OR "FlowRepository" OR "ImmPort" OR "Image Data Resource" OR "Cancer Imaging Archive" OR "SICAS Medical Image Repository" OR "Coherent X-ray Imaging Data Bank" OR "CXIDB" OR "Cell Image Library" OR "Eukaryotic Pathogen Database Resources" OR "EuPathDB" OR "Influenza Research Database" OR "Mouse Genome Informatics" OR "Rat Genome Database" OR "VectorBase" OR "Xenbase" OR "Zebrafish Model Organism Database" OR "ZFIN" OR "HIV Data Archive Program" OR "NAHDAP" OR "National Database for Autism Research" OR "NDAR" OR "PhysioNet" OR "National Database for Clinical Trials related to Mental Illness" OR "NDCT" OR "Research Domain Criteria Database" OR "RdoCdb" OR "Synapse" OR "UK Data Service" OR "caNanoLab" OR "ChEMBL" OR "IoChem-BD" OR "Computational Chemistry Datasets" OR "STRENDA" OR "European Genome–phenome Archive" OR "European Genome phenome Archive" OR "accession number" OR "accession code" OR "accession numbers" OR "accession codes") |
-| ACCESSION_NR   | Set of regular expressions that represent the accession number formats of different (biomedicine-related) repositories | ("G(SE\|SM\|DS\|PL)[[:digit:]]{2,}" OR "PRJ(E\|D\|N\|EB\|DB\|NB)[:digit:]+" OR "SAM(E\|D\|N)[A-Z]?[:digit:]+" OR "[A-Z]{1}[:digit:]{4}" OR "[A-Z]{2}[:digit:]{6}" OR "[A-Z]{3}[:digit:]{5}" OR "[A-Z]{4,6}[:digit:]{3,}" OR "GCA_[:digit:]{9}\\.[:digit:]+" OR "SR(P\|R\|X\|S\|Z)[[:digit:]]{3,}" OR "(E\|P)-[A-Z]{4}-[:digit:]{1,}" OR "[:digit:]{1}[A-Z]{1}[[:alnum:]]{2}" OR "MTBLS[[:digit:]]{2,}" OR "10.17590" OR "10.5073" OR "10.25493" OR "10.6073" OR "10.15468" OR "10.5063" OR "[[:digit:]]{6}" OR "[A-Z]{2,3}_[:digit:]{5,}" OR "[A-Z]{2,3}-[:digit:]{4,}" OR "[A-Z]{2}[:digit:]{5}-[A-Z]{1}" OR "DIP:[:digit:]{3}" OR "FR-FCM-[[:alnum:]]{4}" OR "ICPSR [:digit:]{4}" OR "SN [:digit:]{4}") |
-| REPOSITORIES   | Set of names of general-purpose repositories | ("figshare" OR "dryad" OR "zenodo" OR "dataverse" OR "DataverseNL" OR "osf" OR "open science framework" OR "mendeley data" OR "GIGADB" OR "GigaScience database" OR "OpenNeuro") |
-| FILE_FORMATS   | Set of file formats | ("csv" OR "zip" OR "xls" OR "xlsx" OR "sav" OR "cif" OR "fasta") |
-| GITHUB |	Github for data has to be treated differently, as we need additional information that data and not only code was shared on Github |	(“github”) |
-| DATA |	Data keywords only used for the Github category |	("data" OR "dataset" OR "datasets") |
-| ALL_DATA |	Set of words describing all data or raw data |	("all data" OR  "all array data" OR  "raw data" OR  "full data set" OR  "full dataset" OR  "crystallographic data" OR  "subject-level data") |
-| NOT_DATA |	Set of negations of the data phrases |	("not all data" OR  "not all array data" OR  "no raw data" OR  "no full data set" OR  "no full dataset") |
-| DATA_AVAILABILITY	| Set of headings for data availability section |	("Data sharing" OR  "Data Availability Statement" OR  "Data Availability" OR  "Data deposition" OR  "Deposited Data" OR  "Data Archiving" OR  "Availability of data and materials" OR  "Availability of data" OR  "Data Accessibility" OR  "Accessibility of data") |
-| x OUTER y |	makes all possible pairwise combinations of strings x and y	| |
-| x OUTER_SYM y |	symmetrical outer product with both orderings of vectors	| |
-| SUPPLEMENTAL_TABLE_NAME |	Set of keywords denoting supplemental tables or files |	("supplementary table" OR   "supplementary tables" OR  "supplemental table" OR   "supplemental tables" OR   "table", "tables" OR    "additional file" OR  "file", "files") |
-| SUPPLEMENTAL_TABLE_NUMBER |	Possible numbers of supplemental tables or files |("S[[:digit:]]", "[[:digit:]]", "[A-Z]{2}[[:digit:]]") |
-| SUPPLEMENTAL_TABLE |	Numbered supplemental table or file |	SUPPLEMENTAL_TABLE_NAME OUTER SUPPLEMENTAL_TABLE_NUMBER |
-| SUPPLEMENTAL_DATASET |	Numbered supplemental dataset |	("supplementary data [[:digit:]]{1,2}" OR "supplementary dataset [[:digit:]]{1,2}" OR "supplementary data set [[:digit:]]{1,2}" OR "supplemental data [[:digit:]]{1,2}" OR "supplemental dataset [[:digit:]]{1,2}" OR "supplemental data set [[:digit:]]{1,2}") |
-| DATASET_NAME	| Names for datasets |	("data" OR "dataset" OR "datasets" OR "data set" OR "data sets") |
-| DATASET_NUMBER |	Number for dataset |	("S[[:digit:]]{1,2}") |
-| DATA_JOURNAL_DOIS |	Set of Open Data Journal DOIs for which the publication DOI is checked (from filename, not part of actual keyword search) |	("10.1038/s41597-019-", "10.3390/data", "10.1016/j.dib") |
-| SUPPLEMENT     | Set of expression describing the supplement of an article | ("supporting information" OR "supplement" OR "supplementary data") |
-| SOURCE_CODE    | Set of expressions describing source code | ("source code" OR "analysis script" OR "github" OR "SAS script" OR "SPSS script" OR "R script" OR "R code" OR "python script" OR "python code" OR "matlab script" OR "matlab code") |
-| WEBLINK | | |
+| Definitions    | Description  |
+|----------------|--------------|
+| x NEAR y       | The two keywords (or groups of keywords) x and y are in the same sentence |
+| x NEAR_WD(n) y | Word distance version of NEAR that counts how many words are between the two keywords. If the number lies at or below a cutoff value (e.g. 10 words), the two input words are considered "near". This implementation is needed for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" |
+| NOT(y)         | The negation of near, equivalent to y is not included in the same sentence as x |
+| x OUTER y      | Matches when x is followed by y or vice versa |
+| AVAILABLE      | Expressions that (usually) indicate that the data are or have been made available in some way |
+| WAS_AVAILABLE  | Expressions that (usually) indicate that data is not made available in the paper, or suggest that data from a different source were used |
+| NOT_AVAILABLE  | Expressions of negated availability |
+| UPON_REQUEST   | Expressions that (usually) indicate that data are only available upon request |
+| ALL_DATA       | Expressions associated with all data or raw data |
+| NOT_DATA       | Expressions of negated data |
+| FIELD_SPECIFIC_REPO        | Expressions for names, DOIs, and abbreviations of field-specific repositories |
+| ACCESSION_NR   | Expressions that represent the accession number formats of different (biomedicine-related) repositories |
+| REPOSITORIES   | Expressions for names of general-purpose repositories |
+| FILE_FORMATS   | Expressions for common file formats |
+| GITHUB | Simply the word "github".	Used for compound keywords for data detection, to ensure data and not only code was shared on Github |
+| DATA | Expressions for explicit data mention |
+| DATA_AVAILABILITY	| Expressions with typical section headings for data availability statements |
+| SUPPLEMENTAL_TABLE_NAME |	Expressions for supplemental tables or files |
+| SUPPLEMENTAL_TABLE_NUMBER |	Expressions for numbers of supplemental tables or files |
+| SUPPLEMENTAL_DATASET |	Expressions for numbered supplemental dataset |
+| DATASET_NAME	| Expressions for names for datasets |
+| DATASET_NUMBER | Expressions for numbers for dataset |
+| DATA_JOURNAL_DOIS |	Expressions for Open Data Journal DOIs for which the publication DOI is checked (from filename, not part of actual keyword search) |
+| SUPPLEMENT     | Expressions for supplement of an article |
+| SOURCE_CODE    | Expressions for mentions of (source) code |
+| SOFTWARE_USE   | Expressions that (usually) indicate that sofware or code was used |
+| NO_NEW_CODE    | Expressions for boilerplate negation of producing new or custom code |
 
 ## License
 

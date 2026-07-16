@@ -517,6 +517,10 @@ grant:
   - "support (was provided )?by"
   - "foundation"
 
+# exclusion phrases to downgrade specific mention to supplement
+# flagging supplements is independent from this however, as it relies
+# on the mention of a specific table or file, as opposed to general
+# supplement mention
 supplement:
   - "supporting information"
   - "supplement(?!ed)"

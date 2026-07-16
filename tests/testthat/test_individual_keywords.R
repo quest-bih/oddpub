@@ -249,14 +249,14 @@ test_that("all_data_file_formats",
             # expect_false(.detect_keywords("all data word word word word word word word word word word word xlsx", "all_data_file_formats"))
           })
 
-test_that("supp_table_data",
+test_that("suppl_table_data",
           {
-            expect_true(.detect_keywords("supplementary table S3 word word word word word xlsx", "supp_table_data"))
-            expect_true(.detect_keywords("supplementary table S3 word word word word word all data", "supp_table_data"))
-            expect_true(.detect_keywords("csv word word word word word all S2 Table", "supp_table_data"))
-            expect_true(.detect_keywords("S2 Table word word word word word raw data", "supp_table_data"))
-            expect_true(.detect_keywords("raw data word word. word word word additional file 8", "supp_table_data"))
-            expect_true(.detect_keywords("Proteomics data for all unique proteins detected (Table S1) (XLSX)", "supp_table_data"))
+            expect_true(.detect_keywords("supplementary table S3 word word word word word xlsx", "suppl_table_data"))
+            expect_true(.detect_keywords("supplementary table S3 word word word word word all data", "suppl_table_data"))
+            expect_true(.detect_keywords("csv word word word word word all S2 Table", "suppl_table_data"))
+            expect_true(.detect_keywords("S2 Table word word word word word raw data", "suppl_table_data"))
+            expect_true(.detect_keywords("raw data word word. word word word additional file 8", "suppl_table_data"))
+            expect_true(.detect_keywords("Proteomics data for all unique proteins detected (Table S1) (XLSX)", "suppl_table_data"))
             # expect_false(.detect_keywords("supplementary table S3 word word word word word word word word word word word xlsx", "supp_table_data"))
           })
 

@@ -50,11 +50,12 @@
                                                           keyword_list$file_formats,
                                                           dist = 12)
 
-  keyword_list[["supp_table_data"]] <- .near_wd_sym(keyword_list$supplemental_table,
+  keyword_list[["suppl_table_data"]] <- .near_wd_sym(keyword_list$supplemental_table,
                                                     paste(keyword_list$file_formats,
                                                           keyword_list$all_data,
                                                           sep = "|"),
                                                     dist = 12)
+  keyword_list[["git_or_url"]] <- paste(keyword_list$github, "www|http", sep = "|")
 
   return(keyword_list)
 }
@@ -168,7 +169,7 @@
   # not all keyword categories are used for the sentence search
   sentence_search_keywords <- c("available", "was_available", "not_available",
                                 "field_specific_repo", "accession_nr", "repositories",
-                                "github", "data", "all_data",
+                                "github", "git_or_url", "data", "all_data",
                                 "not_data", "source_code", "supplement", "recommendation",
                                 "reuse", "software_use", "no_new_code", "ownership_claim", "grant",
                                 "file_formats", "upon_request", "dataset", "protocol", "weblink", "misc_non_data")
@@ -542,10 +543,11 @@
   data <- grant <- weblink <- reuse <- available <- not_available <-
     was_available <- misc_non_data <- field_specific_repo <- accession_nr <-
     repositories <- protocol <- supplement <- recommendation <-
-    source_code <- software_use <- no_new_code <- github <- ownership_claim <-
-    upon_request <- publ_sentences <- com_general_repo <- com_specific_repo <-
-    com_github_data <- dataset <- com_code <- com_suppl_code <- com_reuse <-
-    com_request <- com_unknown_source <- com_recommendation <- com_code_reuse <- NULL
+    source_code <- software_use <- no_new_code <- github <- git_or_url <-
+    ownership_claim <- upon_request <- publ_sentences <- com_general_repo <-
+    com_specific_repo <- com_github_data <- dataset <- com_code <-
+    com_suppl_code <- com_reuse <- com_request <- com_unknown_source <-
+    com_recommendation <- com_code_reuse <- NULL
 
 # odc <- open_data_categories[[1]]
   # pdf_text_sentences <- publ_sentences
@@ -580,13 +582,13 @@
                                       !software_use & !recommendation) |
                                      ownership_claim) &
                  ((!upon_request & !supplement & !dataset &
-                     available)|stringr::str_detect(publ_sentences, "www|http")|github)) |>
+                     available)|git_or_url)) |>
     purrr::map(dplyr::mutate, com_suppl_code = source_code & (supplement | dataset)) |>
     purrr::map(dplyr::mutate, com_reuse = reuse &
                  ((!misc_non_data & !protocol & !supplement & !grant & !source_code) | data)) |>
     purrr::map(dplyr::mutate, com_code_reuse = (reuse | software_use) & source_code &
                  (!not_available &
-                    (available | stringr::str_detect(publ_sentences, "www|http")|github))) |>
+                    (available | git_or_url))) |>
     # if no new code statement detected downgrade software detection to code_reuse
     purrr::map(dplyr::mutate, com_code_reuse = ifelse(no_new_code == TRUE,
                                                       com_code | com_code_reuse, com_code_reuse)) |>
@@ -657,7 +659,7 @@
     com_file_formats = map_function(pdf_text_full, str_function,
                                     pattern = keyword_list[["all_data_file_formats"]]),
     com_supplemental_data = map_function(pdf_text_full, str_function,
-                                         pattern = keyword_list[["supp_table_data"]])
+                                         pattern = keyword_list[["suppl_table_data"]])
     )
 
   return(keyword_results_near_wd)
