@@ -195,29 +195,38 @@ Individual keyword and function defintions are further explained below
 | x NEAR_WD(n) y | Word distance version of NEAR that counts how many words are between the two keywords. If the number lies at or below a cutoff value (e.g. 10 words), the two input words are considered "near". This implementation is needed for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" |
 | NOT(y)         | The negation of near, equivalent to y is not included in the same sentence as x |
 | x OUTER y      | Matches when x is followed by y or vice versa |
-| AVAILABLE      | Expressions that (usually) indicate that the data are or have been made available in some way |
-| WAS_AVAILABLE  | Expressions that (usually) indicate that data is not made available in the paper, or suggest that data from a different source were used |
+| AVAILABLE      | Expressions that indicate that the data are or have been made available in some way |
+| WAS_AVAILABLE  | Expressions that indicate that data are not made available in the paper, or suggest that data from a different source were used |
+| REUSE_STATEMENTS| Expressions that indicate that data from previously existing sources were used |
+| SOFTWARE_USE   | Expressions that indicate that software or code was used |
+| OWNERSHIP CLAIM| Expressions that indicate that authors have ownership (e.g. over data or code) |
 | NOT_AVAILABLE  | Expressions of negated availability |
-| UPON_REQUEST   | Expressions that (usually) indicate that data are only available upon request |
-| ALL_DATA       | Expressions associated with all data or raw data |
-| NOT_DATA       | Expressions of negated data |
-| FIELD_SPECIFIC_REPO        | Expressions for names, DOIs, and abbreviations of field-specific repositories |
+| NO_NEW_CODE    | Expressions for (boilerplate) negation of producing new or custom code |
+| RECOMMENDATION | Expressions that indicate that something is recommended, to help flag sentences where sharing of data or code is recommended but not applied |
+| FIELD_SPECIFIC_REPO | Expressions for names, DOIs, and abbreviations of field-specific repositories |
 | ACCESSION_NR   | Expressions that represent the accession number formats of different (biomedicine-related) repositories |
 | REPOSITORIES   | Expressions for names of general-purpose repositories |
-| FILE_FORMATS   | Expressions for common file formats |
 | GITHUB | Simply the word "github".	Used for compound keywords for data detection, to ensure data and not only code was shared on Github |
 | DATA | Expressions for explicit data mention |
-| DATA_AVAILABILITY	| Expressions with typical section headings for data availability statements |
-| SUPPLEMENTAL_TABLE_NAME |	Expressions for supplemental tables or files |
-| SUPPLEMENTAL_TABLE_NUMBER |	Expressions for numbers of supplemental tables or files |
-| SUPPLEMENTAL_DATASET |	Expressions for numbered supplemental dataset |
-| DATASET_NAME	| Expressions for names for datasets |
-| DATASET_NUMBER | Expressions for numbers for dataset |
-| DATA_JOURNAL_DOIS |	Expressions for Open Data Journal DOIs for which the publication DOI is checked (from filename, not part of actual keyword search) |
-| SUPPLEMENT     | Expressions for supplement of an article |
+| ALL_DATA       | Expressions associated with all data or raw data |
+| NOT_DATA       | Expressions of negated data |
 | SOURCE_CODE    | Expressions for mentions of (source) code |
-| SOFTWARE_USE   | Expressions that (usually) indicate that sofware or code was used |
-| NO_NEW_CODE    | Expressions for boilerplate negation of producing new or custom code |
+| WEBLINK        | Expression for weblinks |
+| GRANT          | Expressions associated with funding statements. Useful to exclude grant numbers that may get falsely detected as accession numbers |
+| SUPPLEMENT     | Expressions for supplement of an article |
+| FILE_FORMATS   | Expressions for common file formats |
+| UPON_REQUEST   | Expressions that indicate that data are only available upon request |
+| DATA_AVAILABILITY	| Expressions for section headings for data availability statements |
+| CODE AVAILABILITY | Expressions for section headings for code availability statements |
+| SUPPLEMENTAL_TABLE| Expressions for mentions of supplemental tables or files |
+| SUPPLEMENTAL_TABLE_NUMBER |	Expressions for numbers of supplemental tables or files |
+| SUPPLEMENTAL_DATASET |	Expressions for supplemental datasets |
+| DATASET_NAME	| Expressions for names for datasets |
+| DATASET_NUMBER | Expressions for numbers for datasets |
+| PROTOCOL | Expressions for protocols, assays, sharing of open methods |
+| MISC_NON_DATA | Expressions with context that should invalidate open data detection. For example protein names, gene sequences, etc. could be falsely detected as accession numbers. |
+| DATA_JOURNAL_DOIS |	Expressions for Open Data Journal DOIs for which the publication DOI is checked (from filename, not part of actual keyword search) |
+| SECTION_STOPWORDS | Expressions with section titles usually following data or code availability statements, to help detect where these statements end |
 
 ## License
 

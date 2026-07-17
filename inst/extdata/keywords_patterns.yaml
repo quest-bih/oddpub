@@ -31,34 +31,6 @@ available:
   - "(?<=data) at"
   - "(?<!\\d(-|\\))?(\\.|;) )doi: " # exclude dois in references
 
-reuse_statements:
-  - "(was|were) open source data( ?sets?)?"
-  - "(from )?a sample of primary studies"
-  - "performed on( ?\\b\\w+\\b){1,5} public( ?\\b\\w+\\b){1,5} data"
-  - "from( a)? public(al)?ly available data( ?sets?)?"
-  - "(this (study|article)|we) (used|included)( ?\\b\\w+\\b){0,5} public(al)?ly available( ?\\b\\w+\\b){0,5} data"
-  - "(this article|we)( ?\\b\\w+\\b){1,5} (existing|made use of|based on) public(al)?ly available( ?\\b\\w+\\b){0,5} data"
-  - "(using|extracted from)( the)? public(al)?ly available(?! source)"
-  #- "public(al)?ly available data(sets)? were analy(z|s)ed"
-  - "used( ?\\b\\w+\\b){1,5} public(al)?ly accessible"
-  - "data ?set used previously"
-  - "used data from a public"
-  - "public data( ?sets?)? from"
-  - "following datasets were used"
-  - "using the accession ids \\w+ \\[?\\d+\\]?"
-  - "\\boriginal data accession"
-  - "in all available data ?sets \\(.*\\)?"
-  - "previously published data ?sets? (was|were) used"
-  - "data from([ -]?\\(?\\b\\w+\\b\\)?){1,20} studies were used"
-  - "data referenced in this study"
-  - "all data (we )?used( ?\\b\\w+\\b){0,5} are( ?\\b\\w+\\b){0,3} public"
-  - "using( a)? data ?sets? acquired"
-  - "data derived from public domain (re)?sources"
-  - "dataset,? previously described in"
-  - "data were obtained from([ -]?\\(?\\b\\w+\\b\\)?){1,20} database"
-  - "data( ?\\b\\w+\\b){1,5} reanaly[z,s]ed"
-  - "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){0,5} data"
-
 was_available:
   - "(was|were) provided"
   - "(was|were)? ?(?<!as )previously published"
@@ -93,6 +65,35 @@ was_available:
   - "(?<!code )we used( ?\\b\\w+\\b){1,5} data"
   # make obtain and use specific to only data, as too many false positives otherwise?
   - "(?<!(approvals?|permissions?|permit|consent|waiver) )(we|was|were) obtained(?!( ?\\b\\w+\\b){0,2} (with|using|approvals?|permissions?|permit|consent|waiver))"
+
+
+reuse_statements:
+  - "(was|were) open source data( ?sets?)?"
+  - "(from )?a sample of primary studies"
+  - "performed on( ?\\b\\w+\\b){1,5} public( ?\\b\\w+\\b){1,5} data"
+  - "from( a)? public(al)?ly available data( ?sets?)?"
+  - "(this (study|article)|we) (used|included)( ?\\b\\w+\\b){0,5} public(al)?ly available( ?\\b\\w+\\b){0,5} data"
+  - "(this article|we)( ?\\b\\w+\\b){1,5} (existing|made use of|based on) public(al)?ly available( ?\\b\\w+\\b){0,5} data"
+  - "(using|extracted from)( the)? public(al)?ly available(?! source)"
+  #- "public(al)?ly available data(sets)? were analy(z|s)ed"
+  - "used( ?\\b\\w+\\b){1,5} public(al)?ly accessible"
+  - "data ?set used previously"
+  - "used data from a public"
+  - "public data( ?sets?)? from"
+  - "following datasets were used"
+  - "using the accession ids \\w+ \\[?\\d+\\]?"
+  - "\\boriginal data accession"
+  - "in all available data ?sets \\(.*\\)?"
+  - "previously published data ?sets? (was|were) used"
+  - "data from([ -]?\\(?\\b\\w+\\b\\)?){1,20} studies were used"
+  - "data referenced in this study"
+  - "all data (we )?used( ?\\b\\w+\\b){0,5} are( ?\\b\\w+\\b){0,3} public"
+  - "using( a)? data ?sets? acquired"
+  - "data derived from public domain (re)?sources"
+  - "dataset,? previously described in"
+  - "data were obtained from([ -]?\\(?\\b\\w+\\b\\)?){1,20} database"
+  - "data( ?\\b\\w+\\b){1,5} reanaly[z,s]ed"
+  - "(?<!code )we used public(al)?ly available( ?\\b\\w+\\b){0,5} data"
 
 software_use:
   - "((packages?|tools?)|algorithms)( ?\\b\\w+\\b){0,5} (applied|used) in this (study|investigation)"
@@ -132,13 +133,6 @@ ownership_claim:
   - "in this study\\: this data can be found here"
   - "bespoke"
 
-no_new_code:
-  - "this paper does not report original code"
-  - "no custom (software|code) was developed during this study"
-  - "no custom software codes were generated as part of this study"
-  - "code developed for this work cannot be made publicly available"
-  - "the analytical code( ?\\b\\w+\\b){0,9} is not publicly available in a repository."
-
 not_available:
   - "not included"
   - "not deposited"
@@ -164,6 +158,13 @@ not_available:
   - "being( ?\\b\\w+\\b){0,2} made (available|accessible)"
   - "will be( ?[^\\s]*(\\)|\\b)){0,3} (available|accessible)"
   - "will be uploaded"
+
+no_new_code:
+  - "this paper does not report original code"
+  - "no custom (software|code) was developed during this study"
+  - "no custom software codes were generated as part of this study"
+  - "code developed for this work cannot be made publicly available"
+  - "the analytical code( ?\\b\\w+\\b){0,9} is not publicly available in a repository."
 
 recommendation:
   - "(c|sh)ould( then)? (be|aid)(?! found)"
@@ -694,8 +695,8 @@ data_journal_dois:
   # "10\\.1063\\/\\5.0147933" # Journal of Physical and Chemical Reference Data not OA
   - "10\\.18174\\/odjar\\."               # Open Data Journal for Agricultural Research
 
-citation:
-  - "\\(.*(?<!of )\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
+# citation:
+#   - "\\(.*(?<!of )\\d{4}\\)|\\[\\d{1,3}\\]|cited as reference"
 
 section_stopwords:
   - "a ?c ?k ?n ?o ?w ?l ?e ?d ?g ?e? ?m ?e ?n ?t ?s"
