@@ -2,8 +2,7 @@
 
 [![codecov](https://codecov.io/gh/quest-bih/oddpub/branch/master/graph/badge.svg)](https://codecov.io/gh/quest-bih/oddpub)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![DOI](https://zenodo.org/badge/175600565.svg)](https://zenodo.org/badge/latestdoi/175600565)
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17602245.svg)](https://doi.org/10.5281/zenodo.17602245)
 
 ODDPub is a text mining algorithm that parses a set of publications and detects
 which publications disseminated Open Data or Open Code together with the
