@@ -185,15 +185,15 @@ but used for the detection of higher-level categories are defined below:
 | SUPPLEMENTAL_DATA         | SUPPLEMENTAL_TABLE NEAR_WD(12) (FILE_FORMATS OR ALL_DATA) |
 | GIT_OR_URL                | GUTHUB OR NEAR ("www" OR "http") |
 
-Individual keyword and function defintions are further explained below
-(for corresponding regular expressions, check the `keywords_patterns.yml` file): 
+Individual keyword and functional definitions are given below
+(for corresponding regular expressions, check the [`inst/extdata/keywords_patterns.yaml`](https://github.com/quest-bih/oddpub/tree/main/inst/extdata/keywords_patterns.yaml) file): 
 
 | Definitions    | Description  |
 |----------------|--------------|
-| x NEAR y       | The two keywords (or groups of keywords) x and y are in the same sentence |
-| x NEAR_WD(n) y | Word distance version of NEAR that counts how many words are between the two keywords. If the number lies at or below a cutoff value (e.g. 10 words), the two input words are considered "near". This implementation is needed for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" |
-| NOT(y)         | The negation of near, equivalent to y is not included in the same sentence as x |
-| x OUTER y      | Matches when x is followed by y or vice versa |
+| x NEAR y       | Function. TRUE when the two keywords (or groups of keywords) x and y are in the same sentence |
+| x NEAR_WD(n) y | Function. Word distance version of NEAR that counts how many words are between the two keywordsm and can work across sentences. If the number lies at or below a cutoff value n, the two input words are considered "near". This implementation is needed for cases like "S2 Table. Raw data. https://doi.org/10.1371/journal.pone.0158039.s002 (XLS)" |
+| NOT(x)         | Function. TRUE when x is not included in the sentence |
+| x OUTER y      | Function. TRUE when x is followed by y or vice versa |
 | AVAILABLE      | Expressions that indicate that the data are or have been made available in some way |
 | WAS_AVAILABLE  | Expressions that indicate that data are not made available in the paper, or suggest that data from a different source were used |
 | REUSE_STATEMENTS| Expressions that indicate that data from previously existing sources were used |
