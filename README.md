@@ -100,13 +100,40 @@ write_csv(open_data_results, "path/to/output/folder/open_data_results.csv")
 
 ## Validation
 
-To validate the algorithm, we manually screened a sample of 792 publications
-that were randomly selected from PubMed. On this validation dataset,
-our algorithm detects Open Data publications with a sensitivity of 0.73
-and specificity of 0.97.
+The most current validation of open code detection with ODDPub v.7.3.0 was
+completed on 2026-07-21.
+First we screened 3725 Charité and Berlin Institute of Health journal articles
+published in 2025. Then we selected at random 100 articles with no detected
+open code (`is_open_code` == FALSE) and 100 articles with open code detected
+(`is_open_code` == TRUE) and manually screened them to check if code was actually
+shared. 
+The performance metrics for open code detection are given below:
 
-The algorithm has been updated since the original publication and validation.
-A new validation is planned for Q4 2026.
+metric | estimate |
+-------|----------|
+accuracy| 0.87 |
+sensitivity | 0.94 |
+specificity | 0.82 |
+positive predictive value | 0.79 |
+negative predictive value | 0.95 |
+f1 score | 0.86 |
+
+From the 21 false positive cases, seven lacked findability: either 
+only a generic landing page with no specific repository nor code
+location (n = 5) or empty repositories were linked (n = 2).
+From the 5 false negative cases, one had its code availability
+statement only in the supplement, which was not screened.
+Since ODDPub is an offline tool that detects mentions of code sharing in the 
+main article document, our algorithm could not be improved to classify such
+cases correctly.
+
+A new validation for open data is planned for Q4 2026.
+
+For the validation for the legacy version of ODDPub
+we manually screened a sample of 792 publications that were randomly selected
+from PubMed. On this validation dataset, our algorithm 
+(at time of first publication) detected Open Data publications with a
+sensitivity of 0.73 and specificity of 0.97.
 
 ## Detailed description of the keywords
 
