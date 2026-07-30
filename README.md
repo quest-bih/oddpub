@@ -111,7 +111,7 @@ The performance metrics for open code detection are given below:
 
 metric | estimate |
 -------|----------|
-accuracy| 0.87 |
+accuracy | 0.87 |
 sensitivity | 0.94 |
 specificity | 0.82 |
 positive predictive value | 0.79 |

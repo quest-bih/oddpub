@@ -470,15 +470,40 @@
     stringr::str_detect("(<section>|##+) r ?e ?f ?e ?r ?e ?n ?c ?e ?s(?! and notes)") |>
     which() - 1
 
+  if (sum(line_before_refs) == 0) {
+    # if no references detected but online content and nature portfolio
+    if (all(c(any(stringr::str_detect(pdf_text_sentences, "nature portfolio")),
+              any(stringr::str_detect(pdf_text_sentences, "statements of data and code"))))) {
+      line_before_refs <- pdf_text_sentences |>
+        stringr::str_detect("(<section>|##+) online content") |>
+        which() - 1
+
+      # regular expression for nature references without a title
+      # of the reference section
+
+      amp_et_al <- pdf_text_sentences |>
+        stringr::str_detect("\\w\\. (et al\\.|&) |^&") |>
+        which() - 1
+
+      if (sum(amp_et_al) > 0) {
+        line_before_refs2 <- amp_et_al[diff(amp_et_al) |>
+                                     which.max() + 1] - 1
+        line_before_refs <- c(line_before_refs,
+                              line_before_refs2)
+      }
+
+    } else {
+      # if no references detected
+      return(pdf_text_sentences)
+    }
+  }
+
 
   if (length(line_before_refs) == 2) n_refs <- 2
 
   # if (length(line_before_refs) > 1) line_before_refs <- line_before_refs[length(line_before_refs)]
 
-  if (sum(line_before_refs) == 0) {
-    # if no references detected
-    return(pdf_text_sentences)
-  }
+
   # i <- 1
   for(i in n_refs:1) {
     # for journals that print useful information after the references (Elsevier, Science, etc.)
@@ -494,7 +519,7 @@
     if (sum(line_after_refs) <= 0) {
       line_after_refs <- suppressWarnings(
         pdf_text_sentences[(lbr + 1):length(pdf_text_sentences)] |>
-          stringr::str_detect("(<section>|##+) ((methods$)|acknowledge?ments:?|additional|author)") |>
+          stringr::str_detect("(<section>|##+) ((methods|animals)$|acknowledge?ments:?|additional|author)") |>
           which() |>
           min()
       )
@@ -523,12 +548,20 @@
 
   npp <- numeric(0)
   if (stringr::str_detect(pdf_text_sentences, "nature portfolio") |> sum() > 2) {
-    npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$|last updated by author"))
-
-    npp <- npp[1]
+    npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$|last updated by author\\(s\\)"))
   }
 
   if (sum(npp) != 0) {
+    # if more than one npp detected
+    if (sum(npp) != npp[1]) {
+      # if two far enough apart, take latest
+      if (diff(npp) > 100) {
+        npp <- npp[length(npp)]
+        } else {
+          # if more than two or two close together, take first
+          npp <- npp[1]
+        }
+    }
     pdf_text_sentences <- pdf_text_sentences[1:(npp - 1)]
   }
   return(pdf_text_sentences)

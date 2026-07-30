@@ -298,7 +298,7 @@ Mode <- function(x) {
 
   keyword_list <- .create_keyword_list()
 
-  stopwords <- paste0(keyword_list$section_stopwords, "|\\bauthor|\\bdata")
+  stopwords <- paste0(keyword_list$section_stopwords, "|\\bauthor|\\bdata|\\bmethods")
 
   starts_with_section <- stringr::str_detect(
     tolower(text_data$text[1]),
