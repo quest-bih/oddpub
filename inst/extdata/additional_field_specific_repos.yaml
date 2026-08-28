@@ -1,0 +1,8 @@
+field_specific_repo:
+  - "FlyBase"
+  - "MGI"
+  - "RGD"
+  - "SmedGD"
+  - "TAIR"
+  - "WormBase"
+  - "PANGAEA"

@@ -7,7 +7,9 @@
 open_data_search(
   pdf_text_sentences,
   extract_sentences = TRUE,
-  screen_das = "priority"
+  screen_das = "priority",
+  field_specific_yaml_path = NULL,
+  field_specific_action = "add"
 )
 }
 \arguments{
@@ -33,6 +35,16 @@ If set to "legacy", then the full text (without references) will be screened
 immediately. Caution is to be used with this setting, as the special detection
 algorithm for DAS is not applied here and DAS in papers with complex layouts,
 e.g. PLoS, will most likely cause references to data sets to be missed.}
+
+\item{field_specific_yaml_path}{Path to a yaml file with user-curated
+list of repository names (e.g. outside of the biomedical fields).
+This list allows for detection of repositories that are not in the
+standard ODDPub list and are likely to otherwise be classified as
+"unknown/misspecified source".}
+
+\item{field_specific_action}{Either "add" or "replace". By default,
+with "add", the list of repositories is added to the default ODDPub list. With
+"replace" the list provided replaces the default ODDPub list instead.}
 }
 \value{
 Tibble with one row per screened document and the filename and logical values for open data

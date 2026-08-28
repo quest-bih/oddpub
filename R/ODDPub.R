@@ -77,7 +77,14 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 #'  algorithm for DAS is not applied here and DAS in papers with complex layouts,
 #'  e.g. PLoS, will most likely cause references to data sets to be missed.
 #'
-#'
+#' @param field_specific_yaml_path Path to a yaml file with user-curated
+#' list of repository names (e.g. outside of the biomedical fields).
+#' This list allows for detection of repositories that are not in the
+#' standard ODDPub list and are likely to otherwise be classified as
+#' "unknown/misspecified source".
+#' @param field_specific_action Either "add" or "replace". By default,
+#' with "add", the list of repositories is added to the default ODDPub list. With
+#' "replace" the list provided replaces the default ODDPub list instead.
 #' @returns Tibble with one row per screened document and the filename and logical values for open data
 #' and open code detection as columns plus additional columns containing the identified open data/code categories
 #' as well as the sentences in which open data/code was detected.
@@ -95,7 +102,11 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 #' }
 #'
 #' @export
-open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, screen_das = "priority") {
+open_data_search <- function(pdf_text_sentences,
+                             extract_sentences = TRUE,
+                             screen_das = "priority",
+                             field_specific_yaml_path = NULL,
+                             field_specific_action = "add") {
 # pdf_text_sentences <- pdf_text_corpus
   screen_das <- match.arg(screen_das, c("priority", "extra", "legacy"))
   is_open_data <- is_reuse <- open_data_category <- article <-
@@ -159,7 +170,9 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
       furrr::future_map(unique)
     # search for open data keywords in the full texts or DAS
     message("Screening Data and Code Availability Statements:\n")
-    keyword_results <- .keyword_search_full(das_cas)
+    keyword_results <- .keyword_search_full(das_cas,
+                                            field_specific_yaml_path = field_specific_yaml_path,
+                                            field_specific_action = field_specific_action)
     open_data_results <- .open_data_detection(das_cas, keyword_results) |>
       dplyr::mutate(is_open_data_das = ifelse(article %in% names(sentences_with_das),
                                               is_open_data, FALSE),
@@ -186,7 +199,9 @@ open_data_search <- function(pdf_text_sentences, extract_sentences = TRUE, scree
   if (length(sentences_full_screen) > 0) {
     message("\nScreening full text of articles:\n")
 
-    keyword_full_screen <- .keyword_search_full(pdf_text_sentences[sentences_full_screen])
+    keyword_full_screen <- .keyword_search_full(pdf_text_sentences[sentences_full_screen],
+                                                field_specific_yaml_path = field_specific_yaml_path,
+                                                field_specific_action = field_specific_action)
     open_data_full_screen <- .open_data_detection(pdf_text_sentences[sentences_full_screen], keyword_full_screen)
 
     if (!rlang::is_null(open_data_results)) {

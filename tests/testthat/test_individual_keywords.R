@@ -1,6 +1,12 @@
-keywords <- .create_keyword_list()
+# keywords <- .create_keyword_list()
 
+yaml_path <- system.file("extdata", "additional_field_specific_repos.yaml", package = "oddpub")
 
+keywords_added <- .create_keyword_list(field_specific_yaml_path = yaml_path,
+                                     field_specific_action = "add")
+
+keywords_replaced <- .create_keyword_list(field_specific_yaml_path = yaml_path,
+                                         field_specific_action = "replace")
 
 test_that("available",
           {
@@ -238,8 +244,6 @@ test_that("data_journal_dois",
           })
 
 
-context("search of nearby keywords")
-
 test_that("all_data_file_formats",
           {
             expect_true(.detect_keywords("all data word word word word word xlsx", "all_data_file_formats"))
@@ -262,13 +266,33 @@ test_that("suppl_table_data",
 
 test_that("data_availability_statement",
           {
-            expect_true(.has_das("<section> data availability word word word word word doi", keywords))
-            expect_true(.has_das("<section> data sharing word word word word word GSE77534", keywords))
-            expect_true(.has_das("<section> availability of data and materials word word word word word figshare", keywords))
-            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
-            expect_true(.has_das("<section> data availability word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
-            expect_true(.has_das("<section> Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower(), keywords))
-            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower(), keywords))
-            expect_false(.has_das("doi word word word word word data availability", keywords))
-            expect_false(.has_das("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi", keywords))
+            expect_true(.has_das("<section> data availability word word word word word doi"))
+            expect_true(.has_das("<section> data sharing word word word word word GSE77534"))
+            expect_true(.has_das("<section> availability of data and materials word word word word word figshare"))
+            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower()))
+            expect_true(.has_das("<section> data availability word word word word word word word word word word word word word word word word word word word word word word doi"))
+            expect_true(.has_das("<section> Data Accessibility DNA sequence data and genotypes to assess recombination in the Wave family were archived in NCBI SRA (PRJNA493979)" |> tolower()))
+            expect_true(.has_das("<section> Deposited Data Original data This paper https://data.mendeley.com/datasets/ https://doi.org/10.17632/rypw3jv8mj.1" |> tolower()))
+            expect_false(.has_das("doi word word word word word data availability"))
+            expect_false(.has_das("data availability word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word doi"))
+          })
+
+test_that("added keywords",
+          {
+            expect_true(.detect_keywords("data were deposited in the geo repository ", "field_specific_repo",
+                                         keywords_ls = keywords_added))
+            expect_true(.detect_keywords("data were deposited in the pangaea repository ", "field_specific_repo",
+                                         keywords_ls = keywords_added))
+            expect_false(.detect_keywords("data were deposited in the database ", "field_specific_repo",
+                                          keywords_ls = keywords_added))
+          })
+
+test_that("replaced keywords",
+          {
+            expect_false(.detect_keywords("data were deposited in the geo repository ", "field_specific_repo",
+                                         keywords_ls = keywords_replaced))
+            expect_true(.detect_keywords("data were deposited in the pangaea repository ", "field_specific_repo",
+                                         keywords_ls = keywords_replaced))
+            expect_false(.detect_keywords("data were deposited in the database ", "field_specific_repo",
+                                          keywords_ls = keywords_replaced))
           })

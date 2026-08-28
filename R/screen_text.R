@@ -4,13 +4,41 @@
 
 #' Search for several categories of similar keywords in a sentence.
 #' Multiple categories must match to trigger a detection.
+#' @param field_specific_yaml_path Path to a yaml file with user-curated
+#' list of repository names (e.g. outside of the biomedical fields).
+#' This list allows for detection of repositories that are not in the
+#' standard ODDPub list and are likely to otherwise be classified as
+#' "unknown/misspecified source".
+#' @param field_specific_action Either "add" or "replace". With "add",
+#' the list of repositories is added to the default ODDPub list. With
+#' "replace" the list provided replaces the default ODDPub list instead.
 #' @noRd
-.create_keyword_list <- function()
+.create_keyword_list <- function(field_specific_yaml_path = NULL,
+                                 field_specific_action = "add")
 {
   # read regular expression dictionaries from yaml file
   yaml_path <- system.file("extdata", "keywords_patterns.yaml", package = "oddpub")
   keyword_list <- yaml::read_yaml(file.path(yaml_path))
-  # add conditional formating for some dictionaries
+
+  # if an additional yaml file with field_specific repositories provided
+  # incorporate it into the keyword_list according to the field_specific_action
+  # chosen (add or replace)
+  # field_specific_yaml_path <- system.file("extdata", "additional_field_specific_repos.yaml", package = "oddpub")
+  #field_specific_action = "add"
+  if (!is.null(field_specific_yaml_path)) {
+    field_specific_action <- match.arg(field_specific_action,
+                                       c("add", "replace"))
+
+    new_field_specific_keywords <- yaml::read_yaml(field_specific_yaml_path)
+    if (field_specific_action == "add") {
+      keyword_list$field_specific_repo <- c(keyword_list$field_specific_repo,
+                                            new_field_specific_keywords[[1]])
+    } else if (field_specific_action == "replace") {
+      keyword_list$field_specific_repo <- new_field_specific_keywords[[1]]
+    }
+  }
+
+  # add conditional formatting for some dictionaries
   keyword_list <- keyword_list |>
     purrr::map2(names(keyword_list), \(x, y) switch(y,
       "field_specific_repo" = .format_keyword_vector(x, end_boundary = TRUE),
@@ -161,9 +189,12 @@
 
 #' apply all keyword category searches onto each sentence of the publications
 #' @noRd
-.map_keywords <- function(publ_sentences)
+.map_keywords <- function(publ_sentences,
+                          field_specific_yaml_path,
+                          field_specific_action)
 {
-  keyword_list <- .create_keyword_list()
+  keyword_list <- .create_keyword_list(field_specific_yaml_path = field_specific_yaml_path,
+                                       field_specific_action = field_specific_action)
 
   # search for all relevant keyword categories
   # not all keyword categories are used for the sentence search
@@ -232,7 +263,7 @@
 # sentence <- pdf_text_sentences[927]
 #' test if text contains data availability statement
 #' @noRd
-.has_das <- function(sentence, keyword_list) {
+.has_das <- function(sentence, keyword_list = .create_keyword_list()) {
 
   data_availability <- keyword_list$data_availability
 
@@ -241,7 +272,7 @@
 }
 
 # sentence <- "<section> data availability"
-# .has_das(sentence)
+# .has_das(sentence, keyword_list)
 
 #' extract data and or code availability statement
 #' @noRd
@@ -570,7 +601,9 @@
 # kw <- keyword_results_combined[[1]]
 #'
 #' @noRd
-.keyword_search_full <- function(pdf_text_sentences)
+.keyword_search_full <- function(pdf_text_sentences,
+                                 field_specific_yaml_path = NULL,
+                                 field_specific_action = "add")
 {
 
   data <- grant <- weblink <- reuse <- available <- not_available <-
@@ -588,7 +621,9 @@
   p <- progressr::progressor(along = pdf_text_sentences)
   open_data_categories <- furrr::future_map(pdf_text_sentences, \(x) {
     p()
-    .map_keywords(x)
+    .map_keywords(x,
+                  field_specific_yaml_path = field_specific_yaml_path,
+                  field_specific_action = field_specific_action)
   })
 
 
@@ -701,12 +736,12 @@
 
 #' helper function for the testing of the keywords with testthat
 #' @noRd
-.detect_keywords <- function(string, keyword_category)
+.detect_keywords <- function(string,
+                             keyword_category,
+                             keywords_ls = .create_keyword_list())
 {
-  keywords <- .create_keyword_list()
-
   string <- tolower(string)
-  detected <- stringr::str_detect(string, keywords[[keyword_category]])
+  detected <- stringr::str_detect(string, keywords_ls[[keyword_category]])
 
   return(detected)
 }
@@ -803,7 +838,8 @@
     is_reuse <- is_open_data <- is_open_code <-
     open_data_category <- is_code_reuse <- is_code_supplement <- NULL
 
-  #one part of the keyword search acts on the tokenized sentences while another part acts on the full text
+  # one part of the keyword search acts on the tokenized sentences while
+  # another part acts on the full text
   keyword_results_tokenized <- .keyword_search_tokenized(keyword_results)
   keyword_results_near_wd <- .keyword_search_near_wd(pdf_text_sentences)
   data_journal_doi <- .check_journal_doi(pdf_text_sentences)
@@ -818,7 +854,6 @@
     dplyr::mutate(is_open_data = com_specific_repo | com_general_repo |
                     is_data_journal,
                   is_open_code = com_code,
-                  # | com_suppl_code,
                   is_supplement = dataset | com_file_formats | com_supplemental_data,
                   is_general_purpose = com_general_repo,
                   is_reuse = com_reuse,
@@ -827,7 +862,8 @@
                                                                    com_github_data,
                                                                    com_unknown_source,
                                                                    is_data_journal,
-                                                                   com_recommendation), .OD_category),
+                                                                   com_recommendation),
+                                                              .OD_category),
                   is_code_supplement = com_suppl_code,
                   is_code_reuse = com_code_reuse) |>
     tibble::add_column(article = names(pdf_text_sentences)) |>
@@ -837,15 +873,17 @@
 }
 
 
+
 #' @noRd
 .open_data_sentences <- function(pdf_text_sentences, das_sentences, sentences_with_das, cas_sentences, keyword_results) {
 
-  com_specific_repo <- com_general_repo <- com_github_data <- dataset <- com_file_formats <-
-    com_supplemental_data <- com_reuse <- com_unknown_source <- das <- cas <- com_code <-
-    com_code_reuse <- com_suppl_code <- com_recommendation <- article <-
-    open_data_statements <- open_code_statements <- NULL
+  com_specific_repo <- com_general_repo <- com_github_data <- dataset <-
+    com_file_formats <- com_supplemental_data <- com_reuse <-
+    com_unknown_source <- das <- cas <- com_code <- com_code_reuse <-
+    com_suppl_code <- com_recommendation <- article <- open_data_statements <-
+    open_code_statements <- NULL
 
-  keyword_list <- .create_keyword_list()
+  # keyword_list <- .create_keyword_list()
   #add simple TRUE/FALSE for the categories where the whole text is searched for nearby words
   keyword_results_near_wd <- .keyword_search_near_wd(pdf_text_sentences, extract_text = TRUE)
 
