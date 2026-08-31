@@ -90,12 +90,54 @@ Additionally returns the identified Open Data/Code categories,
 as well as the detected sentences, which can be deactivated using the
 additional parameter ```detected_sentences = FALSE```.
 
-The output data frame can be exported to csv, with the help of the `readr`
-package.
+The output data frame can be exported to csv, with the help of the `write_csv` 
+function from the `readr` package.
 
 ```r
 write_csv(open_data_results, "path/to/output/folder/open_data_results.csv") 
   
+```
+
+## Extending or replacing the list of field-specific repositories
+
+From v7.4.0 the following two parameters were added to `open_data_detection` -
+`field_specific_yaml_path` and `field_specific_action`.
+
+If you have your own curated list of field-specific repositories, for example
+from a different, non-biomedical field, you can add it to the default list of
+biomedical repositories:
+
+```r
+results_new_repositories <- oddpub::open_data_search(
+  pdf_text_sentences,  
+  screen_das = "extra",
+  # replace path below with your own
+  field_specific_yaml_path = system.file(
+    "extdata",
+    "additional_field_specific_repos.yaml",
+    package = "oddpub"
+  ),
+  field_specific_action = "add"
+)
+
+```
+
+Alternatively, if you would like to replace the default list of repositories with
+a different yaml file, change `field_specific_action` to "replace":
+
+```r
+results_new_repositories <- oddpub::open_data_search(
+  pdf_text_sentences,  
+  screen_das = "extra",
+  # replace path below with your own
+  field_specific_yaml_path = system.file(
+    "extdata",
+    "additional_field_specific_repos.yaml",
+    package = "oddpub"
+  ),
+  field_specific_action = "replace"
+)
+
 ```
 
 ## Validation
