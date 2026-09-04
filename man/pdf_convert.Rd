@@ -29,6 +29,6 @@ Logical vector describing the conversion success for each PDF file.
 }
 \description{
 Converts PDFs to text before the text can be loaded and text-mined.
-For the PDFconversion requires the pdftools library.
-for parallelisation requires the future and furrr libraries.
+PDF conversion requires the pdftools library.
+Parallelisation requires the future and furrr libraries.
 }

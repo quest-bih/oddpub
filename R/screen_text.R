@@ -140,7 +140,7 @@
 }
 
 #' create Regex that searches for cases where words x and y are at max dist words apart,
-#' assymetric version where only the case with x before y is checked
+#' asymmetric version where only the case with x before y is checked
 #' @noRd
 .near_wd <- function(x, y, dist = 10)
 {
