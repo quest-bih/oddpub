@@ -1,8 +1,8 @@
 #' Conversion of PDFs to text.
 #'
 #' Converts PDFs to text before the text can be loaded and text-mined.
-#' For the PDFconversion requires the pdftools library.
-#' for parallelisation requires the future and furrr libraries.
+#' PDF conversion requires the pdftools library.
+#' Parallelisation requires the future and furrr libraries.
 #'
 #' @param pdf_folder String of the folder name in which the PDFs are located.
 #' @param output_folder String of the folder name in which the converted files will be saved.
@@ -43,9 +43,9 @@ pdf_convert <- function(pdf_folder, output_folder, recursive = TRUE,
 }
 
 
-#' Seach for open data & open code keywords.
+#' Search for open data & open code keywords.
 #'
-#' The algorithm first searchers for a Data Availability Statement (DAS) and extracts it.
+#' The algorithm first searches for a Data Availability Statement (DAS) and extracts it.
 #' If no DAS was found, the algorithm searches for several categories of similar keywords
 #' in each sentence. Multiple categories have to match for a single sentence to trigger a detection.
 #' Among keyword categories are categories for specific biomedical databases as well as
