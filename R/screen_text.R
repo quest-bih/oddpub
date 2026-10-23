@@ -581,16 +581,18 @@
   if (stringr::str_detect(pdf_text_sentences, "nature portfolio") |> sum() > 2) {
     npp <- which(stringr::str_detect(pdf_text_sentences, "(<section>|##+) reporting summary$|last updated by author\\(s\\)"))
   }
-
+  # if any npp detected
   if (sum(npp) != 0) {
     # if more than one npp detected
     if (sum(npp) != npp[1]) {
-      # if two far enough apart, take latest
-      if (diff(npp) > 100) {
-        npp <- npp[length(npp)]
+
+      if (diff(npp)[1] <= 70) {
+        # reduced from 100 to 70, because 100 was too stringent
+        # if two close together, take first
+        npp <- npp[1]
         } else {
-          # if more than two or two close together, take first
-          npp <- npp[1]
+          # if two far enough apart, take latest
+          npp <- npp[length(npp)]
         }
     }
     pdf_text_sentences <- pdf_text_sentences[1:(npp - 1)]
